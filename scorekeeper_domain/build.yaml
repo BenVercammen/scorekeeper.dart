@@ -1,0 +1,17 @@
+---
+# Read about `build.yaml` at https://pub.dev/packages/build_config
+targets:
+  $default:
+    builders:
+      handler_generator:
+        generate_for:
+          - lib/src/scorable.dart
+
+builders:
+  handler_generator:
+    import: "package:scorekeeper_codegen/generator.dart"
+    builder_factories: ["handlerGenerator"]
+    build_extensions: {".dart": [".handlers.g.part"]}
+    auto_apply: dependents
+    build_to: source
+    # applies_builders: ["source_gen|combining_builder"]
