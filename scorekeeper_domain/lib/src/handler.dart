@@ -16,7 +16,7 @@ abstract class CommandHandler<T extends Aggregate> {
   T newInstance(AggregateId aggregateId);
 
   /// Handle regular (non-constructor) commands
-  void handle(dynamic command, T aggregate);
+  void handle(T aggregate, dynamic command);
 
   /// Returns whether or not this CommandHandler can handle the given command
   bool handles(dynamic command);

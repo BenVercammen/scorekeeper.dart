@@ -109,7 +109,7 @@ class Scorekeeper {
         });
         _aggregateCache.store(aggregate);
       }
-      commandHandler.handle(command, aggregate);
+      commandHandler.handle(aggregate, command);
     }
     // Make sure the aggregate is now registered and cached.
     // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate

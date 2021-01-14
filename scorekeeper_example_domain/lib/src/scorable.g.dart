@@ -19,7 +19,7 @@ class ScorableCommandHandler implements CommandHandler<Scorable> {
   }
 
   @override
-  void handle(dynamic command, Scorable scorable) {
+  void handle(Scorable scorable, dynamic command) {
     switch (command.runtimeType) {
       case AddParticipant:
         scorable.addParticipant(command as AddParticipant);

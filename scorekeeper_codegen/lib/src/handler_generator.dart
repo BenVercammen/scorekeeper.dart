@@ -77,18 +77,18 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     builder.name = 'handle';
     builder.returns = Reference('void');
     var param1 = ParameterBuilder();
-    param1.name = 'command';
-    param1.type = Reference('dynamic');
+    param1.name = _camelName(aggregate.name);
+    param1.type = Reference(aggregate.name);
     builder.requiredParameters.add(param1.build());
     var param2 = ParameterBuilder();
-    param2.name = _camelName(aggregate.name);
-    param2.type = Reference(aggregate.name);
+    param2.name = 'command';
+    param2.type = Reference('dynamic');
     builder.requiredParameters.add(param2.build());
 
     String code = 'switch (command.runtimeType) {';
     commandHandlerMethods.forEach((handlerMethod) {
       var commandType = handlerMethod.parameters[0].type;
-      code += '\ncase ${commandType.name}:\n\t${param2.name}.${handlerMethod.name}(command as ${commandType.name});';
+      code += '\ncase ${commandType.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${commandType.name});';
       code += '\nreturn;';
     });
     code += "\ndefault:\n\tthrow Exception('Unsupported command \${command.runtimeType}.');";
