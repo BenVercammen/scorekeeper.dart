@@ -1,0 +1,29 @@
+# Files and directories created by pub
+.dart_tool/
+.packages
+
+# Omit commiting pubspec.lock for library packages:
+# https://dart.dev/guides/libraries/private-files#pubspeclock
+pubspec.lock
+
+# Conventional directory for build outputs
+build/
+
+# Directory created by dartdoc
+doc/api/
+
+# IDEA folder and IML
+.idea/
+*.iml
+
+# Generated sources
+**/*.pb.dart
+**/*.pbenum.dart
+**/*.pbjson.dart
+**/*.pbserver.dart
+
+# Gradle stuff
+/gradle/wrapper/
+/.gradle/
+/gradlew
+/gradlew.bat
