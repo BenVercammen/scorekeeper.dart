@@ -18,6 +18,9 @@ abstract class EventManager {
   /// Get all events for a single aggregate
   Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId);
 
+  /// Get the number of events for a single aggregate
+  int countEventsForAggregate(AggregateId aggregateId);
+
   /// Get a Stream of DomainEvents received by the EventManager.
   /// These events come either from the own Scorekeeper instance,
   /// or through the remote one ....
@@ -64,9 +67,24 @@ class EventManagerInMemoryImpl implements EventManager {
     }
     _domainEventStore.putIfAbsent(event.aggregateId, () => LinkedHashSet<DomainEvent>());
     if (!_domainEventStore[event.aggregateId].contains(event)) {
-      _domainEventStore[event.aggregateId].add(event);
-      _domainEventController.add(event);
+      // Also check if the sequence is unique (TODO: and possibly in order...)
+      if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
+        // Store the event, but don't publish!?
+        _domainEventStore[event.aggregateId].add(event);
+        var systemEvent = EventNotHandled(SystemEventId.local(), event.id, 'Sequence invalid');
+        _systemEventStore.add(systemEvent);
+        _systemEventController.add(systemEvent);
+      } else {
+        _domainEventStore[event.aggregateId].add(event);
+        _domainEventController.add(event);
+      }
     }
+  }
+
+  /// Check if the DomainEvent sequence is OK.
+  /// Currently, this means no other event with the given sequence
+  bool _domainEventSequenceInvalid(AggregateId aggregateId, int sequence) {
+    return _domainEventStore[aggregateId].where((event) => event.id.sequence == sequence).isNotEmpty;
   }
 
   @override
@@ -78,6 +96,14 @@ class EventManagerInMemoryImpl implements EventManager {
   @override
   Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId) {
     return _domainEventStore[aggregateId] ?? <DomainEvent>{};
+  }
+
+  @override
+  int countEventsForAggregate(AggregateId aggregateId) {
+    if (_domainEventStore.containsKey(aggregateId)) {
+      return _domainEventStore[aggregateId].length;
+    }
+    return 0;
   }
 
   @override
@@ -106,8 +132,4 @@ class EventManagerInMemoryImpl implements EventManager {
     return _domainEventStore.containsKey(aggregateId);
   }
 
-  @override
-  EventId getLastAppliedEventIdForAggregate(AggregateId aggregateId) {
-    return _domainEventStore.containsKey(aggregateId) ? _domainEventStore[aggregateId].last.id : null;
-  }
 }

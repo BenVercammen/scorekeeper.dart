@@ -1,11 +1,16 @@
 
+import 'dart:collection';
+
 import 'package:scorekeeper_domain/core.dart';
+import 'package:uuid/uuid.dart';
 
 /// Class that will run the tests in a minimal setup so that commands and events are applied to a single Aggregate instance
 class TestFixture<T extends Aggregate> {
   final CommandHandler<T> commandHandler;
 
   final EventHandler<T> eventHandler;
+
+  final Map<Aggregate, int> eventSequenceMap = HashMap();
 
   T aggregate;
 
@@ -23,7 +28,8 @@ class TestFixture<T extends Aggregate> {
     }
     final aggregateId = AggregateId.of(event.aggregateId.toString());
     aggregate ??= eventHandler.newInstance(aggregateId);
-    eventHandler.handle(aggregate, DomainEvent.of(EventId.local(), aggregate.aggregateId, event));
+    var sequence = eventSequenceMap[aggregate]++;
+    eventHandler.handle(aggregate, DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event));
     return this;
   }
 
@@ -35,7 +41,8 @@ class TestFixture<T extends Aggregate> {
         commandHandler.handle(aggregate, command);
       }
       for (var event in aggregate.appliedEvents) {
-        eventHandler.handle(aggregate, DomainEvent.of(EventId.local(), aggregate.aggregateId, event));
+        var sequence = eventSequenceMap[aggregate]++;
+        eventHandler.handle(aggregate, DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event));
       }
       lastThrownException = null;
     } on Exception catch (exception) {

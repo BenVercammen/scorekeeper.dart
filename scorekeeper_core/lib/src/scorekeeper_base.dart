@@ -2,6 +2,7 @@
 import 'dart:collection';
 
 import 'package:scorekeeper_domain/core.dart';
+import 'package:uuid/uuid.dart';
 import 'aggregate.dart';
 import 'event.dart';
 
@@ -118,7 +119,8 @@ class Scorekeeper {
       final eventHandler = _getEventHandlerFor(aggregate.runtimeType);
       // TODO: check on sequence!?
       for (var event in aggregate.appliedEvents) {
-        var domainEvent = DomainEvent.of(EventId.local(), aggregate.aggregateId, event);
+        var sequence = _getNextSequenceValueForAggregateEvent(aggregate);
+        var domainEvent = DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event);
         eventHandler.handle(aggregate, domainEvent);
         _localEventManager.storeAndPublish(domainEvent);
       }
@@ -128,6 +130,10 @@ class Scorekeeper {
     }
     // And make sure the aggregate is registered. If this instance is handling commands, it's best that the aggregate is cached
     _localEventManager.registerAggregateId(aggregateId);
+  }
+
+  int _getNextSequenceValueForAggregateEvent(Aggregate aggregate) {
+    return _localEventManager.countEventsForAggregate(aggregate.aggregateId) + 1;
   }
 
   /// Handle the given event using the wired (generated) EventHandler

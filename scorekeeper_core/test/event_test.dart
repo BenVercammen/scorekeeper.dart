@@ -1,23 +1,20 @@
 
 import 'package:scorekeeper_domain/core.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 
 
 void main() {
 
-  group('EventId', () {
+  group('DomainEventId', () {
 
     test('Test local constructor', () {
-      final eventId = EventId.local();
-      expect(eventId.localId, equals(eventId.originId));
+      final uuid = Uuid().v4();
+      final eventId = DomainEventId.local(uuid, 0);
+      expect(eventId.uuid, equals(uuid));
+      expect(eventId.sequence, equals(0));
+      expect(eventId.timestamp, isNotNull);
     });
-
-    test('Test origin constructor', () {
-      final eventId = EventId.origin(EventId.local());
-      expect(eventId.localId, isNot(equals(eventId.originId)));
-    });
-
-    // TODO: veel meer logica nu nodig als we zo vrij met events willen omspringen...
 
   });
 

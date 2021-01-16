@@ -4,6 +4,7 @@ import 'package:example_domain/example.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 
 
 /// Wrapper class that allows us to keep track of which events have been handled
@@ -102,24 +103,28 @@ void main() {
     }
 
     /// Given the ScorableCreatedEvent with parameters
-    void givenScorableCreatedEvent(String aggregateId, String name, [EventId eventId]) {
+    void givenScorableCreatedEvent(String aggregateIdValue, String name, [DomainEventId eventId]) {
       final scorableCreated = ScorableCreated()
-        ..aggregateId = aggregateId
+        ..aggregateId = aggregateIdValue
         ..name = name;
       // Store and publish
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(), AggregateId.of(aggregateId), scorableCreated));
+      var aggregateId = AggregateId.of(aggregateIdValue);
+      var sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
+      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(Uuid().v4(), sequence), aggregateId, scorableCreated));
     }
 
     /// Given the ParticipantAdded event
-    void givenParticipantAddedEvent(String aggregateId, String participantId, String participantName, [EventId eventId]) {
+    void givenParticipantAddedEvent(String aggregateIdValue, String participantId, String participantName, [DomainEventId eventId]) {
       final participantAdded = ParticipantAdded()
-        ..aggregateId = aggregateId;
+        ..aggregateId = aggregateIdValue;
       final participant = Participant()
         ..participantId = participantId
         ..name = participantName;
       participantAdded.participant = participant;
       // Store and publish
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(), AggregateId.of(aggregateId), participantAdded));
+      var aggregateId = AggregateId.of(aggregateIdValue);
+      var sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
+      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(Uuid().v4(), sequence), aggregateId, participantAdded));
     }
 
     /// Given no aggregate with given Id is known in Scorekeeper
@@ -270,7 +275,7 @@ void main() {
 
         /// Events that aren't handled, won't raise any exceptions (for now)
         test('Event without handler', () {
-          scorekeeper.handleEvent(DomainEvent.of(EventId.local(), AggregateId.random(), CreateScorable()));
+          scorekeeper.handleEvent(DomainEvent.of(DomainEventId.local(Uuid().v4(), 0), AggregateId.random(), CreateScorable()));
         });
       });
 
@@ -346,9 +351,10 @@ void main() {
 
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
         /// the system should ignore this event and raise a new SystemEvent
+        /// TODO: this is actually a test for the eventmanager...
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
-          final eventId1 = EventId.local();
-          final eventId2 = EventId.local();
+          final eventId1 = DomainEventId.local(Uuid().v4(), 0);
+          final eventId2 = DomainEventId.local(Uuid().v4(), 0);
           givenAggregateIdRegistered(SCORABLE_ID);
           givenAggregateIdCached(SCORABLE_ID);
           givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId1);
@@ -356,7 +362,7 @@ void main() {
           await eventually(() => thenAggregateShouldBeCached(SCORABLE_ID));
           givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId2);
           await eventually(() {
-            final eventNotHandled = EventNotHandled(SystemEventId.local(), eventId2, 'Aggregate with id $SCORABLE_ID already exists and cannot be created again');
+            final eventNotHandled = EventNotHandled(SystemEventId.local(), eventId2, 'Sequence invalid');
             thenSystemEventShouldBePublished(eventNotHandled);
           });
         });

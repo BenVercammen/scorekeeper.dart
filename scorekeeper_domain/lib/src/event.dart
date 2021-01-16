@@ -3,52 +3,31 @@ import 'package:uuid/uuid.dart';
 
 import 'aggregate.dart';
 
-class TimestampedId {
-  int sequence;
-  String uuid = Uuid().v4();
-  DateTime timestamp = DateTime.now();
+/// A composite ID that contains sequence, UUID and timestamp values.
+class DomainEventId {
 
-  @override
-  String toString() {
-    return '$uuid@${timestamp.toIso8601String()}';
-  }
-}
+  final String _uuid;
 
-/// ID used for a domain and integration events.
-/// Is actually a composite Id in order to give the system some clues as to implement some ordering and conflict reconciliation logic.
-class EventId {
+  final int _sequence;
 
-  /// The ID as given by the originator
-  TimestampedId _originId;
-
-  /// The ID as given by the local event manager
-  TimestampedId _localId;
-
-  /// The ID of the previous event, to give a grip on ordering.
-  // final TimestampedId prevLocalId;
+  DateTime _timestamp;
 
   /// Constructor to be used when creating a locally generated event.
-  /// The localId and originId values should be equal.
-  EventId.local() {
-    _originId = TimestampedId();
-    _localId = _originId;
+  /// The local and origin values should be equal.
+  DomainEventId.local(this._uuid, this._sequence) {
+    _timestamp = DateTime.now();
   }
 
-  /// Constructor to be used when importing remote events
-  /// The localId and originId values should be different.
-  EventId.origin(EventId externalEventId) {
-    _originId = externalEventId._originId;
-    _localId = TimestampedId();
-  }
+  String get uuid => _uuid;
+
+  int get sequence => _sequence;
+
+  DateTime get timestamp => _timestamp;
 
   @override
   String toString() {
-    return 'origin=$_originId, local=$_localId';
+    return '$_sequence@$_uuid@${_timestamp.toIso8601String()}';
   }
-
-  TimestampedId get originId => _originId;
-
-  TimestampedId get localId => _localId;
 
 }
 
@@ -56,45 +35,36 @@ class EventId {
 /// ID used for system events.
 class SystemEventId {
 
-  /// The ID as given by the originator
-  TimestampedId _originId;
+  String _uuid;
 
-  /// The ID as given by the local event manager
-  TimestampedId _localId;
+  DateTime _timestamp;
 
   /// Constructor to be used when creating a locally generated event.
   /// The localId and originId values should be equal.
   SystemEventId.local() {
-    _originId = TimestampedId();
-    _localId = _originId;
+    _uuid = Uuid().v4();
+    _timestamp = DateTime.now();
   }
 
-  /// Constructor to be used when importing remote events
-  /// The localId and originId values should be different.
-  SystemEventId.origin(EventId externalEventId) {
-    _originId = externalEventId._originId;
-    _localId = TimestampedId();
-  }
+  String get uuid => _uuid;
+
+  DateTime get timestamp => _timestamp;
 
   @override
   String toString() {
-    return 'origin=$_originId, local=$_localId';
+    return '$_uuid@${_timestamp.toIso8601String()}';
   }
-
-  TimestampedId get originId => _originId;
-
-  TimestampedId get localId => _localId;
 
 }
 
 
 /// TODO: https://cloudevents.io/ checken
 /// TODO: https://medium.com/google-cloud/using-cloud-events-and-cloud-events-generator-4b71b8a90277 checken...
-/// hoe gaan we die specifiëren,
+/// hoe gaan we die specifiëren?
+/// DomainEvent = payload + metadata, en enkel die payload is voor onze aggregate interessant...
 class DomainEvent<T extends Aggregate> {
 
-  /// TODO: eventId == metadata??
-  final EventId id;
+  final DomainEventId id;
 
   final AggregateId aggregateId;
 
@@ -115,7 +85,7 @@ class DomainEvent<T extends Aggregate> {
 
 /// IntegrationEvents are meant to communicate between different aggregates and/or bounded contexts.
 class IntegrationEvent {
-  final EventId id;
+  final SystemEventId id;
 
   IntegrationEvent(this.id);
 }
@@ -134,7 +104,7 @@ abstract class SystemEvent {
 /// SystemEvent that tells the system that a given event was not handled for some reason
 class EventNotHandled extends SystemEvent {
 
-  final EventId notHandledEventId;
+  final DomainEventId notHandledEventId;
 
   final String reason;
 
