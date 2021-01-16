@@ -9,6 +9,8 @@ class TestFixture<T extends Aggregate> {
 
   T aggregate;
 
+  Exception lastThrownException;
+
   TestFixture(this.commandHandler, this.eventHandler);
 
   TestFixture given(dynamic event) {
@@ -26,14 +28,19 @@ class TestFixture<T extends Aggregate> {
   }
 
   TestFixture when(dynamic command) {
-    if (commandHandler.isConstructorCommand(command)) {
-      aggregate = commandHandler.handleConstructorCommand(command);
-    } else {
-      commandHandler.handle(aggregate, command);
+    try {
+      if (commandHandler.isConstructorCommand(command)) {
+        aggregate = commandHandler.handleConstructorCommand(command);
+      } else {
+        commandHandler.handle(aggregate, command);
+      }
+      aggregate.appliedEvents.forEach((event) {
+        eventHandler.handle(aggregate, DomainEvent.of(EventId.local(null), aggregate.aggregateId, event));
+      });
+      lastThrownException = null;
+    } on Exception catch (exception, stacktrace) {
+      lastThrownException = exception;
     }
-    aggregate.appliedEvents.forEach((event) {
-      eventHandler.handle(aggregate, DomainEvent.of(EventId.local(null), aggregate.aggregateId, event));
-    });
     return this;
   }
 

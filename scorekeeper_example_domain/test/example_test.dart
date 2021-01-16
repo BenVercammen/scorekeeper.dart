@@ -38,6 +38,24 @@ void main() {
           expect(scorable.participants.length, equals(1));
         });
     });
+
+    test('RemoveParticipant failed (non-existing participant)', () {
+      final _aggregateId = Uuid().v4();
+      final participant = Participant()
+        ..name = 'Participant 1'
+        ..participantId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..when(RemoveParticipant()
+          ..aggregateId = _aggregateId
+          ..participant = participant)
+        ..then((scorable) {
+          expect(fixture.lastThrownException.toString(), contains('Participant not on Scorable'));
+          expect(scorable.participants.length, equals(0));
+        });
+    });
   });
 
   group('Event handling', () {
@@ -60,7 +78,6 @@ void main() {
         });
     });
 
-
     test('ParticipantAdded', () {
       final _aggregateId = Uuid().v4();
       fixture
@@ -68,13 +85,25 @@ void main() {
           ..name = 'Test'
           ..aggregateId = _aggregateId)
         ..given(ParticipantAdded()
-            ..aggregateId = _aggregateId
-            ..participant = Participant()
-        )
+          ..aggregateId = _aggregateId
+          ..participant = Participant())
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
     });
 
+    test('ParticipantRemoved', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(ParticipantRemoved()
+          ..aggregateId = _aggregateId
+          ..participant = Participant())
+        ..then((scorable) {
+          expect(scorable.participants.length, equals(0));
+        });
+    });
   });
 }
