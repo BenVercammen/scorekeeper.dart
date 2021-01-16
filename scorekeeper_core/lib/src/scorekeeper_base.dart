@@ -65,9 +65,8 @@ class Scorekeeper {
     _localEventManager.registerAggregateId(aggregateId);
   }
 
-  /// Mark an aggregate as no longer being
-  /// Remove a "cached" aggregate from this scorekeeper instance.
-  /// TODO: currently, the events are still kept in the local event store, that still needs to be considered...
+  /// Mark an aggregate as no longer being registered.
+  /// Removes a "cached" aggregate from this scorekeeper instance and stops listening for (domain) events of that aggregate.
   void unregisterAggregate(AggregateId aggregateId) {
     _registeredAggregates.remove(aggregateId);
     _aggregateCache.purge(aggregateId);

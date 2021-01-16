@@ -166,6 +166,12 @@ void main() {
       callback();
     }
 
+    /// Then the cached aggregate should ...
+    void thenAssertCachedState<T extends Aggregate>(String aggregateId, Function(T aggregate) callback) {
+      final aggregate = aggregateCache.get<T>(AggregateId.of(aggregateId));
+      callback(aggregate);
+    }
+
     /// Then the aggregate with given Id should be cached
     void thenAggregateShouldBeCached(String aggregateId) {
       expect(aggregateCache.contains(AggregateId.of(aggregateId)), equals(true));
@@ -265,6 +271,23 @@ void main() {
         /// Events that aren't handled, won't raise any exceptions (for now)
         test('Event without handler', () {
           scorekeeper.handleEvent(DomainEvent.of(EventId.local(), AggregateId.random(), CreateScorable()));
+        });
+      });
+
+      group('Register/unregister aggregates', () {
+
+        /// When unregistering an aggregate, we also want to remove all events from the local event manager
+        /// We're no longer interested in the aggregate, and don't care if anyone else is...
+        test('Test unregister aggregate', () {
+          final aggregateId = AggregateId.random();
+          scorekeeper.registerAggregate(aggregateId, Scorable);
+          givenScorableCreatedEvent(aggregateId.id, 'Test');
+          thenAggregateShouldBeRegistered(aggregateId.id);
+          thenEventTypeShouldBeStoredNumberOfTimes(aggregateId.id, ScorableCreated, 1);
+          // unregister
+          scorekeeper.unregisterAggregate(aggregateId);
+          thenAggregateShouldNotBeRegistered(aggregateId.id);
+          thenEventTypeShouldBeStoredNumberOfTimes(aggregateId.id, ScorableCreated, 0);
         });
       });
 
@@ -394,8 +417,10 @@ void main() {
           thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
           thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
           // Cached state should reflect the handled event...
-          final scorable = aggregateCache.get<Scorable>(AggregateId.of(SCORABLE_ID));
-          expect(scorable.participants.length, equals(1));
+          thenAssertCachedState<Scorable>(SCORABLE_ID, (Scorable scorable) {
+            expect(scorable.name, equals('Test 1'));
+            expect(scorable.participants.length, equals(1));
+          });
         });
 
         test('Handle regular event for unregistered aggregateId', () {
@@ -433,11 +458,11 @@ void main() {
           thenAggregateShouldBeRegistered(SCORABLE_ID);
           thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
           // Check cached values (this is actually testing the domain itself, so not really something we need to do here)
-          final aggregateId = AggregateId.of(SCORABLE_ID);
-          final cachedAggregate = aggregateCache.get(aggregateId) as Scorable;
-          expect(cachedAggregate, isNotNull);
-          expect(cachedAggregate.aggregateId, equals(aggregateId));
-          expect(cachedAggregate.name, equals('Test Scorable 1'));
+          thenAssertCachedState<Scorable>(SCORABLE_ID, (Scorable scorable) {
+            expect(scorable, isNotNull);
+            expect(scorable.aggregateId, equals(AggregateId.of(SCORABLE_ID)));
+            expect(scorable.name, equals('Test Scorable 1'));
+          });
         });
 
         test('Handle constructor command for non-existing registered, non-cached aggregateId', () {
@@ -499,10 +524,10 @@ void main() {
           thenEventTypeShouldBeHandledNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
           thenAggregateShouldBeCached(SCORABLE_ID);
           // Check if Participant is actually added
-          final aggregateId = AggregateId.of(SCORABLE_ID);
-          final cachedScorable = aggregateCache.get<Scorable>(aggregateId);
-          expect(cachedScorable.participants, isNotNull);
-          expect(cachedScorable.participants.length, equals(1));
+          thenAssertCachedState<Scorable>(SCORABLE_ID, (Scorable scorable) {
+            expect(scorable.participants, isNotNull);
+            expect(scorable.participants.length, equals(1));
+          });
         });
 
       });

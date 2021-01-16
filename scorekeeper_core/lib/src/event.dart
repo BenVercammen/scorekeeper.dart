@@ -98,6 +98,7 @@ class EventManagerInMemoryImpl implements EventManager {
   @override
   void unregisterAggregateId(AggregateId aggregateId) {
     _registeredAggregateIds.remove(aggregateId);
+    _domainEventStore.removeWhere((key, value) => key == aggregateId);
   }
 
   @override
