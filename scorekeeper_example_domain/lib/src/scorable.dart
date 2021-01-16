@@ -16,33 +16,33 @@ class Scorable extends Aggregate {
     if (null == command.name) {
       throw Exception('Invalid name');
     }
-    ScorableCreated event = ScorableCreated();
-    event.aggregateId = command.aggregateId;
-    event.name = command.name;
+    final event = ScorableCreated()
+      ..aggregateId = command.aggregateId
+      ..name = command.name;
     apply(event);
   }
 
   @commandHandler
   void addParticipant(AddParticipant command) {
-    Participant participant = command.participant;
+    final participant = command.participant;
     if (participants.contains(participant)) {
       throw Exception('Participant already added to Scorable');
     }
-    ParticipantAdded event = ParticipantAdded();
-    event.aggregateId = command.aggregateId;
-    event.participant = command.participant;
+    final event = ParticipantAdded()
+      ..aggregateId = command.aggregateId
+      ..participant = command.participant;
     apply(event);
   }
 
   @commandHandler
   void removeParticipant(RemoveParticipant command) {
-    Participant participant = command.participant;
+    final participant = command.participant;
     if (!participants.contains(participant)) {
       throw Exception('Participant not on Scorable');
     }
-    ParticipantRemoved event = ParticipantRemoved();
-    event.aggregateId = command.aggregateId;
-    event.participant = command.participant;
+    final event = ParticipantRemoved()
+      ..aggregateId = command.aggregateId
+      ..participant = command.participant;
     apply(event);
   }
 

@@ -39,17 +39,6 @@ abstract class EventManager {
 
   bool hasEventsForAggregate(AggregateId aggregateId);
 
-  // /// Get the last EventId that was stored for the given aggregate
-  // EventId getLastAppliedEventIdForAggregate(AggregateId aggregateId);
-  //
-  // /// Check if the given DomainEvent is the actual "initial event".
-  // /// An initial event is the event that is responsible for instantiating an Aggregate
-  // ///  TODO: nu heel veel gedoe daaromtrent, kunnen we Events nie gewoon markeren? Of registreren als zijnde "initial events"?
-  // ///  zodanig dat we heel dit gedoe niet nodig hebben???
-  // bool isInitialAggregateDomainEvent(DomainEvent<Aggregate> domainEvent) {
-  //
-  // }
-
 }
 
 /// In memory implementation of the EventManager

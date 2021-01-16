@@ -22,10 +22,10 @@ class Scorekeeper {
   final AggregateCache _aggregateCache;
 
   /// The (generated) handler that maps commands to aggregate handler methods
-  Set<CommandHandler> _commandHandlers = <CommandHandler>{};
+  final _commandHandlers = <CommandHandler>{};
 
   /// The (generated) handler that maps events to aggregate handler methods
-  Set<EventHandler> _eventHandlers = <EventHandler>{};
+  final _eventHandlers = <EventHandler>{};
 
   /// Create a Scorekeeper instance
   Scorekeeper(this._localEventManager, this._remoteEventManager, this._aggregateCache) {
@@ -35,7 +35,6 @@ class Scorekeeper {
     if (null == _aggregateCache) {
       throw Exception('AggregateCache instance is required');
     }
-    // TODO: command and event handlers are also required...
 
     // Make sure that the local event manager keeps track only of the registered AggregateIds
     _localEventManager.registerAggregateIds(_registeredAggregates.keys);
@@ -87,7 +86,7 @@ class Scorekeeper {
     Aggregate aggregate;
 
     // TODO: nog testen dat er maar één command handler mag zijn
-    CommandHandler commandHandler = _getCommandHandlerFor(command);
+    final commandHandler = _getCommandHandlerFor(command);
     if (commandHandler.isConstructorCommand(command)) {
       // First make sure no Aggregate for the given AggregateId exists already
       // For now only in local event manager, but maybe we should check the remote as well?
@@ -118,11 +117,9 @@ class Scorekeeper {
     if (null != aggregate) {
       // De appliedEvents nog effectief handlen
       EventHandler eventHandler = _getEventHandlerFor(aggregate.runtimeType);
-      // TODO: dan ga ik hier de vorige event te pakken moeten zien te krijgen...
-      // EventId prevId = _localEventManager.getLastAppliedEventIdForAggregate(aggregateId);
-      EventId prevId = null;
+      // TODO: check on sequence!?
       aggregate.appliedEvents.forEach((dynamic event) {
-        var domainEvent = DomainEvent.of(EventId.local(null), aggregate.aggregateId, event);
+        var domainEvent = DomainEvent.of(EventId.local(), aggregate.aggregateId, event);
         eventHandler.handle(aggregate, domainEvent);
         _localEventManager.storeAndPublish(domainEvent);
       });
@@ -176,8 +173,7 @@ class Scorekeeper {
       _aggregateCache.store(aggregate);
     }
     // En huidige event apply'en
-    EventHandler eventHandler = _getEventHandlerFor(aggregate.runtimeType);
-    eventHandler.handle(aggregate, domainEvent);
+    _getEventHandlerFor(aggregate.runtimeType).handle(aggregate, domainEvent);
     // event publishen (lokaal en later ook remote??) (dan moet EventId wel aangepast worden)
     // TODO: store and publish moet enkel als het extern binnenkomt, als we het via externe manager binnen krijgen,
     //  is dat niet meer nodig he??
@@ -185,9 +181,9 @@ class Scorekeeper {
   }
 
   Aggregate _loadHydratedAggregate(Type runtimeType, AggregateId aggregateId) {
-    EventHandler eventHandler = _getEventHandlerFor(runtimeType);
+    final eventHandler = _getEventHandlerFor(runtimeType);
     // Nieuwe instance maken
-    Aggregate aggregate = eventHandler.newInstance(aggregateId);
+    final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
     _localEventManager.getEventsForAggregate(aggregateId).forEach((DomainEvent domainEvent) {
       eventHandler.handle(aggregate, domainEvent);
@@ -201,7 +197,7 @@ class Scorekeeper {
 
   void addAggregateToCache(AggregateId aggregateId, Type aggregateType) {
     if (!_aggregateCache.contains(aggregateId)) {
-      Aggregate aggregate = _loadHydratedAggregate(aggregateType, aggregateId);
+      final aggregate = _loadHydratedAggregate(aggregateType, aggregateId);
       _aggregateCache.store(aggregate);
     }
   }
@@ -211,12 +207,12 @@ class Scorekeeper {
   }
 
   CommandHandler<Aggregate> _getCommandHandlerFor(dynamic command) {
-    var handlers = _commandHandlers.where((handler) => handler.handles(command)).toSet();
+    final handlers = _commandHandlers.where((handler) => handler.handles(command)).toSet();
     if (handlers.isEmpty) {
-      throw Exception("No command handler registered for ${command}");
+      throw Exception('No command handler registered for $command');
     }
     if (handlers.length > 1) {
-      throw Exception("Only one command handler should be registered for ${command}");
+      throw Exception('Only one command handler should be registered for $command');
     }
     return handlers.first;
   }

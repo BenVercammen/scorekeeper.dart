@@ -15,15 +15,15 @@ class TestFixture<T extends Aggregate> {
 
   TestFixture given(dynamic event) {
     if (event.aggregateId == null) {
-        throw new Exception('AggregateId was not set on event ${event.runtimeType}');
+        throw Exception('AggregateId was not set on event ${event.runtimeType}');
     }
     // Ignore events for different aggregateId's...
     if (aggregate != null && event.aggregateId != aggregate.aggregateId.id) {
       return this;
     }
-    AggregateId aggregateId = AggregateId.of(event.aggregateId.toString());
+    final aggregateId = AggregateId.of(event.aggregateId.toString());
     aggregate ??= eventHandler.newInstance(aggregateId);
-    eventHandler.handle(aggregate, DomainEvent.of(EventId.local(null), aggregate.aggregateId, event));
+    eventHandler.handle(aggregate, DomainEvent.of(EventId.local(), aggregate.aggregateId, event));
     return this;
   }
 
@@ -35,10 +35,10 @@ class TestFixture<T extends Aggregate> {
         commandHandler.handle(aggregate, command);
       }
       aggregate.appliedEvents.forEach((event) {
-        eventHandler.handle(aggregate, DomainEvent.of(EventId.local(null), aggregate.aggregateId, event));
+        eventHandler.handle(aggregate, DomainEvent.of(EventId.local(), aggregate.aggregateId, event));
       });
       lastThrownException = null;
-    } on Exception catch (exception, stacktrace) {
+    } on Exception catch (exception) {
       lastThrownException = exception;
     }
     return this;

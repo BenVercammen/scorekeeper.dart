@@ -17,8 +17,8 @@ void main() {
     });
 
     test('Test store, remove and contains aggregate', () {
-      var aggregate1 = Scorable.aggregateId(AggregateId.random());
-      var aggregate2 = Scorable.aggregateId(AggregateId.random());
+      final aggregate1 = Scorable.aggregateId(AggregateId.random());
+      final aggregate2 = Scorable.aggregateId(AggregateId.random());
       aggregateCache.store(aggregate1);
       expect(aggregateCache.contains(aggregate1.aggregateId), equals(true));
       expect(aggregateCache.contains(aggregate2.aggregateId), equals(false));

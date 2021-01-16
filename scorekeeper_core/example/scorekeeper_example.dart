@@ -5,17 +5,16 @@ import 'package:uuid/uuid.dart';
 void main() {
 
   // Create an instance
-  var scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl());
-  // Register the command and event handlers for the relevant domain
-  scorekeeper.registerCommandHandler(ScorableCommandHandler());
-  scorekeeper.registerEventHandler(ScorableEventHandler());
+  final scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl())
+    // Register the command and event handlers for the relevant domain
+    ..registerCommandHandler(ScorableCommandHandler())
+    ..registerEventHandler(ScorableEventHandler());
 
   // Handle a command
-  CreateScorable command = CreateScorable();
-  command.aggregateId = Uuid().v4();
-  command.name = 'Test Scorable 1';
+  final command = CreateScorable()
+    ..aggregateId = Uuid().v4()
+    ..name = 'Test Scorable 1';
   scorekeeper.handleCommand(command);
-
 
 }
 

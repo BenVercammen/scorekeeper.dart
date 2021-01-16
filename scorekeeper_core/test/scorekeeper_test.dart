@@ -27,13 +27,6 @@ class EventHandlerCountWrapper<T extends EventHandler> implements EventHandler {
     return _eventHandler.newInstance(aggregateId);
   }
 
-  countHandledEvents(AggregateId aggregateId, Type eventType) {
-    if (!_handledEvents.containsKey(aggregateId)) {
-      return 0;
-    }
-    return _handledEvents[aggregateId].where((event) => event.payload.runtimeType == eventType).toSet().length;
-  }
-
   @override
   bool handles(DomainEvent event) {
     return _eventHandler.handles(event);
@@ -42,6 +35,13 @@ class EventHandlerCountWrapper<T extends EventHandler> implements EventHandler {
   @override
   bool forType(Type type) {
     return _eventHandler.forType(type);
+  }
+
+  int countHandledEvents(AggregateId aggregateId, Type eventType) {
+    if (!_handledEvents.containsKey(aggregateId)) {
+      return 0;
+    }
+    return _handledEvents[aggregateId].where((event) => event.payload.runtimeType == eventType).toSet().length;
   }
 
 }
@@ -73,9 +73,9 @@ void main() {
       aggregateCache = AggregateCacheImpl();
       commandHandler = ScorableCommandHandler();
       eventHandler = EventHandlerCountWrapper<ScorableEventHandler>(ScorableEventHandler());
-      scorekeeper = Scorekeeper(localEventManager, remoteEventManager, aggregateCache);
-      scorekeeper.registerCommandHandler(commandHandler);
-      scorekeeper.registerEventHandler(eventHandler);
+      scorekeeper = Scorekeeper(localEventManager, remoteEventManager, aggregateCache)
+        ..registerCommandHandler(commandHandler)
+        ..registerEventHandler(eventHandler);
     });
 
 
@@ -103,25 +103,23 @@ void main() {
 
     /// Given the ScorableCreatedEvent with parameters
     void givenScorableCreatedEvent(String aggregateId, String name, [EventId eventId]) {
-      ScorableCreated scorableCreated = ScorableCreated();
+      var scorableCreated = ScorableCreated();
       scorableCreated.aggregateId = aggregateId;
       scorableCreated.name = name;
-      // scorekeeper.handleEvent(scorableCreated);
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(null), AggregateId.of(aggregateId), scorableCreated));
+      // Store and publish
+      localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(), AggregateId.of(aggregateId), scorableCreated));
     }
 
     /// Given the ParticipantAdded event
     void givenParticipantAddedEvent(String aggregateId, String participantId, String participantName, [EventId eventId]) {
-      ParticipantAdded participantAdded = ParticipantAdded();
+      var participantAdded = ParticipantAdded();
       participantAdded.aggregateId = aggregateId;
       Participant participant = Participant();
       participant.participantId = participantId;
       participant.name = participantName;
       participantAdded.participant = participant;
-      // scorekeeper.handleEvent(participantAdded);
-      // var prevEventId = localEventManager.getLastAppliedEventIdForAggregate(AggregateId.of(aggregateId));
-      var prevEventId = EventId.local(null);
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(prevEventId.originId), AggregateId.of(aggregateId), participantAdded));
+      // Store and publish
+      localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(), AggregateId.of(aggregateId), participantAdded));
     }
 
     /// Given no aggregate with given Id is known in Scorekeeper
@@ -134,14 +132,14 @@ void main() {
       try {
         _lastThrownWhenException = null;
         callback();
-      } on Exception catch (exception, stacktrace) {
+      } on Exception catch (exception) {
         _lastThrownWhenException = exception;
       }
     }
 
     /// When constructor command is sent to Scorekeeper
     void createScorableCommand(String aggregateId, String name) {
-      CreateScorable command = CreateScorable();
+      var command = CreateScorable();
       command.aggregateId = aggregateId;
       command.name = name;
       scorekeeper.handleCommand(command);
@@ -149,7 +147,7 @@ void main() {
 
     /// When constructor command is sent to Scorekeeper
     void addParticipantCommand(String aggregateId, String participantId, String participantName) {
-      AddParticipant command = AddParticipant();
+      var command = AddParticipant();
       command.aggregateId = aggregateId;
       command.participant = Participant();
       command.participant.participantId = participantId;
@@ -163,7 +161,7 @@ void main() {
     }
 
     /// Eventually means asynchronously, so we'll just wait a few millis to check
-    void eventually(Function() callback) async {
+    Future<void> eventually(Function() callback) async {
       await Future.delayed(Duration(milliseconds: 10));
       callback();
     }
@@ -222,13 +220,13 @@ void main() {
     }
 
 
-    group('Test creation of the Scorekeeper instance', () {
+    group('Test creation and initial usage of the Scorekeeper instance', () {
 
       test('Constructor requires local EventManager', () {
         try {
           Scorekeeper(null, null, AggregateCacheImpl());
           fail('Instantiating without local EventManager instance should fail');
-        } on Exception catch (exception, _) {
+        } on Exception catch (exception) {
           expect(exception.toString(), contains('Local EventManager instance is required'));
         }
       });
@@ -237,9 +235,37 @@ void main() {
         try {
           Scorekeeper(EventManagerInMemoryImpl(), null, null);
           fail('Instantiating without AggregateCache instance should fail');
-        } on Exception catch (exception, _) {
+        } on Exception catch (exception) {
           expect(exception.toString(), contains('AggregateCache instance is required'));
         }
+      });
+
+
+      group('Scorekeeper without handlers', () {
+
+        Scorekeeper scorekeeper;
+
+        setUp(() {
+          scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl());
+        });
+
+        /// Commands that can't be handled, should raise an exception
+        test('Command without handler', () {
+          try {
+            scorekeeper.handleCommand(CreateScorable()
+              ..name = 'Test'
+              ..aggregateId = AggregateId
+                  .random()
+                  .id);
+          } on Exception catch (exception) {
+            expect(exception.toString(), contains("No command handler registered for Instance of 'CreateScorable'"));
+          }
+        });
+
+        /// Events that aren't handled, won't raise any exceptions (for now)
+        test('Event without handler', () {
+          scorekeeper.handleEvent(DomainEvent.of(EventId.local(), AggregateId.random(), CreateScorable()));
+        });
       });
 
     });
@@ -298,8 +324,8 @@ void main() {
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
         /// the system should ignore this event and raise a new SystemEvent
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
-          var eventId1 = EventId.local(null);
-          var eventId2 = EventId.local(null);
+          var eventId1 = EventId.local();
+          var eventId2 = EventId.local();
           givenAggregateIdRegistered(SCORABLE_ID);
           givenAggregateIdCached(SCORABLE_ID);
           givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId1);

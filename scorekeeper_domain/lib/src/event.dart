@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'aggregate.dart';
 
 class TimestampedId {
+  int sequence;
   String uuid = Uuid().v4();
   DateTime timestamp = DateTime.now();
 
@@ -20,9 +21,6 @@ class EventId {
   /// The ID as given by the originator
   TimestampedId _originId;
 
-  /// The ID of the previous event, to give a grip on ordering.
-  TimestampedId _prevOriginId;
-
   /// The ID as given by the local event manager
   TimestampedId _localId;
 
@@ -31,28 +29,24 @@ class EventId {
 
   /// Constructor to be used when creating a locally generated event.
   /// The localId and originId values should be equal.
-  EventId.local(TimestampedId prevOriginId) {
+  EventId.local() {
     _originId = TimestampedId();
     _localId = _originId;
-    _prevOriginId = prevOriginId;
   }
 
   /// Constructor to be used when importing remote events
   /// The localId and originId values should be different.
   EventId.origin(EventId externalEventId) {
     _originId = externalEventId._originId;
-    _prevOriginId = externalEventId._prevOriginId;
     _localId = TimestampedId();
   }
 
   @override
   String toString() {
-    return 'origin=$_originId, local=$_localId, prev=$_prevOriginId';
+    return 'origin=$_originId, local=$_localId';
   }
 
   TimestampedId get originId => _originId;
-
-  TimestampedId get prevOriginId => _prevOriginId;
 
   TimestampedId get localId => _localId;
 

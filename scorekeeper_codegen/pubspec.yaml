@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   scorekeeper_domain:
-    path: ..\scorekeeper_domain
+    path: ../scorekeeper_domain
   # dependencies required for generating code using the build package
   build: ^1.6.1
   source_gen: ^0.9.10+1

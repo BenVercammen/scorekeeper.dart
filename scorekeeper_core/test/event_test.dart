@@ -8,13 +8,12 @@ void main() {
   group('EventId', () {
 
     test('Test local constructor', () {
-      EventId eventId = EventId.local(null);
+      final eventId = EventId.local();
       expect(eventId.localId, equals(eventId.originId));
-      expect(eventId.prevOriginId, equals(null));
     });
 
     test('Test origin constructor', () {
-      EventId eventId = EventId.origin(EventId.local(null));
+      final eventId = EventId.origin(EventId.local());
       expect(eventId.localId, isNot(equals(eventId.originId)));
     });
 
