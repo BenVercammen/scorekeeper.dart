@@ -1,0 +1,18 @@
+# See https://github.com/google/mono_repo.dart for details on this file
+self_validate: analyzer_and_format
+
+# Enables Travis-CI - https://docs.travis-ci.com/
+# If you have no configuration, you can set the value to `true` or just leave it
+# empty.
+travis:
+  # Specify any additional top-level configuration you want in your
+  # `.travis.yml` file.
+  # See https://config.travis-ci.com/ for more details
+  # Example:
+  after_failure:
+    - tool/report_failure.sh
+
+merge_stages:
+- analyzer_and_format
+- ensure_build
+- unit_test
