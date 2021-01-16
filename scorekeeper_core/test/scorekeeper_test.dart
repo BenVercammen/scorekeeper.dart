@@ -81,13 +81,13 @@ void main() {
 
     /// Given we registered for notifications of the aggregate with aggregateId
     void givenAggregateIdRegistered(String aggregateIdValue) {
-      AggregateId aggregateId = AggregateId.of(aggregateIdValue);
+      final aggregateId = AggregateId.of(aggregateIdValue);
       scorekeeper.registerAggregate(aggregateId, Scorable);
     }
 
     /// Given we did not register for notifications of the aggregate with aggregateId
     void givenAggregateIdNotRegistered(String aggregateIdValue) {
-      AggregateId aggregateId = AggregateId.of(aggregateIdValue);
+      final aggregateId = AggregateId.of(aggregateIdValue);
       scorekeeper.unregisterAggregate(aggregateId);
     }
 
@@ -103,20 +103,20 @@ void main() {
 
     /// Given the ScorableCreatedEvent with parameters
     void givenScorableCreatedEvent(String aggregateId, String name, [EventId eventId]) {
-      var scorableCreated = ScorableCreated();
-      scorableCreated.aggregateId = aggregateId;
-      scorableCreated.name = name;
+      final scorableCreated = ScorableCreated()
+        ..aggregateId = aggregateId
+        ..name = name;
       // Store and publish
       localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(), AggregateId.of(aggregateId), scorableCreated));
     }
 
     /// Given the ParticipantAdded event
     void givenParticipantAddedEvent(String aggregateId, String participantId, String participantName, [EventId eventId]) {
-      var participantAdded = ParticipantAdded();
-      participantAdded.aggregateId = aggregateId;
-      Participant participant = Participant();
-      participant.participantId = participantId;
-      participant.name = participantName;
+      final participantAdded = ParticipantAdded()
+        ..aggregateId = aggregateId;
+      final participant = Participant()
+        ..participantId = participantId
+        ..name = participantName;
       participantAdded.participant = participant;
       // Store and publish
       localEventManager.storeAndPublish(DomainEvent.of(eventId??EventId.local(), AggregateId.of(aggregateId), participantAdded));
@@ -124,7 +124,7 @@ void main() {
 
     /// Given no aggregate with given Id is known in Scorekeeper
     void givenNoAggregateKnownWithId(String aggregateIdValue) {
-      AggregateId aggregateId = AggregateId.of(aggregateIdValue);
+      final aggregateId = AggregateId.of(aggregateIdValue);
       aggregateCache.purge(aggregateId);
     }
 
@@ -139,19 +139,19 @@ void main() {
 
     /// When constructor command is sent to Scorekeeper
     void createScorableCommand(String aggregateId, String name) {
-      var command = CreateScorable();
-      command.aggregateId = aggregateId;
-      command.name = name;
+      final command = CreateScorable()
+        ..aggregateId = aggregateId
+        ..name = name;
       scorekeeper.handleCommand(command);
     }
 
     /// When constructor command is sent to Scorekeeper
     void addParticipantCommand(String aggregateId, String participantId, String participantName) {
-      var command = AddParticipant();
-      command.aggregateId = aggregateId;
-      command.participant = Participant();
-      command.participant.participantId = participantId;
-      command.participant.name = participantName;
+      final command = AddParticipant()
+        ..aggregateId = aggregateId
+        ..participant = Participant()
+        ..participant.participantId = participantId
+        ..participant.name = participantName;
       scorekeeper.handleCommand(command);
     }
 
@@ -162,7 +162,7 @@ void main() {
 
     /// Eventually means asynchronously, so we'll just wait a few millis to check
     Future<void> eventually(Function() callback) async {
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 10));
       callback();
     }
 
@@ -188,7 +188,8 @@ void main() {
 
     /// Then the event with payload of given type should be stored exactly [numberOfTimes] times for aggregate with Id
     void thenEventTypeShouldBeStoredNumberOfTimes(String aggregateId, Type eventType, int numberOfTimes) {
-      var equalEventPayloads = Set<DomainEvent>.from(localEventManager.getEventsForAggregate(AggregateId.of(aggregateId)))
+      final eventsForAggregate = localEventManager.getEventsForAggregate(AggregateId.of(aggregateId));
+      final equalEventPayloads = Set<DomainEvent>.from(eventsForAggregate)
         ..retainWhere((event) => event.payload.runtimeType == eventType);
       expect(equalEventPayloads.length, equals(numberOfTimes));
     }
@@ -211,9 +212,8 @@ void main() {
           return false;
         }
         if (actualEvent is EventNotHandled && expectedEvent is EventNotHandled) {
-          return (actualEvent.notHandledEventId == expectedEvent.notHandledEventId
-              && actualEvent.reason == expectedEvent.reason
-          );
+          return actualEvent.notHandledEventId == expectedEvent.notHandledEventId &&
+                  actualEvent.reason == expectedEvent.reason;
         }
         return false;
       }).length, equals(1));
@@ -324,8 +324,8 @@ void main() {
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
         /// the system should ignore this event and raise a new SystemEvent
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
-          var eventId1 = EventId.local();
-          var eventId2 = EventId.local();
+          final eventId1 = EventId.local();
+          final eventId2 = EventId.local();
           givenAggregateIdRegistered(SCORABLE_ID);
           givenAggregateIdCached(SCORABLE_ID);
           givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId1);
@@ -333,7 +333,7 @@ void main() {
           await eventually(() => thenAggregateShouldBeCached(SCORABLE_ID));
           givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId2);
           await eventually(() {
-            var eventNotHandled = EventNotHandled(SystemEventId.local(), eventId2, 'Aggregate with id $SCORABLE_ID already exists and cannot be created again');
+            final eventNotHandled = EventNotHandled(SystemEventId.local(), eventId2, 'Aggregate with id $SCORABLE_ID already exists and cannot be created again');
             thenSystemEventShouldBePublished(eventNotHandled);
           });
         });
@@ -394,7 +394,7 @@ void main() {
           thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
           thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
           // Cached state should reflect the handled event...
-          var scorable = aggregateCache.get<Scorable>(AggregateId.of(SCORABLE_ID));
+          final scorable = aggregateCache.get<Scorable>(AggregateId.of(SCORABLE_ID));
           expect(scorable.participants.length, equals(1));
         });
 
@@ -433,8 +433,8 @@ void main() {
           thenAggregateShouldBeRegistered(SCORABLE_ID);
           thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
           // Check cached values (this is actually testing the domain itself, so not really something we need to do here)
-          var aggregateId = AggregateId.of(SCORABLE_ID);
-          Scorable cachedAggregate = aggregateCache.get(aggregateId);
+          final aggregateId = AggregateId.of(SCORABLE_ID);
+          final cachedAggregate = aggregateCache.get(aggregateId) as Scorable;
           expect(cachedAggregate, isNotNull);
           expect(cachedAggregate.aggregateId, equals(aggregateId));
           expect(cachedAggregate.name, equals('Test Scorable 1'));
@@ -499,8 +499,8 @@ void main() {
           thenEventTypeShouldBeHandledNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
           thenAggregateShouldBeCached(SCORABLE_ID);
           // Check if Participant is actually added
-          AggregateId aggregateId = AggregateId.of(SCORABLE_ID);
-          Scorable cachedScorable = aggregateCache.get<Scorable>(aggregateId);
+          final aggregateId = AggregateId.of(SCORABLE_ID);
+          final cachedScorable = aggregateCache.get<Scorable>(aggregateId);
           expect(cachedScorable.participants, isNotNull);
           expect(cachedScorable.participants.length, equals(1));
         });

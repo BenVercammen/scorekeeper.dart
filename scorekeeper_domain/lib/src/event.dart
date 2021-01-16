@@ -138,7 +138,7 @@ class EventNotHandled extends SystemEvent {
 
   final String reason;
 
-  EventNotHandled(SystemEventId systemEventId, EventId this.notHandledEventId, String this.reason) : super(systemEventId);
+  EventNotHandled(SystemEventId systemEventId, this.notHandledEventId, this.reason) : super(systemEventId);
 
 }
 

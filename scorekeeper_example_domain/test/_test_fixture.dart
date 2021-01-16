@@ -34,9 +34,9 @@ class TestFixture<T extends Aggregate> {
       } else {
         commandHandler.handle(aggregate, command);
       }
-      aggregate.appliedEvents.forEach((event) {
+      for (var event in aggregate.appliedEvents) {
         eventHandler.handle(aggregate, DomainEvent.of(EventId.local(), aggregate.aggregateId, event));
-      });
+      }
       lastThrownException = null;
     } on Exception catch (exception) {
       lastThrownException = exception;

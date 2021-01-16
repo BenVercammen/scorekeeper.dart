@@ -52,6 +52,6 @@ class AggregateIdAlreadyExistsException implements Exception {
 
   final AggregateId aggregateId;
 
-  AggregateIdAlreadyExistsException(AggregateId this.aggregateId);
+  AggregateIdAlreadyExistsException(this.aggregateId);
 
 }

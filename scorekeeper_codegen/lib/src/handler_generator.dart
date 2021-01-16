@@ -86,11 +86,11 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     builder.requiredParameters.add(param2.build());
 
     var code = 'switch (command.runtimeType) {';
-    commandHandlerMethods.forEach((handlerMethod) {
+    for (var handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
       code += '\ncase ${commandType.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${commandType.name});';
       code += '\nreturn;';
-    });
+    }
     code += "\ndefault:\n\tthrow Exception('Unsupported command \${command.runtimeType}.');";
     code += '}';
     builder.body = Code(code);
@@ -111,10 +111,10 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
 
     var code = 'switch (command.runtimeType) {';
     code += '\ncase ${constructor.parameters[0].type.name}:';
-    commandHandlerMethods.forEach((handlerMethod) {
+    for (var handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
       code += '\ncase ${commandType.name}:';
-    });
+    }
     code += '\nreturn true;';
     code += '\ndefault:\n\treturn false;';
     code += '}';
@@ -197,10 +197,10 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..type = const Reference('DomainEvent');
     builder.requiredParameters.add(param1.build());
     var code = 'switch (event.payload.runtimeType) {';
-    commandHandlerMethods.forEach((handlerMethod) {
+    for (var handlerMethod in commandHandlerMethods) {
       final eventType = handlerMethod.parameters[0].type;
       code += '\ncase ${eventType.name}:';
-    });
+    }
     code += '\nreturn true;';
     code += '\ndefault:\n\treturn false;';
     code += '}';
@@ -224,11 +224,11 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     builder.requiredParameters.add(param2.build());
 
     var code = 'switch (event.payload.runtimeType) {';
-    eventHandlerMethods.forEach((handlerMethod) {
+    for (var handlerMethod in eventHandlerMethods) {
       final eventType = handlerMethod.parameters[0].type;
       code += '\ncase ${eventType.name}:\n\t${param1.name}.${handlerMethod.name}(event.payload as ${eventType.name});';
       code += '\nreturn;';
-    });
+    }
     code += "\ndefault:\n\tthrow Exception('Unsupported event \${event.payload.runtimeType}.');";
     code += '}';
     builder.body = Code(code);

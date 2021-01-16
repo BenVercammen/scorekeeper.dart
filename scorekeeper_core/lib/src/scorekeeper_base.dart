@@ -116,13 +116,13 @@ class Scorekeeper {
     addAggregateToCache(aggregateId, aggregate.runtimeType);
     if (null != aggregate) {
       // De appliedEvents nog effectief handlen
-      EventHandler eventHandler = _getEventHandlerFor(aggregate.runtimeType);
+      final eventHandler = _getEventHandlerFor(aggregate.runtimeType);
       // TODO: check on sequence!?
-      aggregate.appliedEvents.forEach((dynamic event) {
+      for (var event in aggregate.appliedEvents) {
         var domainEvent = DomainEvent.of(EventId.local(), aggregate.aggregateId, event);
         eventHandler.handle(aggregate, domainEvent);
         _localEventManager.storeAndPublish(domainEvent);
-      });
+      }
       aggregate.appliedEvents.clear();
     } else {
       // TODO: wat in dit geval?? fout gooien?? applicatie niet juist gewired?

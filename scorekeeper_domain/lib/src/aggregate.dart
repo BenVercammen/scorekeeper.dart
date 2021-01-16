@@ -9,7 +9,7 @@ abstract class Aggregate {
   AggregateId get aggregateId => _aggregateId;
 
   /// We always require an aggregateId
-  Aggregate(AggregateId this._aggregateId);
+  Aggregate(this._aggregateId);
 
   /// All domain events that the aggregate applied on itself.
   /// the command handler should take "freshly applied" events off this Set after each (succesful?) handle
