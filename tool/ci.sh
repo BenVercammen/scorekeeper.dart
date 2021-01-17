@@ -63,12 +63,12 @@ for PKG in ${PKGS}; do
         dartanalyzer --fatal-infos . || EXIT_CODE=$?
         ;;
       test_0)
-        echo 'pub run test'
-        pub run test || EXIT_CODE=$?
-        ;;
-      test_1)
         echo 'pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart'
         pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart || EXIT_CODE=$?
+        ;;
+      test_1)
+        echo 'pub run test'
+        pub run test || EXIT_CODE=$?
         ;;
       *)
         echo -e "\033[31mUnknown TASK '${TASK}' - TERMINATING JOB\033[0m"

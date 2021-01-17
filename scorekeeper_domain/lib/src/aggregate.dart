@@ -13,7 +13,6 @@ abstract class Aggregate {
 
   /// All domain events that the aggregate applied on itself.
   /// the command handler should take "freshly applied" events off this Set after each (succesful?) handle
-  /// TODO: test! (en zijn we zeker dat dat oké is?)
   Set<dynamic> appliedEvents = <dynamic>{};
 
   /// Adds a locally created Domain Event to this Aggregate.

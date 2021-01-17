@@ -28,7 +28,8 @@ class TestFixture<T extends Aggregate> {
     }
     final aggregateId = AggregateId.of(event.aggregateId.toString());
     aggregate ??= eventHandler.newInstance(aggregateId);
-    final sequence = eventSequenceMap[aggregate]++;
+    var sequence = eventSequenceMap[aggregate] ?? 0;
+    eventSequenceMap[aggregate] = sequence++;
     eventHandler.handle(aggregate, DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event));
     return this;
   }
@@ -41,7 +42,8 @@ class TestFixture<T extends Aggregate> {
         commandHandler.handle(aggregate, command);
       }
       for (var event in aggregate.appliedEvents) {
-        final sequence = eventSequenceMap[aggregate]++;
+        var sequence = eventSequenceMap[aggregate] ?? 0;
+        eventSequenceMap[aggregate] = sequence++;
         eventHandler.handle(aggregate, DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event));
       }
       lastThrownException = null;

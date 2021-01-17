@@ -21,17 +21,17 @@ jobs:
       env: PKGS="scorekeeper_codegen scorekeeper_core scorekeeper_domain scorekeeper_example_domain"
       script: tool/ci.sh dartanalyzer
     - stage: unit_test
-      name: "PKGS: scorekeeper_codegen, scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain; `pub run test`"
+      name: "PKGS: scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain; `pub run test`"
       dart: dev
       os: linux
-      env: PKGS="scorekeeper_codegen scorekeeper_core scorekeeper_domain scorekeeper_example_domain"
-      script: tool/ci.sh test_0
+      env: PKGS="scorekeeper_core scorekeeper_domain scorekeeper_example_domain"
+      script: tool/ci.sh test_1
     - stage: ensure_build
       name: "PKGS: scorekeeper_codegen, scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain; `pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart`"
       dart: dev
       os: linux
       env: PKGS="scorekeeper_codegen scorekeeper_core scorekeeper_domain scorekeeper_example_domain"
-      script: tool/ci.sh test_1
+      script: tool/ci.sh test_0
 
 stages:
   - analyzer_and_format
