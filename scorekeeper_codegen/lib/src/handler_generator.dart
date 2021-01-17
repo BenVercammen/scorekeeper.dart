@@ -66,9 +66,9 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
 
     final emitter = DartEmitter();
-    return DartFormatter().format('$imports\n' +
-        '\n${commandHandlerBuilder.build().accept(emitter)}\n' +
-        '\n${eventHandlerBuilder.build().accept(emitter)}');
+    final commandHandler = commandHandlerBuilder.build().accept(emitter);
+    final eventHandler = eventHandlerBuilder.build().accept(emitter);
+    return DartFormatter().format('$imports\n\n$commandHandler\n\n$eventHandler');
   }
 
   /// Build the handle method
@@ -84,17 +84,14 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'command'
       ..type = const Reference('dynamic');
     builder.requiredParameters.add(param2.build());
-
-    var code = 'switch (command.runtimeType) {';
+    final code = StringBuffer()
+      ..write('switch (command.runtimeType) {');
     for (var handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
-      code += '\ncase ${commandType.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${commandType.name});';
-      code += '\nreturn;';
+      code.write('\ncase ${commandType.element.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${commandType.element.name});\nreturn;');
     }
-    code += "\ndefault:\n\tthrow Exception('Unsupported command \${command.runtimeType}.');";
-    code += '}';
-    builder.body = Code(code);
-
+    code.write("\ndefault:\n\tthrow Exception('Unsupported command \${command.runtimeType}.');\n}");
+    builder.body = Code(code.toString());
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }
@@ -108,18 +105,18 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'command'
       ..type = const Reference('dynamic');
     builder.requiredParameters.add(param1.build());
-
-    var code = 'switch (command.runtimeType) {';
-    code += '\ncase ${constructor.parameters[0].type.name}:';
+    final code = StringBuffer()
+      ..write('switch (command.runtimeType) {')
+      ..write('\ncase ${constructor.parameters[0].type.element.name}:');
     for (var handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
-      code += '\ncase ${commandType.name}:';
+      code.write('\ncase ${commandType.element.name}:');
     }
-    code += '\nreturn true;';
-    code += '\ndefault:\n\treturn false;';
-    code += '}';
-    builder.body = Code(code);
-
+    code
+      ..write('\nreturn true;')
+      ..write('\ndefault:\n\treturn false;')
+      ..write('}');
+    builder.body = Code(code.toString());
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }
@@ -133,7 +130,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'command'
       ..type = const Reference('dynamic');
     builder.requiredParameters.add(param1.build());
-    final commandType = commandConstructor.parameters[0].type.name;
+    final commandType = commandConstructor.parameters[0].type.element.name;
     builder.body = Code('return ${aggregate.name}.${commandConstructor.name}(command as $commandType);');
     builder.annotations.add(const Reference('override'));
     return builder.build();
@@ -196,15 +193,16 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'event'
       ..type = const Reference('DomainEvent');
     builder.requiredParameters.add(param1.build());
-    var code = 'switch (event.payload.runtimeType) {';
+    final code = StringBuffer()
+      ..write('switch (event.payload.runtimeType) {');
     for (var handlerMethod in commandHandlerMethods) {
       final eventType = handlerMethod.parameters[0].type;
-      code += '\ncase ${eventType.name}:';
+      code.write('\ncase ${eventType.element.name}:');
     }
-    code += '\nreturn true;';
-    code += '\ndefault:\n\treturn false;';
-    code += '}';
-    builder.body = Code(code);
+    code..write('\nreturn true;')
+      ..write('\ndefault:\n\treturn false;')
+      ..write('}');
+    builder.body = Code(code.toString());
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }
@@ -222,17 +220,18 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'event'
       ..type = const Reference('DomainEvent');
     builder.requiredParameters.add(param2.build());
-
-    var code = 'switch (event.payload.runtimeType) {';
+    final code = StringBuffer()
+      ..write('switch (event.payload.runtimeType) {');
     for (var handlerMethod in eventHandlerMethods) {
       final eventType = handlerMethod.parameters[0].type;
-      code += '\ncase ${eventType.name}:\n\t${param1.name}.${handlerMethod.name}(event.payload as ${eventType.name});';
-      code += '\nreturn;';
+      code
+        ..write('\ncase ${eventType.element.name}:\n\t${param1.name}.${handlerMethod.name}(event.payload as ${eventType.element.name});')
+        ..write('\nreturn;');
     }
-    code += "\ndefault:\n\tthrow Exception('Unsupported event \${event.payload.runtimeType}.');";
-    code += '}';
-    builder.body = Code(code);
-
+    code
+      ..write("\ndefault:\n\tthrow Exception('Unsupported event \${event.payload.runtimeType}.');")
+      ..write('}');
+    builder.body = Code(code.toString());
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }

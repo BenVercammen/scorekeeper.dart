@@ -52,9 +52,9 @@ void main() {
   /// The last thrown exception in a "when" statement
   Exception _lastThrownWhenException;
 
-  group('Scorekeeper', () {
+  const scorableId = 'SCORABLE_ID';
 
-    const SCORABLE_ID = 'SCORABLE_ID';
+  group('Scorekeeper', () {
 
     Scorekeeper scorekeeper;
 
@@ -108,8 +108,8 @@ void main() {
         ..aggregateId = aggregateIdValue
         ..name = name;
       // Store and publish
-      var aggregateId = AggregateId.of(aggregateIdValue);
-      var sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
+      final aggregateId = AggregateId.of(aggregateIdValue);
+      final sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
       localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(Uuid().v4(), sequence), aggregateId, scorableCreated));
     }
 
@@ -122,8 +122,8 @@ void main() {
         ..name = participantName;
       participantAdded.participant = participant;
       // Store and publish
-      var aggregateId = AggregateId.of(aggregateIdValue);
-      var sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
+      final aggregateId = AggregateId.of(aggregateIdValue);
+      final sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
       localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(Uuid().v4(), sequence), aggregateId, participantAdded));
     }
 
@@ -321,11 +321,11 @@ void main() {
       group('Constructor events', () {
 
         test('Handle constructor event for registered, non-cached aggregateId', () async {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenAggregateShouldNotBeCached(SCORABLE_ID);
-          await eventually(() => thenAggregateShouldNotBeCached(SCORABLE_ID));
+          givenAggregateIdRegistered(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenAggregateShouldNotBeCached(scorableId);
+          await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
 
         /// For a non-registered aggregateId, the constructor event should not even be stored in the local event manager
@@ -334,19 +334,19 @@ void main() {
         /// What we want to prevent is that we'll start pulling in ALL aggregates that are being created,
         /// even though we'll never make use of them
         test('Handle constructor event for unregistered aggregateId', () async {
-          givenAggregateIdNotRegistered(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 0);
-          thenAggregateShouldNotBeCached(SCORABLE_ID);
-          await eventually(() => thenAggregateShouldNotBeCached(SCORABLE_ID));
+          givenAggregateIdNotRegistered(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
+          thenAggregateShouldNotBeCached(scorableId);
+          await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
 
         test('Handle constructor event for registered, cached aggregateId', () async {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          await eventually(() => thenAggregateShouldBeCached(SCORABLE_ID));
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await eventually(() => thenAggregateShouldBeCached(scorableId));
         });
 
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
@@ -355,12 +355,12 @@ void main() {
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
           final eventId1 = DomainEventId.local(Uuid().v4(), 0);
           final eventId2 = DomainEventId.local(Uuid().v4(), 0);
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId1);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          await eventually(() => thenAggregateShouldBeCached(SCORABLE_ID));
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1', eventId2);
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1', eventId1);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await eventually(() => thenAggregateShouldBeCached(scorableId));
+          givenScorableCreatedEvent(scorableId, 'TEST 1', eventId2);
           await eventually(() {
             final eventNotHandled = EventNotHandled(SystemEventId.local(), eventId2, 'Sequence invalid');
             thenSystemEventShouldBePublished(eventNotHandled);
@@ -381,59 +381,59 @@ void main() {
       group('Regular events', () {
 
         test('Handle regular event for registered, non-cached aggregateId', () async {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          await eventually(() => thenAggregateShouldNotBeCached(SCORABLE_ID));
-          when(() => evictAggregateFromCache(SCORABLE_ID));
-          thenAggregateShouldNotBeCached(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          givenParticipantAddedEvent(SCORABLE_ID, 'PARTICIPANT_ID', 'Player One');
-          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1));
-          await eventually(() => thenAggregateShouldNotBeCached(SCORABLE_ID));
+          givenAggregateIdRegistered(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await eventually(() => thenAggregateShouldNotBeCached(scorableId));
+          when(() => evictAggregateFromCache(scorableId));
+          thenAggregateShouldNotBeCached(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
+          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1));
+          await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
 
         /// After an AggregateId has been evicted from cache, it should no longer be cached
         test('Handle regular event for registered, evicted-from-cache aggregateId', () async {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenAggregateShouldBeCached(SCORABLE_ID);
-          when(() => evictAggregateFromCache(SCORABLE_ID));
-          thenAggregateShouldNotBeCached(SCORABLE_ID);
-          givenParticipantAddedEvent(SCORABLE_ID, 'PARTICIPANT_ID', 'Player One');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
-          await eventually(() => thenAggregateShouldNotBeCached(SCORABLE_ID));
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenAggregateShouldBeCached(scorableId);
+          when(() => evictAggregateFromCache(scorableId));
+          thenAggregateShouldNotBeCached(scorableId);
+          givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
+          await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
 
         test('Handle regular event for unregistered, non-cached aggregateId', () {
-          givenAggregateIdNotRegistered(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'TEST 1');
-          thenAggregateShouldNotBeRegistered(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 0);
+          givenAggregateIdNotRegistered(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          thenAggregateShouldNotBeRegistered(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
         });
 
         test('Handle regular event for registered, cached aggregateId', () async {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'Test 1');
-          givenParticipantAddedEvent(SCORABLE_ID, 'PARTICIPANT_ID', 'Player One');
-          await eventually(() => thenAggregateShouldBeCached(SCORABLE_ID));
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test 1');
+          givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
+          await eventually(() => thenAggregateShouldBeCached(scorableId));
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
           // Cached state should reflect the handled event...
-          thenAssertCachedState<Scorable>(SCORABLE_ID, (Scorable scorable) {
+          thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
             expect(scorable.name, equals('Test 1'));
             expect(scorable.participants.length, equals(1));
           });
         });
 
         test('Handle regular event for unregistered aggregateId', () {
-          givenAggregateIdNotRegistered(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'Test');
-          thenAggregateShouldNotBeCached(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 0);
+          givenAggregateIdNotRegistered(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test');
+          thenAggregateShouldNotBeCached(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
         });
 
       });
@@ -457,61 +457,61 @@ void main() {
         /// A Constructor Command should result in a newly created, registered and cached Aggregate
         /// We want this in cache because the high probability of extra commands following the initial one
         test('Handle constructor command for non-existing unregistered, non-cached aggregateId', () {
-          givenNoAggregateKnownWithId(SCORABLE_ID);
-          givenAggregateIdEvictedFromCache(SCORABLE_ID);
-          when(() => createScorableCommand(SCORABLE_ID, 'Test Scorable 1'));
-          thenAggregateShouldBeCached(SCORABLE_ID);
-          thenAggregateShouldBeRegistered(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
+          givenNoAggregateKnownWithId(scorableId);
+          givenAggregateIdEvictedFromCache(scorableId);
+          when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
+          thenAggregateShouldBeCached(scorableId);
+          thenAggregateShouldBeRegistered(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           // Check cached values (this is actually testing the domain itself, so not really something we need to do here)
-          thenAssertCachedState<Scorable>(SCORABLE_ID, (Scorable scorable) {
+          thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
             expect(scorable, isNotNull);
-            expect(scorable.aggregateId, equals(AggregateId.of(SCORABLE_ID)));
+            expect(scorable.aggregateId, equals(AggregateId.of(scorableId)));
             expect(scorable.name, equals('Test Scorable 1'));
           });
         });
 
         test('Handle constructor command for non-existing registered, non-cached aggregateId', () {
-          givenNoAggregateKnownWithId(SCORABLE_ID);
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdEvictedFromCache(SCORABLE_ID);
-          when(() => createScorableCommand(SCORABLE_ID, 'Test Scorable 1'));
-          thenAggregateShouldBeCached(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenAggregateShouldBeRegistered(SCORABLE_ID);
+          givenNoAggregateKnownWithId(scorableId);
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdEvictedFromCache(scorableId);
+          when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
+          thenAggregateShouldBeCached(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenAggregateShouldBeRegistered(scorableId);
         });
 
         test('Handle constructor command for non-existing registered, cached aggregateId', () {
-          givenNoAggregateKnownWithId(SCORABLE_ID);
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          when(() => createScorableCommand(SCORABLE_ID, 'Test Scorable 1'));
-          thenAggregateShouldBeCached(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenAggregateShouldBeRegistered(SCORABLE_ID);
+          givenNoAggregateKnownWithId(scorableId);
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
+          thenAggregateShouldBeCached(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenAggregateShouldBeRegistered(scorableId);
         });
 
         test('Handle constructor command for non-existing unregistered, cached aggregateId', () {
-          givenNoAggregateKnownWithId(SCORABLE_ID);
-          givenAggregateIdNotRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          when(() => createScorableCommand(SCORABLE_ID, 'Test Scorable 1'));
-          thenAggregateShouldBeCached(SCORABLE_ID);
-          thenAggregateShouldBeRegistered(SCORABLE_ID);
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
+          givenNoAggregateKnownWithId(scorableId);
+          givenAggregateIdNotRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
+          thenAggregateShouldBeCached(scorableId);
+          thenAggregateShouldBeRegistered(scorableId);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
         });
 
         /// Scorekeeper should block new constructor commands for already existing aggregates
         test('Handle constructor command for already existing registered, cached aggregateId', () {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'Test Scorable 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          when(() => createScorableCommand(SCORABLE_ID, 'Test Scorable 1'));
-          thenExceptionShouldBeThrown(AggregateIdAlreadyExistsException(AggregateId.of(SCORABLE_ID)));
-          thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenAggregateShouldBeCached(SCORABLE_ID);
-          thenAggregateShouldBeRegistered(SCORABLE_ID);
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test Scorable 1');
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
+          thenExceptionShouldBeThrown(AggregateIdAlreadyExistsException(AggregateId.of(scorableId)));
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenAggregateShouldBeCached(scorableId);
+          thenAggregateShouldBeRegistered(scorableId);
         });
 
       });
@@ -519,18 +519,18 @@ void main() {
       group('Regular commands', () {
 
         test('Handle regular command for unregistered, non-cached aggregateId', () async {
-          givenAggregateIdRegistered(SCORABLE_ID);
-          givenAggregateIdCached(SCORABLE_ID);
-          givenScorableCreatedEvent(SCORABLE_ID, 'Test Scorable');
-          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(SCORABLE_ID, ScorableCreated, 1));
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test Scorable');
+          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1));
           // TODO: dat "should be handled" ook in andere tests nagaan!
-          await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(SCORABLE_ID, ScorableCreated, 1));
-          when(() => addParticipantCommand(SCORABLE_ID, 'PARTICIPANT_ID', 'Player One'));
-          thenEventTypeShouldBeHandledNumberOfTimes(SCORABLE_ID, ScorableCreated, 1);
-          thenEventTypeShouldBeHandledNumberOfTimes(SCORABLE_ID, ParticipantAdded, 1);
-          thenAggregateShouldBeCached(SCORABLE_ID);
+          await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
+          when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
+          thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1);
+          thenAggregateShouldBeCached(scorableId);
           // Check if Participant is actually added
-          thenAssertCachedState<Scorable>(SCORABLE_ID, (Scorable scorable) {
+          thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
             expect(scorable.participants, isNotNull);
             expect(scorable.participants.length, equals(1));
           });

@@ -71,7 +71,7 @@ class EventManagerInMemoryImpl implements EventManager {
       if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
         // Store the event, but don't publish!?
         _domainEventStore[event.aggregateId].add(event);
-        var systemEvent = EventNotHandled(SystemEventId.local(), event.id, 'Sequence invalid');
+        final systemEvent = EventNotHandled(SystemEventId.local(), event.id, 'Sequence invalid');
         _systemEventStore.add(systemEvent);
         _systemEventController.add(systemEvent);
       } else {

@@ -1,3 +1,4 @@
+---
 name: example_domain
 description: A starting point for Dart libraries or applications.
 version: 0.0.1-dev
@@ -13,11 +14,10 @@ dependencies:
 
 
 dev_dependencies:
-  pedantic: ^1.9.0
-  test: ^1.14.4
-  scorekeeper_codegen:
-    path: ../scorekeeper_codegen
-  build_version: 2.0.1
-  # Nodig om "pub run build_runner build" uit te voeren
   build_config: ^0.4.5
   build_runner: ^1.10.12
+  build_version: 2.0.1
+  pedantic: ^1.9.0
+  scorekeeper_codegen:
+    path: ../scorekeeper_codegen
+  test: ^1.14.4

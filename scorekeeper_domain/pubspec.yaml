@@ -1,3 +1,4 @@
+---
 name: scorekeeper_domain
 description: The core domain package for the scorekeeper application
 version: 0.0.1-dev

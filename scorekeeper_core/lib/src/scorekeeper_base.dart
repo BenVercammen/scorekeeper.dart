@@ -1,6 +1,7 @@
 
 import 'dart:collection';
 
+import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:uuid/uuid.dart';
 import 'aggregate.dart';
@@ -9,6 +10,8 @@ import 'event.dart';
 /// The Scorekeeper class adds event sourcing capabilities to the actual domain.
 /// All commands and events will have to go through this class in order to be handled.
 class Scorekeeper {
+
+  final logger = Logger();
 
   final EventManager _localEventManager;
 
@@ -35,6 +38,9 @@ class Scorekeeper {
     }
     if (null == _aggregateCache) {
       throw Exception('AggregateCache instance is required');
+    }
+    if (null == _remoteEventManager) {
+      logger.w('No remote event manager was passed along, so all events will remain on the local machine');
     }
 
     // Make sure that the local event manager keeps track only of the registered AggregateIds
@@ -82,7 +88,7 @@ class Scorekeeper {
     }
     // The aggregate on which the command should be applied.
     // We'll use the registered command handler(s) to create a new Aggregate instances based on the given command
-    var aggregateId = AggregateId.of(command.aggregateId as String);
+    final aggregateId = AggregateId.of(command.aggregateId as String);
     Aggregate aggregate;
 
     // TODO: nog testen dat er maar één command handler mag zijn
@@ -119,8 +125,8 @@ class Scorekeeper {
       final eventHandler = _getEventHandlerFor(aggregate.runtimeType);
       // TODO: check on sequence!?
       for (var event in aggregate.appliedEvents) {
-        var sequence = _getNextSequenceValueForAggregateEvent(aggregate);
-        var domainEvent = DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event);
+        final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
+        final domainEvent = DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event);
         eventHandler.handle(aggregate, domainEvent);
         _localEventManager.storeAndPublish(domainEvent);
       }
@@ -141,7 +147,7 @@ class Scorekeeper {
   /// TODO: of course, we might want to work with DomainEvent classes, add some extra "typing" here?
   void handleEvent(DomainEvent domainEvent) {
     // Kijken of we de aggregate van dit event in't oog houden of niet...
-    var aggregateId = domainEvent.aggregateId;
+    final aggregateId = domainEvent.aggregateId;
     if (!_registeredAggregates.containsKey(aggregateId)) {
       // TODO: loggen? nu negeren we deze gewoon...
       // TODO: Of tenminste het event opslaan! (aparte lijst voor events voorzien, naast lijst met aggregates??)
@@ -207,7 +213,7 @@ class Scorekeeper {
     }
   }
 
-  isRegistered(AggregateId aggregateId) {
+  bool isRegistered(AggregateId aggregateId) {
     return _registeredAggregates.containsKey(aggregateId);
   }
 
