@@ -2,6 +2,9 @@
 language: dart
 
 # Custom configuration
+branches:
+  - master
+  - develop
 after_failure:
   - tool/report_failure.sh
 
@@ -34,11 +37,6 @@ stages:
   - analyzer_and_format
   - unit_test
   - ensure_build
-
-# Only building master means that we don't run two builds for each pull request.
-branches:
-  only:
-    - develop
 
 cache:
   directories:

@@ -8,6 +8,9 @@ travis:
   # Specify any additional top-level configuration you want in your
   # `.travis.yml` file.
   # See https://config.travis-ci.com/ for more details
+  branches:
+    - master
+    - develop
   # Example:
   after_failure:
     - tool/report_failure.sh
