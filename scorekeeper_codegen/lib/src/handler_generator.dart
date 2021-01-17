@@ -59,12 +59,13 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..methods.add(_eventHandlesMethod(aggregate, eventHandlerMethods));
 
     // Import the current aggregate package + scorekeeper_domain...
+    final fullLibraryIdentifier = element.library.identifier;
+    final relativeIdentifier = fullLibraryIdentifier.substring(fullLibraryIdentifier.lastIndexOf('/') + 1);
     final importedLibraries = <String>{}
-      ..add(element.library.identifier)
-      ..add('package:scorekeeper_domain/core.dart');
-
+      ..add('package:scorekeeper_domain/core.dart')
+      ..add(relativeIdentifier);
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
-
+    // Put everything together!
     final emitter = DartEmitter();
     final commandHandler = commandHandlerBuilder.build().accept(emitter);
     final eventHandler = eventHandlerBuilder.build().accept(emitter);

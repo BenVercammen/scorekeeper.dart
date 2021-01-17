@@ -4,8 +4,8 @@
 // CommandEventHandlerGenerator
 // **************************************************************************
 
-import 'package:example_domain/src/scorable.dart';
 import 'package:scorekeeper_domain/core.dart';
+import 'scorable.dart';
 
 class ScorableCommandHandler implements CommandHandler<Scorable> {
   @override
