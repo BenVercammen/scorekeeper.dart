@@ -62,10 +62,6 @@ for PKG in ${PKGS}; do
         echo 'dartanalyzer --fatal-infos .'
         dartanalyzer --fatal-infos . || EXIT_CODE=$?
         ;;
-      dartfmt)
-        echo 'dartfmt -n --set-exit-if-changed .'
-        dartfmt -n --set-exit-if-changed . || EXIT_CODE=$?
-        ;;
       test_0)
         echo 'pub run test'
         pub run test || EXIT_CODE=$?
