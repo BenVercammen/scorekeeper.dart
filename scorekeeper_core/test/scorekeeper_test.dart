@@ -541,7 +541,7 @@ void main() {
           });
         });
 
-        test('Command should always have an aggregateId property', () {
+        test('Command should always have an aggregateId value', () {
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'Test Scorable');
@@ -549,6 +549,29 @@ void main() {
             ..aggregateId = null;
           when(() => command(invalidCommand));
           thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand));
+        });
+
+        test('Command should always have an aggregateId property', () {
+          final invalidCommand = Object();
+          when(() => command(invalidCommand));
+          thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand));
+        });
+
+        test('No command handler found', () {
+          scorekeeper.unregisterCommandHandler(commandHandler);
+          final unsupportedCommand = CreateScorable()
+            ..aggregateId = AggregateId.random().id;
+          when(() => command(unsupportedCommand));
+          thenExceptionShouldBeThrown(UnsupportedCommandException(unsupportedCommand));
+        });
+
+        test('Multiple command handlers found', () {
+          final extraCommandHandler = ScorableCommandHandler();
+          scorekeeper.registerCommandHandler(extraCommandHandler);
+          final duplicateCommand = CreateScorable()
+            ..aggregateId = AggregateId.random().id;
+          when(() => command(duplicateCommand));
+          thenExceptionShouldBeThrown(MultipleCommandHandlersException(duplicateCommand));
         });
 
       });

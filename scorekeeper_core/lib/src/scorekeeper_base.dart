@@ -40,7 +40,7 @@ class Scorekeeper {
       throw Exception('AggregateCache instance is required');
     }
     if (null == _remoteEventManager) {
-      logger.w('No remote event manager was passed along, so all events will remain on the local machine');
+      logger.i('No remote event manager was passed along, so all events will remain on the local machine');
     }
 
     // Make sure that the local event manager keeps track only of the registered AggregateIds
@@ -60,9 +60,19 @@ class Scorekeeper {
     _eventHandlers.add(handler);
   }
 
+  /// Unregister the given event handler
+  void unregisterEventHandler(EventHandler handler) {
+    _eventHandlers.remove(handler);
+  }
+
   /// Register the given command handler
   void registerCommandHandler(CommandHandler handler) {
     _commandHandlers.add(handler);
+  }
+
+  /// Unregister the given command handler
+  void unregisterCommandHandler(CommandHandler handler) {
+    _commandHandlers.remove(handler);
   }
 
   /// Add an aggregate as being available within the current Scorekeeper instance.
@@ -82,6 +92,13 @@ class Scorekeeper {
 
   /// Handle the given command using the wired (generated) CommandHandler
   void handleCommand(dynamic command) {
+    try {
+      // ignore: unnecessary_statements
+      command.aggregateId;
+    // ignore: avoid_catching_errors
+    } on NoSuchMethodError {
+      throw InvalidCommandException(command);
+    }
     if (command.aggregateId == null) {
       throw InvalidCommandException(command);
     }
@@ -219,10 +236,10 @@ class Scorekeeper {
   CommandHandler<Aggregate> _getCommandHandlerFor(dynamic command) {
     final handlers = _commandHandlers.where((handler) => handler.handles(command)).toSet();
     if (handlers.isEmpty) {
-      throw Exception('No command handler registered for $command');
+      throw UnsupportedCommandException(command);
     }
     if (handlers.length > 1) {
-      throw Exception('Only one command handler should be registered for $command');
+      throw MultipleCommandHandlersException(command);
     }
     return handlers.first;
   }

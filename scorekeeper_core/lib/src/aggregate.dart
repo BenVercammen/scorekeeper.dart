@@ -56,10 +56,39 @@ class AggregateIdAlreadyExistsException implements Exception {
 
 }
 
+/// In case a command is invalid
 class InvalidCommandException implements Exception {
 
   final dynamic command;
 
   InvalidCommandException(this.command);
+
+}
+
+/// In case a command is not supported
+class UnsupportedCommandException implements Exception {
+
+  final dynamic command;
+
+  UnsupportedCommandException(this.command);
+
+  @override
+  String toString() {
+    return 'No command handler registered for $command';
+  }
+
+}
+
+/// In case multiple handlers for the same command are registered
+class MultipleCommandHandlersException implements Exception {
+
+  final dynamic command;
+
+  MultipleCommandHandlersException(this.command);
+
+  @override
+  String toString() {
+    return 'Multiple command handlers registered for $command';
+  }
 
 }
