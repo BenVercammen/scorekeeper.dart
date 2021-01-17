@@ -6,7 +6,7 @@ import 'aggregate.dart';
 /// A composite ID that contains sequence, UUID and timestamp values.
 class DomainEventId {
 
-  final String _uuid;
+  String _uuid;
 
   final int _sequence;
 
@@ -14,7 +14,8 @@ class DomainEventId {
 
   /// Constructor to be used when creating a locally generated event.
   /// The local and origin values should be equal.
-  DomainEventId.local(this._uuid, this._sequence) {
+  DomainEventId.local(this._sequence) {
+    _uuid = Uuid().v4();
     _timestamp = DateTime.now();
   }
 
@@ -81,6 +82,11 @@ class DomainEvent<T extends Aggregate> {
 
   // TODO: deze had ik liever niet in DomainEvent gestoken, maar ergens maakt het wel sense dat we weten welke aggregate dit event emit...
   Type get aggregateType => T;
+
+  @override
+  String toString() {
+    return 'Event $id for aggregate $aggregateId with payload type ${payload.runtimeType}';
+  }
 }
 
 /// IntegrationEvents are meant to communicate between different aggregates and/or bounded contexts.
@@ -108,7 +114,12 @@ class EventNotHandled extends SystemEvent {
 
   final String reason;
 
-  EventNotHandled(SystemEventId systemEventId, this.notHandledEventId, this.reason) : super(systemEventId);
+  EventNotHandled(this.notHandledEventId, this.reason) : super(SystemEventId.local());
+
+  @override
+  String toString() {
+    return "Event $notHandledEventId couldn't be handled because $reason";
+  }
 
 }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
 
 /// The EventManager is responsible for the following:
@@ -48,6 +49,8 @@ abstract class EventManager {
 ///
 class EventManagerInMemoryImpl implements EventManager {
 
+  final Logger _logger = Logger();
+
   /// Important to use a LinkedHashSet in order to preserve the insertion order!
   final Map<AggregateId, LinkedHashSet<DomainEvent>> _domainEventStore = HashMap();
 
@@ -67,24 +70,28 @@ class EventManagerInMemoryImpl implements EventManager {
     }
     _domainEventStore.putIfAbsent(event.aggregateId, () => LinkedHashSet<DomainEvent>());
     if (!_domainEventStore[event.aggregateId].contains(event)) {
-      // Also check if the sequence is unique (TODO: and possibly in order...)
+      // Also check if the sequence is unique
       if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
-        // Store the event, but don't publish!?
+        // TODO: Store the event, but don't publish!?
         _domainEventStore[event.aggregateId].add(event);
-        final systemEvent = EventNotHandled(SystemEventId.local(), event.id, 'Sequence invalid');
+        final systemEvent = EventNotHandled(event.id, 'Sequence invalid');
         _systemEventStore.add(systemEvent);
         _systemEventController.add(systemEvent);
       } else {
         _domainEventStore[event.aggregateId].add(event);
         _domainEventController.add(event);
       }
+    } else {
+      _logger.i('Received and ignored duplicate $event');
     }
   }
 
   /// Check if the DomainEvent sequence is OK.
   /// Currently, this means no other event with the given sequence
   bool _domainEventSequenceInvalid(AggregateId aggregateId, int sequence) {
-    return _domainEventStore[aggregateId].where((event) => event.id.sequence == sequence).isNotEmpty;
+    return _domainEventStore[aggregateId].where((event) {
+      return event.id.sequence == sequence;
+    }).isNotEmpty;
   }
 
   @override

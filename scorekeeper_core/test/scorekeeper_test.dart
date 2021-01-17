@@ -1,10 +1,9 @@
 import 'dart:collection';
 
 import 'package:example_domain/example.dart';
-import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
+import 'package:scorekeeper_domain/core.dart';
 import 'package:test/test.dart';
-import 'package:uuid/uuid.dart';
 
 
 /// Wrapper class that allows us to keep track of which events have been handled
@@ -110,7 +109,7 @@ void main() {
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
       final sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(Uuid().v4(), sequence), aggregateId, scorableCreated));
+      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, scorableCreated));
     }
 
     /// Given the ParticipantAdded event
@@ -124,7 +123,7 @@ void main() {
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
       final sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(Uuid().v4(), sequence), aggregateId, participantAdded));
+      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, participantAdded));
     }
 
     /// Given no aggregate with given Id is known in Scorekeeper
@@ -280,7 +279,7 @@ void main() {
 
         /// Events that aren't handled, won't raise any exceptions (for now)
         test('Event without handler', () {
-          scorekeeper.handleEvent(DomainEvent.of(DomainEventId.local(Uuid().v4(), 0), AggregateId.random(), CreateScorable()));
+          scorekeeper.handleEvent(DomainEvent.of(DomainEventId.local(0), AggregateId.random(), CreateScorable()));
         });
       });
 
@@ -358,8 +357,8 @@ void main() {
         /// the system should ignore this event and raise a new SystemEvent
         /// TODO: this is actually a test for the eventmanager...
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
-          final eventId1 = DomainEventId.local(Uuid().v4(), 0);
-          final eventId2 = DomainEventId.local(Uuid().v4(), 0);
+          final eventId1 = DomainEventId.local(0);
+          final eventId2 = DomainEventId.local(0);
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'TEST 1', eventId1);
@@ -367,7 +366,7 @@ void main() {
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           givenScorableCreatedEvent(scorableId, 'TEST 1', eventId2);
           await eventually(() {
-            final eventNotHandled = EventNotHandled(SystemEventId.local(), eventId2, 'Sequence invalid');
+            final eventNotHandled = EventNotHandled(eventId2, 'Sequence invalid');
             thenSystemEventShouldBePublished(eventNotHandled);
           });
         });

@@ -3,7 +3,7 @@ import 'dart:collection';
 
 import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:uuid/uuid.dart';
+
 import 'aggregate.dart';
 import 'event.dart';
 
@@ -106,8 +106,6 @@ class Scorekeeper {
     // We'll use the registered command handler(s) to create a new Aggregate instances based on the given command
     final aggregateId = AggregateId.of(command.aggregateId as String);
     Aggregate aggregate;
-
-    // TODO: nog testen dat er maar één command handler mag zijn
     final commandHandler = _getCommandHandlerFor(command);
     if (commandHandler.isConstructorCommand(command)) {
       // First make sure no Aggregate for the given AggregateId exists already
@@ -139,10 +137,9 @@ class Scorekeeper {
     if (null != aggregate) {
       // De appliedEvents nog effectief handlen
       final eventHandler = _getEventHandlerFor(aggregate.runtimeType);
-      // TODO: check on sequence!?
       for (var event in aggregate.appliedEvents) {
         final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
-        final domainEvent = DomainEvent.of(DomainEventId.local(Uuid().v4(), sequence), aggregate.aggregateId, event);
+        final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
         eventHandler.handle(aggregate, domainEvent);
         _localEventManager.storeAndPublish(domainEvent);
       }
