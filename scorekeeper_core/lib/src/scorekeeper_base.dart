@@ -83,8 +83,7 @@ class Scorekeeper {
   /// Handle the given command using the wired (generated) CommandHandler
   void handleCommand(dynamic command) {
     if (command.aggregateId == null) {
-      // TODO: test voor schrijven!
-      throw Exception('Invalid command');
+      throw InvalidCommandException(command);
     }
     // The aggregate on which the command should be applied.
     // We'll use the registered command handler(s) to create a new Aggregate instances based on the given command

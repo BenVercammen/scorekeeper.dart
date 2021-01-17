@@ -8,8 +8,6 @@ stages:
   - group:
     # - dartfmt
     - dartanalyzer: --fatal-infos .
-- ensure_build:
-  - test: --run-skipped -t presubmit-only test/ensure_build_test.dart
 
 cache:
   directories:

@@ -35,6 +35,8 @@ void main() {
         ///  - (un)registerAggregateId(s):
       });
 
+      // TODO: test event ID and invalid sequence issues (becomes important when introducing remote event managers)
+
     });
 
   });

@@ -142,6 +142,11 @@ void main() {
       }
     }
 
+    /// When the given command is sent to Scorekeeper
+    void command(dynamic command) {
+      scorekeeper.handleCommand(command);
+    }
+
     /// When constructor command is sent to Scorekeeper
     void createScorableCommand(String aggregateId, String name) {
       final command = CreateScorable()
@@ -534,6 +539,16 @@ void main() {
             expect(scorable.participants, isNotNull);
             expect(scorable.participants.length, equals(1));
           });
+        });
+
+        test('Command should always have an aggregateId property', () {
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test Scorable');
+          final invalidCommand = AddParticipant()
+            ..aggregateId = null;
+          when(() => command(invalidCommand));
+          thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand));
         });
 
       });

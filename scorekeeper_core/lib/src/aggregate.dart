@@ -55,3 +55,11 @@ class AggregateIdAlreadyExistsException implements Exception {
   AggregateIdAlreadyExistsException(this.aggregateId);
 
 }
+
+class InvalidCommandException implements Exception {
+
+  final dynamic command;
+
+  InvalidCommandException(this.command);
+
+}
