@@ -1,15 +1,36 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
+import 'package:scorekeeper_core/scorekeeper.dart';
+import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_flutter/scorable_detail.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
-  runApp(MyApp());
+
+  // Create an instance
+  final scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl())
+  // Register the command and event handlers for the relevant domain
+    ..registerCommandHandler(ScorableCommandHandler())
+    ..registerEventHandler(ScorableEventHandler());
+
+  final scorekeeperService = ScorekeeperService(scorekeeper);
+
+  runApp(MyApp(scorekeeperService));
 }
 
 class MyApp extends StatelessWidget {
+
+  ScorekeeperService _scorekeeperService;
+
+  MyApp(this._scorekeeperService);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Scorekeeper Demo Application',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -22,40 +43,72 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: ScorableOverviewPage(title: 'Scorekeeper Demo Home Page', scorekeeperService: _scorekeeperService),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+/// An API implementation designed specifically for the UI
+/// TODO: deze mag mss toch nog in een aparte package? Is een API layer bovenop de commands en events...
+///   Op die manier kunnen we die commands/events van de UI afschermen
+///   Maar dan kunnen we wel naar onze "allowances" fluiten, niet?
+///   Is weer een extra tussenlaag....
+class ScorekeeperService {
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+  // The actual Scorekeeper application
+  final Scorekeeper _scorekeeper;
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  ScorekeeperService(this._scorekeeper);
+
+  /// Add a new Scorable
+  Scorable createNewScorable(String scorableName) {
+    final aggregateId = AggregateId.random();
+    final command = CreateScorable()
+      ..aggregateId = aggregateId.id
+      ..name = 'New Scorable';
+    _scorekeeper.handleCommand(command);
+    return _scorekeeper.getAggregateById<Scorable>(aggregateId);
+  }
+
+  /// Add a newly created Participant to the Scorable
+  void addParticipantToScorable(AggregateId aggregateId, String participantName) {
+    final participant = Participant()
+      ..name = participantName
+      ..participantId = Uuid().v4();
+    final command = AddParticipant()
+        ..participant = participant
+        ..aggregateId = aggregateId.id;
+    _scorekeeper.handleCommand(command);
+  }
+
+
+}
+
+
+class ScorableOverviewPage extends StatefulWidget {
 
   final String title;
 
+  final ScorekeeperService scorekeeperService;
+
+  ScorableOverviewPage({Key key, this.title, this.scorekeeperService}) : super(key: key);
+
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _ScorableOverviewPageState createState() => _ScorableOverviewPageState(scorekeeperService);
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
 
-  void _incrementCounter() {
+  final ScorekeeperService _scorekeeperService;
+
+  final Map<AggregateId, Scorable> scorables = HashMap();
+
+  _ScorableOverviewPageState(this._scorekeeperService);
+
+  void _createNewScorable() {
+    final scorable = _scorekeeperService.createNewScorable('New Scorable Name');
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      scorables.putIfAbsent(scorable.aggregateId, () => scorable);
     });
   }
 
@@ -73,41 +126,60 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+      body:
+
+      ListView.builder(
+          itemCount: scorables.values.length,
+          itemBuilder: scorableItemBuilder
       ),
+
+      // Center(
+      //   // Center is a layout widget. It takes a single child and positions it
+      //   // in the middle of the parent.
+      //   child: Column(
+      //     // Column is also a layout widget. It takes a list of children and
+      //     // arranges them vertically. By default, it sizes itself to fit its
+      //     // children horizontally, and tries to be as tall as its parent.
+      //     //
+      //     // Invoke "debug painting" (press "p" in the console, choose the
+      //     // "Toggle Debug Paint" action from the Flutter Inspector in Android
+      //     // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+      //     // to see the wireframe for each widget.
+      //     //
+      //     // Column has various properties to control how it sizes itself and
+      //     // how it positions its children. Here we use mainAxisAlignment to
+      //     // center the children vertically; the main axis here is the vertical
+      //     // axis because Columns are vertical (the cross axis would be
+      //     // horizontal).
+      //     mainAxisAlignment: MainAxisAlignment.center,
+      //     children: <Widget>[
+      //       Text(
+      //         'You have created this many scorables:',
+      //       ),
+      //       Text(
+      //         '${scorables.length}',
+      //         style: Theme.of(context).textTheme.headline4,
+      //       ),
+      //     ],
+      //   ),
+      // ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
+        onPressed: _createNewScorable,
+        tooltip: 'Create new Scorable',
         child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
+
+  /// The Scorable ListView item builder
+  Widget scorableItemBuilder(BuildContext context, int index) {
+    final scorable = scorables.values.elementAt(index);
+    return GestureDetector(
+      child: Text('Scorable $index ($scorable)'),
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ScorableDetailPage(_scorekeeperService, scorable)));
+      },
+    );
+  }
+
 }
