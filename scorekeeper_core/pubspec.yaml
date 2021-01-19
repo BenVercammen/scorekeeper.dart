@@ -8,7 +8,7 @@ environment:
   sdk: '>=2.10.0 <3.0.0'
 
 dependencies:
-  example_domain:
+  scorekeeper_example_domain:
     path: ../scorekeeper_example_domain
   logger: ^0.9.4
   scorekeeper_domain:

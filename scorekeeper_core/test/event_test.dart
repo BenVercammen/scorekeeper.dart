@@ -1,5 +1,5 @@
 
-import 'package:example_domain/example.dart';
+import 'package:scorekeeper_example_domain/example.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:test/test.dart';

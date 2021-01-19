@@ -1,6 +1,6 @@
 ---
-name: example_domain
-description: A starting point for Dart libraries or applications.
+name: scorekeeper_example_domain
+description: An example domain that can be used with the scorekepeer application
 version: 0.0.1-dev
 # homepage: https://www.example.com
 

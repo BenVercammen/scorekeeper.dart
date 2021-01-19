@@ -49,7 +49,7 @@ abstract class EventManager {
 ///
 class EventManagerInMemoryImpl implements EventManager {
 
-  final Logger _logger = Logger();
+  Logger _logger;
 
   /// Important to use a LinkedHashSet in order to preserve the insertion order!
   final Map<AggregateId, LinkedHashSet<DomainEvent>> _domainEventStore = HashMap();
@@ -61,6 +61,10 @@ class EventManagerInMemoryImpl implements EventManager {
   final StreamController<SystemEvent> _systemEventController = StreamController<SystemEvent>();
 
   final Set<AggregateId> _registeredAggregateIds = <AggregateId>{};
+
+  EventManagerInMemoryImpl([this._logger]) {
+    _logger ??= Logger();
+  }
 
   @override
   void storeAndPublish(DomainEvent event) {

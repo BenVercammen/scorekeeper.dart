@@ -11,7 +11,7 @@ import 'event.dart';
 /// All commands and events will have to go through this class in order to be handled.
 class Scorekeeper {
 
-  final logger = Logger();
+  Logger _logger;
 
   final EventManager _localEventManager;
 
@@ -32,15 +32,16 @@ class Scorekeeper {
   final _eventHandlers = <EventHandler>{};
 
   /// Create a Scorekeeper instance
-  Scorekeeper(this._localEventManager, this._remoteEventManager, this._aggregateCache) {
+  Scorekeeper(this._localEventManager, this._remoteEventManager, this._aggregateCache, [this._logger]) {
     if (null == _localEventManager) {
       throw Exception('Local EventManager instance is required');
     }
     if (null == _aggregateCache) {
       throw Exception('AggregateCache instance is required');
     }
+    _logger ??= Logger();
     if (null == _remoteEventManager) {
-      logger.i('No remote event manager was passed along, so all events will remain on the local machine');
+      _logger.i('No remote event manager was passed along, so all events will remain on the local machine');
     }
 
     // Make sure that the local event manager keeps track only of the registered AggregateIds
@@ -201,7 +202,7 @@ class Scorekeeper {
     // event publishen (lokaal en later ook remote??) (dan moet EventId wel aangepast worden)
     // TODO: store and publish moet enkel als het extern binnenkomt, als we het via externe manager binnen krijgen,
     //  is dat niet meer nodig he??
-    _localEventManager.storeAndPublish(domainEvent);
+    // _localEventManager.storeAndPublish(domainEvent);
   }
 
   Aggregate _loadHydratedAggregate(Type runtimeType, AggregateId aggregateId) {
@@ -244,6 +245,11 @@ class Scorekeeper {
   /// Get the EventHandler for the given Aggregate Type
   EventHandler _getEventHandlerFor(Type runtimeType) {
     return _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType)).first;
+  }
+
+  /// Load an aggregate by id
+  T getAggregateById<T extends Aggregate>(AggregateId aggregateId) {
+    return _aggregateCache.get(aggregateId);
   }
 
 }

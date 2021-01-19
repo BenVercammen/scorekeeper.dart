@@ -62,6 +62,11 @@ class Scorable extends Aggregate {
     participants.remove(event.participant);
   }
 
+  @override
+  String toString() {
+    return 'Scorable $name ($aggregateId)';
+  }
+
 }
 
 

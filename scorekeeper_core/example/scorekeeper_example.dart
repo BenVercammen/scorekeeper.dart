@@ -1,4 +1,4 @@
-import 'package:example_domain/example.dart';
+import 'package:scorekeeper_example_domain/example.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:uuid/uuid.dart';
 

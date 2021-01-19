@@ -1,19 +1,20 @@
 import 'dart:collection';
 
-import 'package:example_domain/example.dart';
+import 'package:logger/logger.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_example_domain/example.dart';
 import 'package:test/test.dart';
 
 
 /// Wrapper class that allows us to keep track of which events have been handled
-class EventHandlerCountWrapper<T extends EventHandler> implements EventHandler {
+class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler {
 
   final T _eventHandler;
 
   final Map<AggregateId, Set<DomainEvent>> _handledEvents = HashMap();
 
-  EventHandlerCountWrapper(this._eventHandler);
+  _EventHandlerCountWrapper(this._eventHandler);
 
   @override
   void handle(Aggregate aggregate, DomainEvent event) {
@@ -46,10 +47,26 @@ class EventHandlerCountWrapper<T extends EventHandler> implements EventHandler {
 
 }
 
+
+class _TracingLogger extends Logger {
+
+  Map<Level, List<String>> loggedMessages = HashMap();
+
+  @override
+  void log(Level level, message, [error, StackTrace stackTrace]) {
+    super.log(level, message, error, stackTrace);
+    loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
+    loggedMessages[level].add(message.toString());
+  }
+
+}
+
 void main() {
 
   /// The last thrown exception in a "when" statement
   Exception _lastThrownWhenException;
+
+  _TracingLogger _logger;
 
   const scorableId = 'SCORABLE_ID';
 
@@ -65,15 +82,16 @@ void main() {
 
     CommandHandler commandHandler;
 
-    EventHandlerCountWrapper<ScorableEventHandler> eventHandler;
+    _EventHandlerCountWrapper<ScorableEventHandler> eventHandler;
 
     setUp(() {
-      localEventManager = EventManagerInMemoryImpl();
-      remoteEventManager = EventManagerInMemoryImpl();
+      _logger = _TracingLogger();
+      localEventManager = EventManagerInMemoryImpl(_logger);
+      remoteEventManager = EventManagerInMemoryImpl(_logger);
       aggregateCache = AggregateCacheImpl();
       commandHandler = ScorableCommandHandler();
-      eventHandler = EventHandlerCountWrapper<ScorableEventHandler>(ScorableEventHandler());
-      scorekeeper = Scorekeeper(localEventManager, remoteEventManager, aggregateCache)
+      eventHandler = _EventHandlerCountWrapper<ScorableEventHandler>(ScorableEventHandler());
+      scorekeeper = Scorekeeper(localEventManager, remoteEventManager, aggregateCache, _logger)
         ..registerCommandHandler(commandHandler)
         ..registerEventHandler(eventHandler);
     });
@@ -220,6 +238,17 @@ void main() {
       expect(_lastThrownWhenException.toString(), equals(expected.toString()));
     }
 
+    /// Then the given message should be logged number of times
+    void thenMessageShouldBeLoggedNumberOfTimes(Level level, String expectedMessage, int times) {
+      _logger.loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
+      expect(_logger.loggedMessages[level].where((loggedMessage) => loggedMessage.contains(expectedMessage)).length, equals(times));
+    }
+
+    /// Then the given message should not be logged
+    void thenNoMessageShouldBeLogged(Level level, String expectedMessage, int times) {
+      thenMessageShouldBeLoggedNumberOfTimes(level, expectedMessage, 0);
+    }
+
     /// Then a SystemEvent of the given type should be published
     void thenSystemEventShouldBePublished(SystemEvent expectedEvent) {
       expect(localEventManager.getSystemEvents().where((actualEvent) {
@@ -272,6 +301,7 @@ void main() {
               ..aggregateId = AggregateId
                   .random()
                   .id);
+            fail('Expected exception because of missing command handler(s)');
           } on Exception catch (exception) {
             expect(exception.toString(), contains("No command handler registered for Instance of 'CreateScorable'"));
           }
@@ -516,6 +546,14 @@ void main() {
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldBeCached(scorableId);
           thenAggregateShouldBeRegistered(scorableId);
+        });
+
+        /// Handling a command should not result in the same event being triggered/handled twice
+        test('Handling constructor command should emit event(s) only once', () async {
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test Scorable 1');
+          await eventually(() => thenNoMessageShouldBeLogged(Level.info, 'Received and ignored duplicate Event', 0));
         });
 
       });
