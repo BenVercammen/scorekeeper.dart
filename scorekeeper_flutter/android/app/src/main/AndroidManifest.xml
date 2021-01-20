@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.score.scorekeeper_flutter">
    <application
-        android:label="scorekeeper_flutter"
+        android:label="Scorekeeper (flutter)"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -37,5 +37,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+       <!-- permissions -->
+
     </application>
+
+    <uses-permission
+            android:name="android.permission.INTERNET"
+            android:maxSdkVersion="18" />
 </manifest>

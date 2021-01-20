@@ -27,3 +27,7 @@ doc/api/
 /.gradle/
 /gradlew
 /gradlew.bat
+
+# Keystores
+*.jks
+*.jks.old

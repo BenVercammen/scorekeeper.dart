@@ -21,11 +21,11 @@ environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.1
+  flutter:
+    sdk: flutter
   scorekeeper_core:
     path: ../scorekeeper_core
   # TODO: why doesn't the scorekeeper_example_domain bring this transitive dependency along?
@@ -36,6 +36,8 @@ dependencies:
   uuid: ^2.2.2
 
 dev_dependencies:
+  # Te gebruiken om via CLI icons aan te passen fzo... (voorlopig nog nie gebruikt, ma bon)
+  flutter_launcher_icons: 0.8.1
   flutter_test:
     sdk: flutter
   integration_test:
