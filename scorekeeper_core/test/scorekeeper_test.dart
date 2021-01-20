@@ -560,7 +560,7 @@ void main() {
 
       group('Regular commands', () {
 
-        test('Handle regular command for unregistered, non-cached aggregateId', () async {
+        test('Handle regular command for registered, cached aggregateId', () async {
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'Test Scorable');
@@ -576,6 +576,13 @@ void main() {
             expect(scorable.participants, isNotNull);
             expect(scorable.participants.length, equals(1));
           });
+        });
+
+        test('Handle regular command for unregistered, non-cached aggregateId', () async {
+          givenAggregateIdNotRegistered(scorableId);
+          givenAggregateIdEvictedFromCache(scorableId);
+          givenScorableCreatedEvent(scorableId, 'Test Scorable');
+          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0));
         });
 
         test('Command should always have an aggregateId value', () {
@@ -609,6 +616,25 @@ void main() {
             ..aggregateId = AggregateId.random().id;
           when(() => command(duplicateCommand));
           thenExceptionShouldBeThrown(MultipleCommandHandlersException(duplicateCommand));
+        });
+
+        /// We had an issue where the events emitted by regular commands would be handled twice.
+        /// The tricky part is that the second handled event was handled asynchronously,
+        /// so if we don't wait for it in our tests, we'd never notice it...
+        /// This test will explicitly wait to make sure that something like that doesn't happen (again).
+        test('Regular command should have its emitted events applied only once', () async {
+          when(() => createScorableCommand(scorableId, 'Test'));
+          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1));
+          await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
+          when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
+          thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1);
+          thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1);
+          thenAggregateShouldBeCached(scorableId);
+          // Check if Participant is actually added
+          await eventually(() => thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
+            expect(scorable.participants, isNotNull);
+            expect(scorable.participants.length, equals(1));
+          }));
         });
 
       });

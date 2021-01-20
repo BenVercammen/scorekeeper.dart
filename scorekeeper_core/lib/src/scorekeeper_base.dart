@@ -48,11 +48,16 @@ class Scorekeeper {
     _localEventManager.registerAggregateIds(_registeredAggregates.keys);
 
     // Listen to the EventManager streams
+    // TODO: only listen to the remote ones!?
     _localEventManager.domainEventStream.listen((DomainEvent event) {
       // If the event relates to an aggregate that's supposed to be cached, we'll handle it, otherwise just let it sit in the store
       if (_aggregateCache.contains(event.aggregateId)) {
         handleEvent(event);
       }
+    });
+    _localEventManager.systemEventStream.listen((SystemEvent event) {
+      // TODO: handle system events properly...
+      _logger.w('System Event received: $event');
     });
   }
 
@@ -137,12 +142,13 @@ class Scorekeeper {
     addAggregateToCache(aggregateId, aggregate.runtimeType);
     if (null != aggregate) {
       // De appliedEvents nog effectief handlen
-      final eventHandler = _getEventHandlerFor(aggregate.runtimeType);
+      final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
       for (var event in aggregate.appliedEvents) {
         final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
         final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
+        _logger.d('Handling event triggerd by command: $domainEvent');
         eventHandler.handle(aggregate, domainEvent);
-        _localEventManager.storeAndPublish(domainEvent);
+        _localEventManager.store(domainEvent);
       }
       aggregate.appliedEvents.clear();
     } else {
@@ -156,49 +162,33 @@ class Scorekeeper {
     return _localEventManager.countEventsForAggregate(aggregate.aggregateId) + 1;
   }
 
-  /// Handle the given event using the wired (generated) EventHandler
-  /// We don't pass the aggregate, each event should have the "aggregateId"...
-  /// TODO: of course, we might want to work with DomainEvent classes, add some extra "typing" here?
+  /// Handle the given DomainEvent using the wired (generated) EventHandler.
+  /// We don't pass the aggregate, each event should contain the "aggregateId" and "aggregateType".
   void handleEvent(DomainEvent domainEvent) {
     // Kijken of we de aggregate van dit event in't oog houden of niet...
     final aggregateId = domainEvent.aggregateId;
     if (!_registeredAggregates.containsKey(aggregateId)) {
-      // TODO: loggen? nu negeren we deze gewoon...
-      // TODO: Of tenminste het event opslaan! (aparte lijst voor events voorzien, naast lijst met aggregates??)
-      // TODO: we moeten wel de "origin event" hebben, zodat we weten dat we compleet zijn??
-      // TODO... of toch event sequences bijhouden per aggregate?
+      _logger.w('Ignoring $domainEvent for unregistered aggregate $aggregateId');
       return;
     }
-
-    // Wanneer we een aggregate binnen Event binnen krijgen voor een aggregate moeten we nagaan dat
-    //  1. het een "prevId" heeft, tenzij er nog geen andere events voor binnengekomen zijn
-    //  2. we de "prevId" ook al in memory/repository hebben zitten???
-
-    // When there is no previous Id, there should not be any other events for this aggregate in the store...
-    // TODO: vervangen door check op event sequence id
-    // if (null == domainEvent.id.prevOriginId && !_localEventManager.isInitialAggregateDomainEvent(domainEvent)) {
-    //   // TODO: SYSTEM event toevoegen!
-    //   throw Exception("TODO: SYSTEM event publishen en verder gaan...");
-    // }
-
-
-    // TODO: en als we geen cache willen bijhouden, maar wel events?
-    //  -> gewoon store and publish dan he!
-    // Hebben we dit al in cache?
+    // If the aggregate is in our cache, we'll immediately apply the event
     Aggregate aggregate;
     if (_aggregateCache.contains(aggregateId)) {
       // Een lege, default instance aanmaken en verdere events afhandelen...
-      // TODO: of kijken of we nog events hiervoor hebben? zonder dat de aggregate zelf in cache zit?
       aggregate = _aggregateCache.get(aggregateId);
-      // TODO: ook nog nagaan dat we effectief alle events al hebben?
+      // TODO: check 1: is aggregate up-to-date (should be, but you never know..)
+      // TODO: check 2: pull events from remote event manager?? (probably not something we really want to do)
     } else {
-      // Instance laden
+      // Load the (hydrated) aggregate and store it in cache.
+      // TODO: TO TEST so this means that we'll automatically cache every Aggregate that we've registered!?
+      //  NOT according to 'Handle regular event for registered, non-cached aggregateId' ...
       aggregate = _loadHydratedAggregate(domainEvent.aggregateType, aggregateId);
-      // aggregate cachen
       _aggregateCache.store(aggregate);
     }
-    // En huidige event apply'en
-    _getEventHandlerFor(aggregate.runtimeType).handle(aggregate, domainEvent);
+    // Load the matching event handler and apply the event!
+    final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
+    _logger.d('Handling event triggerd by eventmanager (local) stream: $domainEvent');
+    eventHandler.handle(aggregate, domainEvent);
     // event publishen (lokaal en later ook remote??) (dan moet EventId wel aangepast worden)
     // TODO: store and publish moet enkel als het extern binnenkomt, als we het via externe manager binnen krijgen,
     //  is dat niet meer nodig he??
@@ -206,11 +196,12 @@ class Scorekeeper {
   }
 
   Aggregate _loadHydratedAggregate(Type runtimeType, AggregateId aggregateId) {
-    final eventHandler = _getEventHandlerFor(runtimeType);
+    final eventHandler = _getDomainEventHandlerFor(runtimeType);
     // Nieuwe instance maken
     final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
     _localEventManager.getEventsForAggregate(aggregateId).forEach((DomainEvent domainEvent) {
+      _logger.d('Handling event triggerd by hydration: $domainEvent');
       eventHandler.handle(aggregate, domainEvent);
     });
     return aggregate;
@@ -243,7 +234,9 @@ class Scorekeeper {
   }
 
   /// Get the EventHandler for the given Aggregate Type
-  EventHandler _getEventHandlerFor(Type runtimeType) {
+  /// There can only be one, if we want to communicate events across Aggregates,
+  /// we'll have to make use of IntegrationEvents...
+  EventHandler _getDomainEventHandlerFor(Type runtimeType) {
     return _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType)).first;
   }
 

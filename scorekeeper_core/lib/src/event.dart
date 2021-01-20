@@ -12,8 +12,14 @@ import 'package:scorekeeper_domain/core.dart';
 ///
 abstract class EventManager {
 
-  /// Publish a single DomainEvent.
-  /// Should store the event and emit it through the [#eventStream] method
+  /// Store the given DomainEvent
+  /// Command handlers already apply the event themselves and thus shoud not publish them again.
+  /// Returns whether or not the event was stored successfully.
+  /// This is very important, as non-persisted events should never be published
+  bool store(DomainEvent event);
+
+  /// Store and publish the given DomainEvent.
+  /// Publishing means emitting it through the [#eventStream] method
   void storeAndPublish(DomainEvent event);
 
   /// Get all events for a single aggregate
@@ -67,27 +73,41 @@ class EventManagerInMemoryImpl implements EventManager {
   }
 
   @override
-  void storeAndPublish(DomainEvent event) {
+  bool store(DomainEvent event) {
     // Ignore this event. We only store events for the registered aggregates, the others will need to be pulled from the remote event manager
     if (!_registeredAggregateIds.contains(event.aggregateId)) {
-      return;
+      return false;
     }
     _domainEventStore.putIfAbsent(event.aggregateId, () => LinkedHashSet<DomainEvent>());
     if (!_domainEventStore[event.aggregateId].contains(event)) {
       // Also check if the sequence is unique
       if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
-        // TODO: Store the event, but don't publish!?
+        /// We'll store the event for now, but we'll also emit a SystemEvent so the error can be handled accordingly...
         _domainEventStore[event.aggregateId].add(event);
         final systemEvent = EventNotHandled(event.id, 'Sequence invalid');
         _systemEventStore.add(systemEvent);
         _systemEventController.add(systemEvent);
+        return false;
       } else {
         _domainEventStore[event.aggregateId].add(event);
-        _domainEventController.add(event);
+        return true;
       }
     } else {
       _logger.i('Received and ignored duplicate $event');
     }
+    return false;
+  }
+
+  @override
+  void storeAndPublish(DomainEvent event) {
+    // Ignore this event. We only store events for the registered aggregates, the others will need to be pulled from the remote event manager
+    if (!_registeredAggregateIds.contains(event.aggregateId)) {
+      return;
+    }
+    if (!store(event)) {
+      _logger.w('Could not publish $event because it was not stored properly');
+    }
+    _domainEventController.add(event);
   }
 
   /// Check if the DomainEvent sequence is OK.

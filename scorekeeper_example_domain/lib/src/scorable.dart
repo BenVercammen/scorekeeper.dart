@@ -169,5 +169,10 @@ class Participant {
 
   String name;
 
+  @override
+  String toString() {
+    return 'Participant $name ($participantId)';
+  }
+
 }
 
