@@ -32,8 +32,13 @@ void main() {
   final scorable = scorekeeper.getAggregateById<Scorable>(aggregateId);
 
   // Work with the Scorable...
-  // TODO: this Scorable should be a DTO instead of the actual aggregate!
+  // TODO: this Scorable should be a DTO instead of the actual aggregate! no?
+  //  of alle handler methodes moeten private zijn... maar dat gaat dan weer niet omdat die scorable.g.dart een aparte file / package is
+  //  tenzij ik daar ook alles in kopieer en enkel die deel... en de scorable.dart file zelf niet... (exposen via example.dart file)
   // We don't want the aggregates to leave the domain...
+  //
+  //
+  //
   print(scorable.participants.length);
 
 }

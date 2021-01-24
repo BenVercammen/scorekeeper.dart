@@ -12,6 +12,8 @@ class DomainEventId {
 
   DateTime _timestamp;
 
+  DomainEventId.of(this._uuid, this._sequence, this._timestamp);
+
   /// Constructor to be used when creating a locally generated event.
   /// The local and origin values should be equal.
   DomainEventId.local(this._sequence) {
@@ -30,6 +32,16 @@ class DomainEventId {
     return '$_sequence@$_uuid@${_timestamp.toIso8601String()}';
   }
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DomainEventId &&
+          runtimeType == other.runtimeType &&
+          _uuid == other._uuid &&
+          _sequence == other._sequence;
+
+  @override
+  int get hashCode => _uuid.hashCode ^ _sequence.hashCode;
 }
 
 
@@ -73,12 +85,20 @@ class DomainEvent<T extends Aggregate> {
 
   DomainEvent.of(this.id, this.aggregateId, this.payload);
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is DomainEvent && runtimeType == other.runtimeType && id == other.id;
 
   @override
-  int get hashCode => id.hashCode;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DomainEvent &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          aggregateId == other.aggregateId &&
+          // TODO: mja.... ik wil hier niet op instance checken, maar op inhoud...
+          payload == other.payload;
+
+
+  @override
+  int get hashCode => id.hashCode ^ aggregateId.hashCode ^ payload.hashCode;
 
   // TODO: deze had ik liever niet in DomainEvent gestoken, maar ergens maakt het wel sense dat we weten welke aggregate dit event emit...
   Type get aggregateType => T;
@@ -87,6 +107,8 @@ class DomainEvent<T extends Aggregate> {
   String toString() {
     return 'Event $id for aggregate $aggregateId with payload type ${payload.runtimeType}';
   }
+
+
 }
 
 /// IntegrationEvents are meant to communicate between different aggregates and/or bounded contexts.

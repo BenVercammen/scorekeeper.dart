@@ -1,8 +1,9 @@
 
-import 'package:scorekeeper_example_domain/example.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_example_domain/example.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 
 
 void main() {
@@ -16,26 +17,91 @@ void main() {
       expect(eventId.timestamp, isNotNull);
     });
 
+    test('Equals method', () {
+      final uuid1 = Uuid().v4();
+      final uuid2 = Uuid().v4();
+      final timestamp1 = DateTime.now();
+      final timestamp2 = DateTime.now();
+      // Exactly alike
+      expect(DomainEventId.of(uuid1, 0, timestamp1), equals(DomainEventId.of(uuid1, 0, timestamp1)));
+      // Timestamp is not taken into account
+      expect(DomainEventId.of(uuid1, 0, timestamp2), equals(DomainEventId.of(uuid1, 0, timestamp1)));
+      // Uuid and sequence are important
+      expect(DomainEventId.of(uuid1, 0, timestamp1), isNot(equals(DomainEventId.of(uuid2, 0, timestamp1))));
+      expect(DomainEventId.of(uuid1, 0, timestamp1), isNot(equals(DomainEventId.of(uuid1, 1, timestamp1))));
+    });
+
   });
 
+  group('DomainEvent', () {
 
+    test('Equals method', () {
+      final eventId1 = DomainEventId.local(0);
+      final eventId2 = DomainEventId.local(1);
+      final aggregateId1 = AggregateId.random();
+      final aggregateId2 = AggregateId.random();
+      final aggregateId3 = AggregateId.random();
+      final payload1 = ScorableCreated()
+        ..name = 'Test'
+        ..aggregateId = aggregateId1.id;
+      final payload1b = ScorableCreated()
+        ..name = 'Test 2'
+        ..aggregateId = aggregateId1.id;
+      final payload2 = ScorableCreated()
+        ..name = 'Test'
+        ..aggregateId = aggregateId2.id;
+      final payload2b = ScorableCreated()
+        ..name = 'Test'
+        ..aggregateId = aggregateId2.id;
+      final payload3 = ScorableCreatedWithEquals()
+        ..name = 'Test'
+        ..aggregateId = aggregateId3.id;
+      final payload3b = ScorableCreatedWithEquals()
+        ..name = 'Test'
+        ..aggregateId = aggregateId3.id;
+      expect(DomainEvent.of(eventId1, aggregateId1, payload1), equals(DomainEvent.of(eventId1, aggregateId1, payload1)));
+      expect(DomainEvent.of(eventId2, aggregateId1, payload1), equals(DomainEvent.of(eventId2, aggregateId1, payload1)));
+      expect(DomainEvent.of(eventId2, aggregateId2, payload1), equals(DomainEvent.of(eventId2, aggregateId2, payload1)));
+      expect(DomainEvent.of(eventId2, aggregateId2, payload2), equals(DomainEvent.of(eventId2, aggregateId2, payload2)));
+      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload1b))));
+      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload2))));
+      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId2, aggregateId1, payload1))));
+      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId2, aggregateId2, payload1))));
+      expect(DomainEvent.of(eventId1, aggregateId2, payload2), isNot(equals(DomainEvent.of(eventId1, aggregateId2, payload1))));
+      expect(DomainEvent.of(eventId1, aggregateId1, payload2), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload1))));
+      expect(DomainEvent.of(eventId1, aggregateId1, payload2), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload1b))));
+      expect(DomainEvent.of(eventId1, aggregateId2, payload1), isNot(equals(DomainEvent.of(eventId2, aggregateId2, payload1))));
 
-  /// TODO: EventManager ook goed testen, zien dat events en aggregates apart gecleared/gemanaged moeten worden!
+      // TODO:
+      // We don't want to check the identity of the payload, just the content,
+      // but we cannot rely on the actual payload class to implement a proper equals method
+      expect(DomainEvent.of(eventId2, aggregateId2, payload2), isNot(equals(DomainEvent.of(eventId2, aggregateId2, payload2b))));
+      // At the moment, we rely on a proper equals implementation of the DomainEvents payload...
+      expect(DomainEvent.of(eventId2, aggregateId3, payload3), equals(DomainEvent.of(eventId2, aggregateId3, payload3b)));
+    });
 
+  });
 
-  group('EventHandlerInMemoryImpl', () {
-    group('storeAndPublish', () {
+  /// Probably the most important feature, the synchronization between multiple EventManager instances.
+  /// If there is only a single (local) EventManager, all data will just remain within the local instance.
+  /// But as soon as there are multiple EventManagers, the Events are to be exchanged between all of them.
+  /// This means receiving and sending events (Domain, Integration, System) from and to the remote EventManager(s).
+  ///
+  group('EventManager synchronization', () {
+
+    /// Technical scenario's:
+    ///  - DomainEvents published by local EventManager should be received by the remote EventManager
+    ///  - DomainEvents published by remote EventManagers should be received by the local EventManager
+    ///  TODO: do we need an event backbone?? how can we know for sure
+
+    // TODO: see event_synchronization.feature for functional scenario's
+
       test('happy flow', () {
-        /// TODO:
-        ///  - storeAndPublish: zien dat het event effectief gepersisteerd wordt + op de stream terecht komt
-        ///     - weliswaar enkel als het om een aggregateId gaat waarop we geregistreerd zijn!
-        ///  - getEventsForAggregate: zien dat we alle events voor een aggregate kunnen opvragen
-        ///  - (un)registerAggregateId(s):
+
       });
 
       // TODO: test event ID and invalid sequence issues (becomes important when introducing remote event managers)
 
-    });
   });
 
   group('EventManagerInMemoryImpl', () {
@@ -100,6 +166,12 @@ void main() {
     void thenNoExceptionShouldBeThrown() {
       expect(lastThrownException, isNull);
     }
+
+    /// TODO:
+    ///  - storeAndPublish: zien dat het event effectief gepersisteerd wordt + op de stream terecht komt
+    ///     - weliswaar enkel als het om een aggregateId gaat waarop we geregistreerd zijn!
+    ///  - getEventsForAggregate: zien dat we alle events voor een aggregate kunnen opvragen
+    ///  - (un)registerAggregateId(s):
 
     /// Then a SystemEvent of the given type should be published
     void thenSystemEventShouldBePublished(SystemEvent expectedEvent) {
@@ -187,6 +259,23 @@ void main() {
     });
 
   });
+
+
 }
 
+/// Extended event with a proper equals method
+/// TODO: perhaps we can also generate this?
+///  perhaps we'll have to generate and expose a lot more classes from the (example) domain?
+///   - Extended commands and events with equals methods
+///   - DTO's that only contain the properties?
+///     -> how to prevent the clients to get full control of the aggregates?
+class ScorableCreatedWithEquals extends ScorableCreated {
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is ScorableCreatedWithEquals && runtimeType == other.runtimeType;
+
+  @override
+  int get hashCode => 0;
+
+}

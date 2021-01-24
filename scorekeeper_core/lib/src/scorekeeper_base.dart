@@ -13,8 +13,10 @@ class Scorekeeper {
 
   Logger _logger;
 
+  /// The EventManager for emitting or storing DomainEvents on the local Scorekeeper instance
   final EventManager _localEventManager;
 
+  /// The EventManager for receiving or emitting DomainEvents from or to a remote (Scorekeeper) instance
   final EventManager _remoteEventManager;
 
   /// Map of aggregates this Scorekeeper needs to follow up on.
