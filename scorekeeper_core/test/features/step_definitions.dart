@@ -1,32 +1,63 @@
 
+import 'dart:async';
 import 'dart:collection';
 
+import 'package:logger/logger.dart';
 import 'package:ogurets/ogurets.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 
+import '../scorekeeper_test.dart';
+
+/// Simple mock implementation we can use to mock incoming DomainEvents
+class MockRemoteEventListener extends RemoteEventListener {
+
+  final StreamController<DomainEvent> _domainEventController = StreamController<DomainEvent>();
+
+  void emitEvent(DomainEvent domainEvent) {
+    _domainEventController.add(domainEvent);
+  }
+
+  @override
+  Stream<DomainEvent> get domainEventStream => _domainEventController.stream.asBroadcastStream();
+
+}
+
+/// Simple mock implementation we can use to mock outgoing DomainEvents
+class MockRemoteEventPublisher extends RemoteEventPublisher {
+
+  final publishedDomainEvents = List<DomainEvent>.empty(growable: true);
+
+  @override
+  void publishDomainEvent(DomainEvent domainEvent) {
+    publishedDomainEvents.add(domainEvent);
+  }
+
+}
+
 class StepDefinitions {
 
-  EventManager _localEventManager;
+  TracingLogger _logger;
 
-  EventManager _remoteEventManager;
+  EventStore _localEventManager;
 
-  /// All DomainEvents that have been emitted by the _localEventManager
-  List<DomainEvent> _locallyEmittedEvents;
+  MockRemoteEventPublisher _remoteEventPublisher;
+
+  MockRemoteEventListener _remoteEventListener;
 
   @Before()
   void setUp() {
-    _localEventManager = EventManagerInMemoryImpl();
-    _remoteEventManager = EventManagerInMemoryImpl();
-    _locallyEmittedEvents = List<DomainEvent>.empty(growable: true);
-    _localEventManager.domainEventStream.listen((event) => _locallyEmittedEvents.add(event));
+    _logger = TracingLogger();
+    _localEventManager = EventStoreInMemoryImpl(_logger);
+    _remoteEventListener = MockRemoteEventListener();
+    _remoteEventPublisher = MockRemoteEventPublisher();
   }
 
   // TODO: https://github.com/dart-ogurets/Ogurets (eventueel contribution om duidelijk te maken dat aantal parameters niet klopt (nu onduidelijke growable array error)
   //  Exception: RangeError (index): Invalid value: Valid value range is empty: 0
 
 
-  @Given(r'local EventManager has DomainEvents')
+  @Given(r'the following DomainEvents have already been stored locally')
   Future<void> givenLocalEventManagerHasDomainEvents({GherkinTable table}) async {
     final givenDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in givenDomainEvents) {
@@ -35,19 +66,42 @@ class StepDefinitions {
     }
   }
 
-  @When(r'local EventManager receives DomainEvents')
-  void localEventManagerReceivesDomainEvents({GherkinTable table}) async {
+  @When(r'the following DomainEvents are to be stored locally')
+  Future<void> eventManagerReceivesRemoteDomainEvents({GherkinTable table}) async {
     final receivedDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in receivedDomainEvents) {
-      _localEventManager.storeAndPublish(domainEvent);
+      _localEventManager.store(domainEvent);
     }
   }
 
-  @Then(r'local EventManager should have the following DomainEvents')
-  void localEventManagerShouldHaveTheFollowingDomainEvents({GherkinTable table}) async {
+  @When(r'the following DomainEvents are received remotely')
+  Future<void> eventManagerReceivesLocalDomainEvents({GherkinTable table}) async {
+    final receivedDomainEvents = _parseDomainEvents(table);
+    for (final domainEvent in receivedDomainEvents) {
+      _remoteEventListener.emitEvent(domainEvent);
+    }
+  }
+
+  @Then(r'the following DomainEvents should be stored locally')
+  Future<void> localEventManagerShouldHaveTheFollowingDomainEvents({GherkinTable table}) async {
     final expectedDomainEvents = List.from(_parseDomainEvents(table));
     final actualDomainEvents = List.from(_localEventManager.getAllDomainEvents());
     _collectionShouldContainExactlyInAnyOrder(expectedDomainEvents, actualDomainEvents);
+  }
+
+  @Then(r'the following DomainEvents should be published remotely')
+  Future<void> domainEventsShouldBePublishedRemotely({GherkinTable table}) async {
+    final expectedDomainEvents = List.from(_parseDomainEvents(table));
+    final actualDomainEvents = List.from(_remoteEventPublisher.publishedDomainEvents);
+    _collectionShouldContainExactlyInAnyOrder(expectedDomainEvents, actualDomainEvents);
+  }
+
+  @Then(r'a level {string} message should be logged stating {string}')
+  Future<void> thenMessageShouldBeLogged(String levelName, String expectedMessage) async {
+    final level = Level.values.where((element) => element.toString().toLowerCase() == levelName.toLowerCase()).first;
+    _logger.loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
+    final matches = _logger.loggedMessages[level].where((loggedMessage) => loggedMessage.contains(expectedMessage));
+    assert(matches.isNotEmpty);
   }
 
   /// Assert that actual collection contains exactly all elements of the expected collection, in any order.

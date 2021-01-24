@@ -37,7 +37,7 @@ class AggregateCacheImpl implements AggregateCache {
 
   @override
   void store(Aggregate aggregate) {
-    _cache.putIfAbsent(aggregate.aggregateId, () => aggregate);
+    _cache[aggregate.aggregateId] = aggregate;
   }
 
   @override

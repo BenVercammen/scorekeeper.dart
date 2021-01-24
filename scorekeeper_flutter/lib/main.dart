@@ -10,7 +10,7 @@ import 'package:uuid/uuid.dart';
 void main() {
 
   // Create an instance
-  final scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl())
+  final scorekeeper = Scorekeeper(EventStoreInMemoryImpl(), AggregateCacheImpl(), null, null)
   // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(ScorableCommandHandler())
     ..registerEventHandler(ScorableEventHandler());
@@ -67,7 +67,7 @@ class ScorekeeperService {
       ..aggregateId = aggregateId.id
       ..name = 'New Scorable';
     _scorekeeper.handleCommand(command);
-    return _scorekeeper.getAggregateById<Scorable>(aggregateId);
+    return _scorekeeper.getCachedAggregateById<Scorable>(aggregateId);
   }
 
   /// Add a newly created Participant to the Scorable

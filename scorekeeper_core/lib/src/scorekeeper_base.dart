@@ -13,11 +13,8 @@ class Scorekeeper {
 
   Logger _logger;
 
-  /// The EventManager for emitting or storing DomainEvents on the local Scorekeeper instance
-  final EventManager _localEventManager;
-
-  /// The EventManager for receiving or emitting DomainEvents from or to a remote (Scorekeeper) instance
-  final EventManager _remoteEventManager;
+  /// The EventStore for storing DomainEvents of the local Scorekeeper instance
+  final EventStore _eventStore;
 
   /// Map of aggregates this Scorekeeper needs to follow up on.
   /// In order to receive events from external source,
@@ -33,34 +30,43 @@ class Scorekeeper {
   /// The (generated) handler that maps events to aggregate handler methods
   final _eventHandlers = <EventHandler>{};
 
+  /// The publisher for emitting DomainEvents to a remote (Scorekeeper) instance
+  final RemoteEventPublisher _remoteEventPublisher;
+
+  /// The listener for receiving DomainEvents from a remote (Scorekeeper) instance
+  final RemoteEventListener _remoteEventListener;
+
   /// Create a Scorekeeper instance
-  Scorekeeper(this._localEventManager, this._remoteEventManager, this._aggregateCache, [this._logger]) {
-    if (null == _localEventManager) {
-      throw Exception('Local EventManager instance is required');
+  Scorekeeper(this._eventStore,this._aggregateCache, this._remoteEventPublisher, this._remoteEventListener, [this._logger]) {
+    _logger ??= Logger();
+    if (null == _eventStore) {
+      // TODO: we can default to the in memory implementation!
+      throw Exception('Local EventStore instance is required');
     }
     if (null == _aggregateCache) {
       throw Exception('AggregateCache instance is required');
     }
-    _logger ??= Logger();
-    if (null == _remoteEventManager) {
-      _logger.i('No remote event manager was passed along, so all events will remain on the local machine');
+    if (null == _remoteEventPublisher) {
+      _logger.i('No remote event publisher was passed along, so all events will remain on the local machine');
+    }
+    if (null == _remoteEventListener) {
+      _logger.i('No remote event listener was passed along, so no remote events will be applied on the local machine');
     }
 
     // Make sure that the local event manager keeps track only of the registered AggregateIds
-    _localEventManager.registerAggregateIds(_registeredAggregates.keys);
+    _eventStore.registerAggregateIds(_registeredAggregates.keys);
 
-    // Listen to the EventManager streams
-    // TODO: only listen to the remote ones!?
-    _localEventManager.domainEventStream.listen((DomainEvent event) {
+    // Listen to the RemoteEventListener's event stream
+    _remoteEventListener?.domainEventStream?.listen((DomainEvent event) {
       // If the event relates to an aggregate that's supposed to be cached, we'll handle it, otherwise just let it sit in the store
       if (_aggregateCache.contains(event.aggregateId)) {
-        handleEvent(event);
+        _handleEvent(event);
       }
     });
-    _localEventManager.systemEventStream.listen((SystemEvent event) {
-      // TODO: handle system events properly...
-      _logger.w('System Event received: $event');
-    });
+    // _eventManager.systemEventStream.listen((SystemEvent event) {
+    //   // TODO: handle system events properly...
+    //   _logger.w('System Event received: $event');
+    // });
   }
 
   /// Register the given event handler
@@ -87,7 +93,7 @@ class Scorekeeper {
   /// This is important as otherwise aggregates from outside this instance won't be available.
   void registerAggregate(AggregateId aggregateId, Type aggregateType) {
     _registeredAggregates.putIfAbsent(aggregateId, () => aggregateType);
-    _localEventManager.registerAggregateId(aggregateId);
+    _eventStore.registerAggregateId(aggregateId);
   }
 
   /// Mark an aggregate as no longer being registered.
@@ -95,7 +101,7 @@ class Scorekeeper {
   void unregisterAggregate(AggregateId aggregateId) {
     _registeredAggregates.remove(aggregateId);
     _aggregateCache.purge(aggregateId);
-    _localEventManager.unregisterAggregateId(aggregateId);
+    _eventStore.unregisterAggregateId(aggregateId);
   }
 
   /// Handle the given command using the wired (generated) CommandHandler
@@ -120,7 +126,7 @@ class Scorekeeper {
       // For now only in local event manager, but maybe we should check the remote as well?
       // Or somehow allow for updating the aggregateId. The chances of accidentally using duplicate aggregateId's are very slim!
       // When it's done on purpose, tough luck then...
-      if (_localEventManager.hasEventsForAggregate(aggregateId)) {
+      if (_eventStore.hasEventsForAggregate(aggregateId)) {
         throw AggregateIdAlreadyExistsException(aggregateId);
       }
       aggregate = commandHandler.handleConstructorCommand(command);
@@ -131,7 +137,7 @@ class Scorekeeper {
       } else {
         // When not yet stored in cache, request events from local event manager and apply them...
         aggregate = commandHandler.newInstance(aggregateId);
-        _localEventManager.getEventsForAggregate(aggregateId).forEach((event) {
+        _eventStore.getEventsForAggregate(aggregateId).forEach((event) {
           aggregate.apply(event.payload);
         });
         _aggregateCache.store(aggregate);
@@ -140,33 +146,42 @@ class Scorekeeper {
     }
     // Make sure the aggregate is now registered and cached.
     // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
+    if (null == aggregate) {
+      _logger.e('Aggregate not loaded, but this should never happen... (here be nullpointers)');
+    }
     registerAggregate(aggregateId, aggregate.runtimeType);
     addAggregateToCache(aggregateId, aggregate.runtimeType);
-    if (null != aggregate) {
-      // De appliedEvents nog effectief handlen
-      final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
-      for (var event in aggregate.appliedEvents) {
-        final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
-        final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
-        _logger.d('Handling event triggerd by command: $domainEvent');
+    // De appliedEvents nog effectief handlen
+    final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
+    for (var event in aggregate.appliedEvents) {
+      final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
+      final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
+      _logger.d('Handling event triggerd by command: $domainEvent');
+      try {
         eventHandler.handle(aggregate, domainEvent);
-        _localEventManager.store(domainEvent);
+      } on Exception catch(exception) {
+        // TODO: testen en afhandelen!
+        _logger.e(exception);
       }
-      aggregate.appliedEvents.clear();
-    } else {
-      // TODO: wat in dit geval?? fout gooien?? applicatie niet juist gewired?
+      try {
+        _eventStore.store(domainEvent);
+      } on Exception catch(exception) {
+        // TODO: testen + afhandelen!
+        _logger.e(exception);
+      }
     }
+    aggregate.appliedEvents.clear();
     // And make sure the aggregate is registered. If this instance is handling commands, it's best that the aggregate is cached
-    _localEventManager.registerAggregateId(aggregateId);
+    _eventStore.registerAggregateId(aggregateId);
   }
 
   int _getNextSequenceValueForAggregateEvent(Aggregate aggregate) {
-    return _localEventManager.countEventsForAggregate(aggregate.aggregateId) + 1;
+    return _eventStore.countEventsForAggregate(aggregate.aggregateId) + 1;
   }
 
   /// Handle the given DomainEvent using the wired (generated) EventHandler.
   /// We don't pass the aggregate, each event should contain the "aggregateId" and "aggregateType".
-  void handleEvent(DomainEvent domainEvent) {
+  void _handleEvent(DomainEvent domainEvent) {
     // Kijken of we de aggregate van dit event in't oog houden of niet...
     final aggregateId = domainEvent.aggregateId;
     if (!_registeredAggregates.containsKey(aggregateId)) {
@@ -194,19 +209,19 @@ class Scorekeeper {
     // event publishen (lokaal en later ook remote??) (dan moet EventId wel aangepast worden)
     // TODO: store and publish moet enkel als het extern binnenkomt, als we het via externe manager binnen krijgen,
     //  is dat niet meer nodig he??
-    // _localEventManager.storeAndPublish(domainEvent);
+    // TODO: _eventStore.store(domainEvent); ???
   }
 
-  Aggregate _loadHydratedAggregate(Type runtimeType, AggregateId aggregateId) {
+  T _loadHydratedAggregate<T extends Aggregate>(Type runtimeType, AggregateId aggregateId) {
     final eventHandler = _getDomainEventHandlerFor(runtimeType);
     // Nieuwe instance maken
     final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
-    _localEventManager.getEventsForAggregate(aggregateId).forEach((DomainEvent domainEvent) {
+    _eventStore.getEventsForAggregate(aggregateId).forEach((DomainEvent domainEvent) {
       _logger.d('Handling event triggerd by hydration: $domainEvent');
       eventHandler.handle(aggregate, domainEvent);
     });
-    return aggregate;
+    return aggregate as T;
   }
 
   void evictAggregateFromCache(AggregateId aggregateId) {
@@ -242,9 +257,13 @@ class Scorekeeper {
     return _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType)).first;
   }
 
-  /// Load an aggregate by id
-  T getAggregateById<T extends Aggregate>(AggregateId aggregateId) {
+  /// Load an aggregate by id from the cache...
+  T getCachedAggregateById<T extends Aggregate>(AggregateId aggregateId) {
     return _aggregateCache.get(aggregateId);
+  }
+
+  void refreshCache(Type aggregateType, AggregateId aggregateId) {
+    _aggregateCache.store(_loadHydratedAggregate(aggregateType, aggregateId));
   }
 
 }

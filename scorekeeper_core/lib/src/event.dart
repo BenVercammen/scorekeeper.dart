@@ -1,28 +1,14 @@
-import 'dart:async';
 import 'dart:collection';
 
 import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
 
-/// The EventManager is responsible for persisting and publishing DomainEvents.
-/// It receives events from the local domain and
-///
-///  - persist all events that were published by the Scorekeeper instance
-///  - persist all events coming in from another EventManager
-///  - publish all events to another EventManager
-///  - ...
-///
-abstract class EventManager {
+/// The EventStore is responsible for persisting DomainEvents.
+abstract class EventStore {
 
-  /// Store the given DomainEvent
-  /// Command handlers already apply the event themselves and thus shoud not publish them again.
+  /// Store the given DomainEvent.
   /// Returns whether or not the event was stored successfully.
-  /// This is very important, as non-persisted events should never be published
   bool store(DomainEvent event);
-
-  /// Store and publish the given DomainEvent.
-  /// Publishing means emitting it through the [#eventStream] method
-  void storeAndPublish(DomainEvent event);
 
   /// Get all events for a single aggregate
   Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId);
@@ -30,18 +16,11 @@ abstract class EventManager {
   /// Get the number of events for a single aggregate
   int countEventsForAggregate(AggregateId aggregateId);
 
-  /// Get a Stream of DomainEvents received by the EventManager.
-  /// These events come either from the own Scorekeeper instance,
-  /// or through the remote one ....
-  Stream<DomainEvent> get domainEventStream;
+  /// Get all domain events that are stored within
+  Set<DomainEvent> getAllDomainEvents();
 
   /// Get all system events
   Set<SystemEvent> getSystemEvents();
-
-  /// Get a Stream of SystemEvents received by the EventManager.
-  /// These events come either from the own Scorekeeper instance,
-  /// or through the remote one ....
-  Stream<SystemEvent> get systemEventStream;
 
   void registerAggregateId(AggregateId aggregateId);
 
@@ -51,14 +30,20 @@ abstract class EventManager {
 
   bool hasEventsForAggregate(AggregateId aggregateId);
 
-  /// Get all domain events that are stored within
-  Set<DomainEvent> getAllDomainEvents();
+}
+
+/// Exception to be thrown in case an invalid Event is being stored or handled.
+class InvalidEventException implements Exception {
+
+  final DomainEvent event;
+
+  InvalidEventException(this.event);
 
 }
 
-/// In memory implementation of the EventManager
+/// In memory implementation of the EventStore
 ///
-class EventManagerInMemoryImpl implements EventManager {
+class EventStoreInMemoryImpl implements EventStore {
 
   Logger _logger;
 
@@ -67,13 +52,9 @@ class EventManagerInMemoryImpl implements EventManager {
 
   final Set<SystemEvent> _systemEventStore = <SystemEvent>{};
 
-  final StreamController<DomainEvent> _domainEventController = StreamController<DomainEvent>();
-
-  final StreamController<SystemEvent> _systemEventController = StreamController<SystemEvent>();
-
   final Set<AggregateId> _registeredAggregateIds = <AggregateId>{};
 
-  EventManagerInMemoryImpl([this._logger]) {
+  EventStoreInMemoryImpl([this._logger]) {
     _logger ??= Logger();
   }
 
@@ -90,29 +71,10 @@ class EventManagerInMemoryImpl implements EventManager {
     }
     // Also check if the sequence is unique
     if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
-      /// We'll store the event for now, but we'll also emit a SystemEvent so the error can be handled accordingly...
-      _domainEventStore[event.aggregateId].add(event);
-      final systemEvent = EventNotHandled(event.id, 'Sequence invalid');
-      _systemEventStore.add(systemEvent);
-      _systemEventController.add(systemEvent);
-      _logger.i('Received event with invalid sequence $event');
-      return false;
-    } else {
-      _domainEventStore[event.aggregateId].add(event);
-      return true;
+      throw InvalidEventException(event);
     }
-  }
-
-  @override
-  void storeAndPublish(DomainEvent event) {
-    // Ignore this event. We only store events for the registered aggregates, the others will need to be pulled from the remote event manager
-    if (!_registeredAggregateIds.contains(event.aggregateId)) {
-      return;
-    }
-    if (!store(event)) {
-      _logger.w('Could not publish $event because it was not stored properly');
-    }
-    _domainEventController.add(event);
+    _domainEventStore[event.aggregateId].add(event);
+    return true;
   }
 
   /// Check if the DomainEvent sequence is OK.
@@ -135,12 +97,6 @@ class EventManagerInMemoryImpl implements EventManager {
   }
 
   @override
-  Stream<DomainEvent> get domainEventStream => _domainEventController.stream.asBroadcastStream();
-
-  @override
-  Stream<SystemEvent> get systemEventStream => _systemEventController.stream.asBroadcastStream();
-
-  @override
   Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId) {
     return _domainEventStore[aggregateId] ?? <DomainEvent>{};
   }
@@ -150,7 +106,7 @@ class EventManagerInMemoryImpl implements EventManager {
   @override
   Set<DomainEvent> getAllDomainEvents() {
     final result = <DomainEvent>{};
-    for (AggregateId aggregateId in _domainEventStore.keys) {
+    for (final aggregateId in _domainEventStore.keys) {
       result.addAll(_domainEventStore[aggregateId]);
     }
     return result;
@@ -189,5 +145,22 @@ class EventManagerInMemoryImpl implements EventManager {
   bool hasEventsForAggregate(AggregateId aggregateId) {
     return _domainEventStore.containsKey(aggregateId);
   }
+
+}
+
+/// Class that should publish events to all remote listeners
+/// This way we can share locally created events with the outside world
+abstract class RemoteEventPublisher {
+
+  /// Publish a DomainEvent to the remote listener(s)
+  void publishDomainEvent(DomainEvent domainEvent);
+
+}
+
+/// Class that should listen for events published by remote instances
+abstract class RemoteEventListener {
+
+  /// The Stream containing DomainEvents received from remote publishers
+  Stream<DomainEvent> get domainEventStream;
 
 }

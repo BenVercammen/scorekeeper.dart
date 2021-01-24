@@ -82,31 +82,10 @@ void main() {
 
   });
 
-  /// Probably the most important feature, the synchronization between multiple EventManager instances.
-  /// If there is only a single (local) EventManager, all data will just remain within the local instance.
-  /// But as soon as there are multiple EventManagers, the Events are to be exchanged between all of them.
-  /// This means receiving and sending events (Domain, Integration, System) from and to the remote EventManager(s).
-  ///
-  group('EventManager synchronization', () {
 
-    /// Technical scenario's:
-    ///  - DomainEvents published by local EventManager should be received by the remote EventManager
-    ///  - DomainEvents published by remote EventManagers should be received by the local EventManager
-    ///  TODO: do we need an event backbone?? how can we know for sure
+  group('EventStoreInMemoryImpl', () {
 
-    // TODO: see event_synchronization.feature for functional scenario's
-
-      test('happy flow', () {
-
-      });
-
-      // TODO: test event ID and invalid sequence issues (becomes important when introducing remote event managers)
-
-  });
-
-  group('EventManagerInMemoryImpl', () {
-
-    EventManager eventManager;
+    EventStore eventStore;
 
     DomainEvent event1;
 
@@ -125,9 +104,9 @@ void main() {
     Exception lastThrownException;
 
     setUp(() {
-      eventManager = EventManagerInMemoryImpl();
+      eventStore = EventStoreInMemoryImpl();
       aggregateId = AggregateId.random();
-      eventManager.registerAggregateId(aggregateId);
+      eventStore.registerAggregateId(aggregateId);
       final payload1 = ScorableCreated()
         ..aggregateId = aggregateId.id
         ..name = 'Test';
@@ -160,11 +139,17 @@ void main() {
     }
 
     void receivedEvent(DomainEvent event) {
-      eventManager.storeAndPublish(event);
+      eventStore.store(event);
+      // TODO: fixture laten applyen??
     }
 
     void thenNoExceptionShouldBeThrown() {
       expect(lastThrownException, isNull);
+    }
+
+    void thenExceptionShouldBeThrown(Exception exception) {
+      expect(lastThrownException, isNotNull);
+      expect(lastThrownException, equals(exception));
     }
 
     /// TODO:
@@ -175,7 +160,7 @@ void main() {
 
     /// Then a SystemEvent of the given type should be published
     void thenSystemEventShouldBePublished(SystemEvent expectedEvent) {
-      expect(eventManager.getSystemEvents().where((actualEvent) {
+      expect(eventStore.getSystemEvents().where((actualEvent) {
         if (actualEvent.runtimeType != expectedEvent.runtimeType) {
           return false;
         }
@@ -189,10 +174,15 @@ void main() {
 
     /// Then no SystemEvent should be published
     void thenNoSystemEventShouldBePublished() {
-      expect(eventManager.getSystemEvents(), isEmpty);
+      expect(eventStore.getSystemEvents(), isEmpty);
     }
 
+    // TODO: test only DomainEvents for registered aggregates should be stored
+    // TODO: test caching of aggregates?
+    //  -> or should these also be pulled up to the Scorekeeper instance? It's be
+
     /// In case events are added out-of-sync, we should raise a SystemEvent...
+    /// TODO: this should be moved to the scorekeeper test, as it is responsible for this now...
     group('Out of sync event sequences', () {
 
       /// Missing event 3... eventManager should wait and possibly check the remote for event 3
@@ -200,7 +190,7 @@ void main() {
         given(() => receivedEvent(event1));
         thenNoExceptionShouldBeThrown();
         given(() => receivedEvent(event2));
-        thenNoExceptionShouldBeThrown();
+        thenExceptionShouldBeThrown(InvalidEventException(event2));
         given(() => receivedEvent(event4));
         thenNoExceptionShouldBeThrown();
         // TODO: mss op aparte queue houden? of verwijderen en remote terug aanroepen?

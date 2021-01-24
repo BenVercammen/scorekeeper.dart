@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 void main() {
 
   // Create an instance
-  final scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl())
+  final scorekeeper = Scorekeeper(EventStoreInMemoryImpl(), AggregateCacheImpl(), null, null)
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(ScorableCommandHandler())
     ..registerEventHandler(ScorableEventHandler());
@@ -29,7 +29,7 @@ void main() {
   scorekeeper.handleCommand(addParticipantCommand);
 
   // Retrieve (cached) aggregate
-  final scorable = scorekeeper.getAggregateById<Scorable>(aggregateId);
+  final scorable = scorekeeper.getCachedAggregateById<Scorable>(aggregateId);
 
   // Work with the Scorable...
   // TODO: this Scorable should be a DTO instead of the actual aggregate! no?

@@ -48,7 +48,7 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
 }
 
 
-class _TracingLogger extends Logger {
+class TracingLogger extends Logger {
 
   Map<Level, List<String>> loggedMessages = HashMap();
 
@@ -66,7 +66,7 @@ void main() {
   /// The last thrown exception in a "when" statement
   Exception _lastThrownWhenException;
 
-  _TracingLogger _logger;
+  TracingLogger _logger;
 
   const scorableId = 'SCORABLE_ID';
 
@@ -76,22 +76,25 @@ void main() {
 
     AggregateCache aggregateCache;
 
-    EventManager localEventManager;
+    EventStore eventStore;
 
-    EventManager remoteEventManager;
+    RemoteEventPublisher remoteEventPublisher;
+
+    RemoteEventListener remoteEventListener;
 
     CommandHandler commandHandler;
 
     _EventHandlerCountWrapper<ScorableEventHandler> eventHandler;
 
     setUp(() {
-      _logger = _TracingLogger();
-      localEventManager = EventManagerInMemoryImpl(_logger);
-      remoteEventManager = EventManagerInMemoryImpl(_logger);
+      _logger = TracingLogger();
+      eventStore = EventStoreInMemoryImpl(_logger);
+      remoteEventPublisher = null; // TODO: RemoteEventPublisher();
+      remoteEventListener = null; // TODO: RemoteEventListener();
       aggregateCache = AggregateCacheImpl();
       commandHandler = ScorableCommandHandler();
       eventHandler = _EventHandlerCountWrapper<ScorableEventHandler>(ScorableEventHandler());
-      scorekeeper = Scorekeeper(localEventManager, remoteEventManager, aggregateCache, _logger)
+      scorekeeper = Scorekeeper(eventStore, aggregateCache, remoteEventPublisher, remoteEventListener, _logger)
         ..registerCommandHandler(commandHandler)
         ..registerEventHandler(eventHandler);
     });
@@ -126,8 +129,8 @@ void main() {
         ..name = name;
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
-      final sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, scorableCreated));
+      final sequence = eventStore.countEventsForAggregate(aggregateId) + 1;
+      eventStore.store(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, scorableCreated));
     }
 
     /// Given the ParticipantAdded event
@@ -140,14 +143,18 @@ void main() {
       participantAdded.participant = participant;
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
-      final sequence = localEventManager.countEventsForAggregate(aggregateId) + 1;
-      localEventManager.storeAndPublish(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, participantAdded));
+      final sequence = eventStore.countEventsForAggregate(aggregateId) + 1;
+      eventStore.store(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, participantAdded));
     }
 
     /// Given no aggregate with given Id is known in Scorekeeper
     void givenNoAggregateKnownWithId(String aggregateIdValue) {
       final aggregateId = AggregateId.of(aggregateIdValue);
       aggregateCache.purge(aggregateId);
+    }
+
+    void givenCacheIsUpToDate(String aggregateIdValue) {
+      scorekeeper.refreshCache(Scorable, AggregateId.of(aggregateIdValue));
     }
 
     void when(Function() callback) {
@@ -187,6 +194,11 @@ void main() {
       scorekeeper.evictAggregateFromCache(AggregateId.of(aggregateId));
     }
 
+    /// When an aggregate should be loaded
+    Scorable loadAggregateFromCache(String aggregateId) {
+      return scorekeeper.getCachedAggregateById(AggregateId.of(aggregateId));
+    }
+
     /// Eventually means asynchronously, so we'll just wait a few millis to check
     Future<void> eventually(Function() callback) async {
       await Future.delayed(const Duration(milliseconds: 10));
@@ -221,7 +233,7 @@ void main() {
 
     /// Then the event with payload of given type should be stored exactly [numberOfTimes] times for aggregate with Id
     void thenEventTypeShouldBeStoredNumberOfTimes(String aggregateId, Type eventType, int numberOfTimes) {
-      final eventsForAggregate = localEventManager.getEventsForAggregate(AggregateId.of(aggregateId));
+      final eventsForAggregate = eventStore.getEventsForAggregate(AggregateId.of(aggregateId));
       final equalEventPayloads = Set<DomainEvent>.from(eventsForAggregate)
         ..retainWhere((event) => event.payload.runtimeType == eventType);
       expect(equalEventPayloads.length, equals(numberOfTimes));
@@ -251,7 +263,7 @@ void main() {
 
     /// Then a SystemEvent of the given type should be published
     void thenSystemEventShouldBePublished(SystemEvent expectedEvent) {
-      expect(localEventManager.getSystemEvents().where((actualEvent) {
+      expect(eventStore.getSystemEvents().where((actualEvent) {
         if (actualEvent.runtimeType != expectedEvent.runtimeType) {
           return false;
         }
@@ -266,18 +278,18 @@ void main() {
 
     group('Test creation and initial usage of the Scorekeeper instance', () {
 
-      test('Constructor requires local EventManager', () {
+      test('Constructor requires local EventStore', () {
         try {
-          Scorekeeper(null, null, AggregateCacheImpl());
-          fail('Instantiating without local EventManager instance should fail');
+          Scorekeeper(null, AggregateCacheImpl(), null, null);
+          fail('Instantiating without local EventStore instance should fail');
         } on Exception catch (exception) {
-          expect(exception.toString(), contains('Local EventManager instance is required'));
+          expect(exception.toString(), contains('Local EventStore instance is required'));
         }
       });
 
       test('Constructor requires an AggregateCache', () {
         try {
-          Scorekeeper(EventManagerInMemoryImpl(), null, null);
+          Scorekeeper(EventStoreInMemoryImpl(_logger), null, null, null);
           fail('Instantiating without AggregateCache instance should fail');
         } on Exception catch (exception) {
           expect(exception.toString(), contains('AggregateCache instance is required'));
@@ -290,7 +302,7 @@ void main() {
         Scorekeeper scorekeeper;
 
         setUp(() {
-          scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl());
+          scorekeeper = Scorekeeper(EventStoreInMemoryImpl(_logger), AggregateCacheImpl(), null, null);
         });
 
         /// Commands that can't be handled, should raise an exception
@@ -307,10 +319,11 @@ void main() {
           }
         });
 
-        /// Events that aren't handled, won't raise any exceptions (for now)
-        test('Event without handler', () {
-          scorekeeper.handleEvent(DomainEvent.of(DomainEventId.local(0), AggregateId.random(), CreateScorable()));
-        });
+        // We don't allow for explicitly handling events in the scorekeeper application, only commands...
+        // /// Events that aren't handled, won't raise any exceptions (for now)
+        // test('Event without handler', () {
+        //   scorekeeper.handleEvent(DomainEvent.of(DomainEventId.local(0), AggregateId.random(), CreateScorable()));
+        // });
       });
 
       group('Register/unregister aggregates', () {
@@ -337,7 +350,7 @@ void main() {
     /// Vocabulary
     ///
     ///  - Registered AggregateIds: Events are only stored in the (local) EventStore
-    ///                             if the aggregateId is registered within the EventManager
+    ///                             if the aggregateId is registered within the EventStore
     ///  - Cached AggregateIds:     aggregates that are fully hydrated within the AggregateCache
     ///  - Non-cached AggregateIds: aggregates for which only the events are stored.
     ///                             When loading, these aggregates need to be re-hydrated based on the stored events
@@ -385,7 +398,7 @@ void main() {
 
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
         /// the system should ignore this event and raise a new SystemEvent
-        /// TODO: this is actually a test for the eventmanager...
+        /// TODO: this is actually a test for the scorekeeper now...
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
           final eventId1 = DomainEventId.local(0);
           final eventId2 = DomainEventId.local(0);
@@ -402,7 +415,7 @@ void main() {
         });
 
         // TODO: only not-yet-handled events should get handled... (so look at EventId!)
-        //  but that's probably more of the EventManager's concern/responsibility??
+        //  but that's probably more of the EventStore's concern/responsibility??
 
 
         /// TODO: what if a constructor event tries to create an already created aggregateId
@@ -453,6 +466,8 @@ void main() {
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'Test 1');
           givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
+          // TODO: dus ook scenario's schrijven waarin cache out-of-date is? of zou da nooit mogen?
+          givenCacheIsUpToDate(scorableId);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
@@ -564,9 +579,7 @@ void main() {
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'Test Scorable');
-          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1));
-          // TODO: dat "should be handled" ook in andere tests nagaan!
-          await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
+          givenCacheIsUpToDate(scorableId);
           when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
           thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1);
           thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1);

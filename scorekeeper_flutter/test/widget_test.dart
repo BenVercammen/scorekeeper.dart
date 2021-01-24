@@ -13,7 +13,7 @@ import 'package:scorekeeper_flutter/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    final scorekeeper = Scorekeeper(EventManagerInMemoryImpl(), null, AggregateCacheImpl());
+    final scorekeeper = Scorekeeper(EventStoreInMemoryImpl(), AggregateCacheImpl(), null, null);
     await tester.pumpWidget(ScorableOverviewPage(title: 'Test', scorekeeperService: ScorekeeperService(scorekeeper)));
 
     // Verify that our counter starts at 0.
