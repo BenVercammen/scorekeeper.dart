@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-import 'package:scorekeeper_flutter/scorable_detail.dart';
 import 'package:uuid/uuid.dart';
+
+import 'scorable_detail.dart';
 
 void main() {
 
@@ -24,7 +25,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
 
-  ScorekeeperService _scorekeeperService;
+  final ScorekeeperService _scorekeeperService;
 
   MyApp(this._scorekeeperService);
 
@@ -168,7 +169,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _createNewScorable,
         tooltip: 'Create new Scorable',
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -61,8 +61,9 @@ class StepDefinitions {
   Future<void> givenLocalEventManagerHasDomainEvents({GherkinTable table}) async {
     final givenDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in givenDomainEvents) {
-      _localEventManager.registerAggregateId(domainEvent.aggregateId);
-      _localEventManager.storeDomainEvent(domainEvent);
+      _localEventManager
+          ..registerAggregateId(domainEvent.aggregateId)
+          ..storeDomainEvent(domainEvent);
     }
   }
 

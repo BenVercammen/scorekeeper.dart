@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-import 'package:scorekeeper_flutter/main.dart';
+
+import 'main.dart';
 
 class ScorableDetailPage extends StatefulWidget {
 
@@ -52,7 +53,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _addParticipant,
         tooltip: 'Add new Participant',
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }

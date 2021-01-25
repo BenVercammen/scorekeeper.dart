@@ -210,11 +210,6 @@ void main() {
       scorekeeper.evictAggregateFromCache(AggregateId.of(aggregateId));
     }
 
-    /// When an aggregate should be loaded
-    Scorable loadAggregateFromCache(String aggregateId) {
-      return scorekeeper.getCachedAggregateById(AggregateId.of(aggregateId));
-    }
-
     /// Eventually means asynchronously, so we'll just wait a few millis to check
     Future<void> eventually(Function() callback) async {
       await Future.delayed(const Duration(milliseconds: 10));
@@ -306,7 +301,7 @@ void main() {
         }
         if (actualEvent is EventNotHandled && expectedEvent is EventNotHandled) {
           return actualEvent.notHandledEvent.id == expectedEvent.notHandledEvent.id &&
-                  actualEvent.reason == expectedEvent.reason;
+              actualEvent.reason.contains(expectedEvent.reason);
         }
         return false;
       }).length, equals(1));
@@ -455,7 +450,7 @@ void main() {
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           try {
             givenScorableCreatedEvent(scorableId, 'TEST 1', eventId2);
-            fail("InvalidEventException expected");
+            fail('InvalidEventException expected');
           } on InvalidEventException catch (exception) {
             expect(exception.event.id, equals(eventId2));
           }
@@ -479,7 +474,7 @@ void main() {
           givenScorableCreatedEvent(scorableId, 'TEST 1');
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
-          when(() => evictAggregateFromCache(scorableId));
+          await when(() => evictAggregateFromCache(scorableId));
           thenAggregateShouldNotBeCached(scorableId);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
@@ -494,7 +489,7 @@ void main() {
           givenScorableCreatedEvent(scorableId, 'TEST 1');
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldBeCached(scorableId);
-          when(() => evictAggregateFromCache(scorableId));
+          await when(() => evictAggregateFromCache(scorableId));
           thenAggregateShouldNotBeCached(scorableId);
           givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
@@ -533,19 +528,6 @@ void main() {
         });
 
       });
-
-      void thenSystemEventShouldBePublished(SystemEvent expectedEvent) {
-        expect(eventStore.getSystemEvents().where((actualEvent) {
-          if (actualEvent.runtimeType != expectedEvent.runtimeType) {
-            return false;
-          }
-          if (actualEvent is EventNotHandled && expectedEvent is EventNotHandled) {
-            return actualEvent.notHandledEvent.id == expectedEvent.notHandledEvent.id &&
-                actualEvent.reason.contains(expectedEvent.reason);
-          }
-          return false;
-        }).length, equals(1));
-      }
 
       /// Then no SystemEvent should be published
       void thenNoSystemEventShouldBePublished() {
@@ -753,7 +735,7 @@ void main() {
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'Test Scorable');
           givenCacheIsUpToDate(scorableId);
-          when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
+          await when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
           thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1);
           thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1);
           thenAggregateShouldBeCached(scorableId);
@@ -809,10 +791,10 @@ void main() {
         /// so if we don't wait for it in our tests, we'd never notice it...
         /// This test will explicitly wait to make sure that something like that doesn't happen (again).
         test('Regular command should have its emitted events applied only once', () async {
-          when(() => createScorableCommand(scorableId, 'Test'));
+          await when(() => createScorableCommand(scorableId, 'Test'));
           await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1));
           await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
-          when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
+          await when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
           thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1);
           thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1);
           thenAggregateShouldBeCached(scorableId);
