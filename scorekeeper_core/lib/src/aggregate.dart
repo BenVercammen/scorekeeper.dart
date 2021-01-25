@@ -21,7 +21,7 @@ abstract class AggregateCache {
 
 /// Simple in memory implementation of AggregateCache.
 /// Has no persistence, so needs to be reloaded/hydrated/... on each startup
-class AggregateCacheImpl implements AggregateCache {
+class AggregateCacheInMemoryImpl implements AggregateCache {
 
   final Map<AggregateId, Aggregate> _cache = HashMap();
 

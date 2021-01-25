@@ -14,7 +14,7 @@ class Scorekeeper {
   Logger _logger;
 
   /// The EventStore for storing DomainEvents of the local Scorekeeper instance
-  final EventStore _eventStore;
+  EventStore _eventStore;
 
   /// Map of aggregates this Scorekeeper needs to follow up on.
   /// In order to receive events from external source,
@@ -22,7 +22,7 @@ class Scorekeeper {
   final Map<AggregateId, Type> _registeredAggregates = HashMap();
 
   /// The cache in which to store the hydrated aggregate
-  final AggregateCache _aggregateCache;
+  AggregateCache _aggregateCache;
 
   /// The (generated) handler that maps commands to aggregate handler methods
   final _commandHandlers = <CommandHandler>{};
@@ -31,36 +31,51 @@ class Scorekeeper {
   final _eventHandlers = <EventHandler>{};
 
   /// The publisher for emitting DomainEvents to a remote (Scorekeeper) instance
-  final RemoteEventPublisher _remoteEventPublisher;
+  RemoteEventPublisher _remoteEventPublisher;
 
   /// The listener for receiving DomainEvents from a remote (Scorekeeper) instance
-  final RemoteEventListener _remoteEventListener;
+  RemoteEventListener _remoteEventListener;
 
   /// Create a Scorekeeper instance
-  Scorekeeper(this._eventStore,this._aggregateCache, this._remoteEventPublisher, this._remoteEventListener, [this._logger]) {
-    _logger ??= Logger();
-    if (null == _eventStore) {
-      // TODO: we can default to the in memory implementation!
+  /// EventStore and AggregateCache are required.
+  /// RemoteEventPublisher and RemoteEventListener are optional
+  Scorekeeper({EventStore eventStore, AggregateCache aggregateCache, RemoteEventPublisher remoteEventPublisher, RemoteEventListener remoteEventListener, Logger logger}) {
+    _logger = logger ?? Logger();
+    if (null == eventStore) {
       throw Exception('Local EventStore instance is required');
     }
-    if (null == _aggregateCache) {
+    _eventStore = eventStore;
+    if (null == aggregateCache) {
       throw Exception('AggregateCache instance is required');
     }
-    if (null == _remoteEventPublisher) {
+    _aggregateCache = aggregateCache;
+    if (null == remoteEventPublisher) {
       _logger.i('No remote event publisher was passed along, so all events will remain on the local machine');
     }
-    if (null == _remoteEventListener) {
+    _remoteEventPublisher = remoteEventPublisher;
+    if (null == remoteEventListener) {
       _logger.i('No remote event listener was passed along, so no remote events will be applied on the local machine');
     }
-
+    _remoteEventListener = remoteEventListener;
     // Make sure that the local event manager keeps track only of the registered AggregateIds
     _eventStore.registerAggregateIds(_registeredAggregates.keys);
 
     // Listen to the RemoteEventListener's event stream
     _remoteEventListener?.domainEventStream?.listen((DomainEvent event) {
-      // If the event relates to an aggregate that's supposed to be cached, we'll handle it, otherwise just let it sit in the store
-      if (_aggregateCache.contains(event.aggregateId)) {
-        _handleEvent(event);
+      // TODO: in case it cannot be stored, we can't apply the event locally!!
+      // TODO: what if it can be stored, but not applied???
+      // If the event relates to an aggregate that's supposed to be stored, we'll store it
+      if (_registeredAggregates.containsKey(event.aggregateId)) {
+        try {
+          if (_eventStore.storeDomainEvent(event)) {
+            // If the event relates to a cached aggregate, we'll handle it immediately
+            if (_aggregateCache.contains(event.aggregateId)) {
+              _handleEvent(event);
+            }
+          }
+        } on Exception catch (exception) {
+          _eventStore.storeSystemEvent(EventNotHandled(event, exception.toString()));
+        }
       }
     });
     // _eventManager.systemEventStream.listen((SystemEvent event) {
@@ -164,7 +179,8 @@ class Scorekeeper {
         _logger.e(exception);
       }
       try {
-        _eventStore.store(domainEvent);
+        _eventStore.storeDomainEvent(domainEvent);
+        _remoteEventPublisher.publishDomainEvent(domainEvent);
       } on Exception catch(exception) {
         // TODO: testen + afhandelen!
         _logger.e(exception);
@@ -206,10 +222,6 @@ class Scorekeeper {
     final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
     _logger.d('Handling event triggerd by eventmanager (local) stream: $domainEvent');
     eventHandler.handle(aggregate, domainEvent);
-    // event publishen (lokaal en later ook remote??) (dan moet EventId wel aangepast worden)
-    // TODO: store and publish moet enkel als het extern binnenkomt, als we het via externe manager binnen krijgen,
-    //  is dat niet meer nodig he??
-    // TODO: _eventStore.store(domainEvent); ???
   }
 
   T _loadHydratedAggregate<T extends Aggregate>(Type runtimeType, AggregateId aggregateId) {

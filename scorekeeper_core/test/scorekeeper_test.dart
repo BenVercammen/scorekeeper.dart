@@ -6,6 +6,8 @@ import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
 import 'package:test/test.dart';
 
+import 'features/step_definitions.dart';
+
 
 /// Wrapper class that allows us to keep track of which events have been handled
 class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler {
@@ -78,9 +80,9 @@ void main() {
 
     EventStore eventStore;
 
-    RemoteEventPublisher remoteEventPublisher;
+    MockRemoteEventPublisher remoteEventPublisher;
 
-    RemoteEventListener remoteEventListener;
+    MockRemoteEventListener remoteEventListener;
 
     CommandHandler commandHandler;
 
@@ -89,16 +91,20 @@ void main() {
     setUp(() {
       _logger = TracingLogger();
       eventStore = EventStoreInMemoryImpl(_logger);
-      remoteEventPublisher = null; // TODO: RemoteEventPublisher();
-      remoteEventListener = null; // TODO: RemoteEventListener();
-      aggregateCache = AggregateCacheImpl();
+      remoteEventPublisher = MockRemoteEventPublisher();
+      remoteEventListener = MockRemoteEventListener();
+      aggregateCache = AggregateCacheInMemoryImpl();
       commandHandler = ScorableCommandHandler();
       eventHandler = _EventHandlerCountWrapper<ScorableEventHandler>(ScorableEventHandler());
-      scorekeeper = Scorekeeper(eventStore, aggregateCache, remoteEventPublisher, remoteEventListener, _logger)
+      scorekeeper = Scorekeeper(
+          eventStore: eventStore,
+          aggregateCache: aggregateCache,
+          remoteEventPublisher: remoteEventPublisher,
+          remoteEventListener: remoteEventListener,
+          logger: _logger)
         ..registerCommandHandler(commandHandler)
         ..registerEventHandler(eventHandler);
     });
-
 
     /// Given we registered for notifications of the aggregate with aggregateId
     void givenAggregateIdRegistered(String aggregateIdValue) {
@@ -122,6 +128,11 @@ void main() {
       scorekeeper.evictAggregateFromCache(AggregateId.of(aggregateId));
     }
 
+    /// Given the DomainEvent is already persisted locally
+    void givenLocallyPersistedEvent(DomainEvent domainEvent) {
+      eventStore.storeDomainEvent(domainEvent);
+    }
+
     /// Given the ScorableCreatedEvent with parameters
     void givenScorableCreatedEvent(String aggregateIdValue, String name, [DomainEventId eventId]) {
       final scorableCreated = ScorableCreated()
@@ -130,7 +141,7 @@ void main() {
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
       final sequence = eventStore.countEventsForAggregate(aggregateId) + 1;
-      eventStore.store(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, scorableCreated));
+      eventStore.storeDomainEvent(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, scorableCreated));
     }
 
     /// Given the ParticipantAdded event
@@ -144,7 +155,7 @@ void main() {
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
       final sequence = eventStore.countEventsForAggregate(aggregateId) + 1;
-      eventStore.store(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, participantAdded));
+      eventStore.storeDomainEvent(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, participantAdded));
     }
 
     /// Given no aggregate with given Id is known in Scorekeeper
@@ -157,10 +168,10 @@ void main() {
       scorekeeper.refreshCache(Scorable, AggregateId.of(aggregateIdValue));
     }
 
-    void when(Function() callback) {
+    Future<void> when(Function() callback) async {
       try {
         _lastThrownWhenException = null;
-        callback();
+        await callback();
       } on Exception catch (exception) {
         _lastThrownWhenException = exception;
       }
@@ -187,6 +198,11 @@ void main() {
         ..participant.participantId = participantId
         ..participant.name = participantName;
       scorekeeper.handleCommand(command);
+    }
+
+    /// When the RemoteEventListener receives a new DomainEvent
+    Future<void> receivedRemoteEvent(DomainEvent domainEvent) async {
+      remoteEventListener.emitEvent(domainEvent);
     }
 
     /// When an aggregate with given Id is evicted from cache
@@ -240,14 +256,35 @@ void main() {
     }
 
     /// Then the event with payload of given type should actually be handled exactly [numberOfTimes] for the aggregate with Id
-    void thenEventTypeShouldBeHandledNumberOfTimes(String aggregateId, Type eventtype, int numberOfTimes) {
-      expect(eventHandler.countHandledEvents(AggregateId.of(aggregateId), eventtype), equals(numberOfTimes));
+    void thenEventTypeShouldBeHandledNumberOfTimes(String aggregateId, Type eventType, int numberOfTimes) {
+      expect(eventHandler.countHandledEvents(AggregateId.of(aggregateId), eventType), equals(numberOfTimes));
+    }
+
+    /// Then the event with payload of given type should be published exactly [numberOfTimes] for the aggregate with Id
+    void thenEventTypeShouldBePublishedNumberOfTimes(String aggregateId, Type eventType, int numberOfTimes) {
+      final matches = remoteEventPublisher.publishedDomainEvents.where((publishedEvent) {
+        return publishedEvent.aggregateId.id == aggregateId && publishedEvent.payload.runtimeType == eventType;
+      });
+      expect(matches.length, equals(numberOfTimes));
+    }
+
+    /// Then no events should be published
+    void thenNoEventsShouldBePublishedForAggregateId(String aggregateId) {
+      final matches = remoteEventPublisher.publishedDomainEvents.where((publishedEvent) {
+        return publishedEvent.aggregateId.id == aggregateId;
+      });
+      expect(matches, isEmpty);
     }
 
     /// Then the given Exception should have been thrown
     void thenExceptionShouldBeThrown(Exception expected) {
       expect(_lastThrownWhenException, isNotNull);
       expect(_lastThrownWhenException.toString(), equals(expected.toString()));
+    }
+
+    /// Then no Exception should have been thrown
+    void thenNoExceptionShouldBeThrown() {
+      expect(_lastThrownWhenException, isNull);
     }
 
     /// Then the given message should be logged number of times
@@ -268,7 +305,7 @@ void main() {
           return false;
         }
         if (actualEvent is EventNotHandled && expectedEvent is EventNotHandled) {
-          return actualEvent.notHandledEventId == expectedEvent.notHandledEventId &&
+          return actualEvent.notHandledEvent.id == expectedEvent.notHandledEvent.id &&
                   actualEvent.reason == expectedEvent.reason;
         }
         return false;
@@ -280,7 +317,7 @@ void main() {
 
       test('Constructor requires local EventStore', () {
         try {
-          Scorekeeper(null, AggregateCacheImpl(), null, null);
+          Scorekeeper(aggregateCache: AggregateCacheInMemoryImpl());
           fail('Instantiating without local EventStore instance should fail');
         } on Exception catch (exception) {
           expect(exception.toString(), contains('Local EventStore instance is required'));
@@ -289,7 +326,7 @@ void main() {
 
       test('Constructor requires an AggregateCache', () {
         try {
-          Scorekeeper(EventStoreInMemoryImpl(_logger), null, null, null);
+          Scorekeeper(eventStore: EventStoreInMemoryImpl(_logger));
           fail('Instantiating without AggregateCache instance should fail');
         } on Exception catch (exception) {
           expect(exception.toString(), contains('AggregateCache instance is required'));
@@ -302,7 +339,7 @@ void main() {
         Scorekeeper scorekeeper;
 
         setUp(() {
-          scorekeeper = Scorekeeper(EventStoreInMemoryImpl(_logger), AggregateCacheImpl(), null, null);
+          scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(_logger), aggregateCache: AggregateCacheInMemoryImpl());
         });
 
         /// Commands that can't be handled, should raise an exception
@@ -359,7 +396,7 @@ void main() {
     ///
 
 
-    /// Tests regarding event handling
+    /// Tests regarding the handling of remotely received events
     /// Events should raise some sort of ExceptionEvent in case something went wrong
     /// Event handling should never (or very rarely) result in actual exceptions
     /// TODO: So we'll have some sort of EventHandlingException log??
@@ -367,12 +404,21 @@ void main() {
 
       group('Constructor events', () {
 
+        /// Not sure how we can register the aggregateId for a remotely created aggregate... :/
         test('Handle constructor event for registered, non-cached aggregateId', () async {
           givenAggregateIdRegistered(scorableId);
-          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          await when(() => receivedRemoteEvent(
+              DomainEvent.of(
+                DomainEventId.local(0),
+                AggregateId.of(scorableId),
+                ScorableCreated()
+                  ..aggregateId = scorableId
+                  ..name = 'Test'))
+          );
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldNotBeCached(scorableId);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
+          thenNoEventsShouldBePublishedForAggregateId(scorableId);
         });
 
         /// For a non-registered aggregateId, the constructor event should not even be stored in the local event manager
@@ -394,11 +440,11 @@ void main() {
           givenScorableCreatedEvent(scorableId, 'TEST 1');
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
+          // TODO: but the cached state is not up-to-date, our whole "given event" premise is messed up... there's no WHEN action...
         });
 
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
-        /// the system should ignore this event and raise a new SystemEvent
-        /// TODO: this is actually a test for the scorekeeper now...
+        /// an exception will be thrown
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
           final eventId1 = DomainEventId.local(0);
           final eventId2 = DomainEventId.local(0);
@@ -407,11 +453,12 @@ void main() {
           givenScorableCreatedEvent(scorableId, 'TEST 1', eventId1);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
-          givenScorableCreatedEvent(scorableId, 'TEST 1', eventId2);
-          await eventually(() {
-            final eventNotHandled = EventNotHandled(eventId2, 'Sequence invalid');
-            thenSystemEventShouldBePublished(eventNotHandled);
-          });
+          try {
+            givenScorableCreatedEvent(scorableId, 'TEST 1', eventId2);
+            fail("InvalidEventException expected");
+          } on InvalidEventException catch (exception) {
+            expect(exception.event.id, equals(eventId2));
+          }
         });
 
         // TODO: only not-yet-handled events should get handled... (so look at EventId!)
@@ -487,6 +534,132 @@ void main() {
 
       });
 
+      void thenSystemEventShouldBePublished(SystemEvent expectedEvent) {
+        expect(eventStore.getSystemEvents().where((actualEvent) {
+          if (actualEvent.runtimeType != expectedEvent.runtimeType) {
+            return false;
+          }
+          if (actualEvent is EventNotHandled && expectedEvent is EventNotHandled) {
+            return actualEvent.notHandledEvent.id == expectedEvent.notHandledEvent.id &&
+                actualEvent.reason.contains(expectedEvent.reason);
+          }
+          return false;
+        }).length, equals(1));
+      }
+
+      /// Then no SystemEvent should be published
+      void thenNoSystemEventShouldBePublished() {
+        expect(eventStore.getSystemEvents(), isEmpty);
+      }
+
+      // TODO: test only DomainEvents for registered aggregates should be stored
+      // TODO: test caching of aggregates?
+      //  -> or should these also be pulled up to the Scorekeeper instance? It's be
+
+      /// In case events are added out-of-sync, we should raise a SystemEvent...
+      group('Receiving remote events out of sync', () {
+
+        DomainEvent event1;
+
+        DomainEvent event2;
+
+        DomainEvent event2b;
+
+        DomainEvent event2c;
+
+        DomainEvent event3;
+
+        DomainEvent event4;
+
+        AggregateId aggregateId;
+
+        setUp(() {
+          aggregateId = AggregateId.random();
+          eventStore.registerAggregateId(aggregateId);
+          final payload1 = ScorableCreated()
+            ..aggregateId = aggregateId.id
+            ..name = 'Test';
+          event1 = DomainEvent.of(DomainEventId.local(0), aggregateId, payload1);
+          final payload2 = ParticipantAdded()
+            ..aggregateId = aggregateId.id
+            ..participant = Participant();
+          event2 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
+          final payload3 = ParticipantAdded()
+            ..aggregateId = aggregateId.id
+            ..participant = Participant();
+          event3 = DomainEvent.of(DomainEventId.local(2), aggregateId, payload3);
+          final payload4 = ParticipantAdded()
+            ..aggregateId = aggregateId.id
+            ..participant = Participant();
+          event4 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload4);
+          // Same aggregate, same sequence, same payload, different UUID, so different origin
+          event2b = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
+          // Same aggregate, same sequence, different payload
+          event2c = DomainEvent.of(DomainEventId.local(1), aggregateId, payload3);
+        });
+
+        /// Missing event 3... eventManager should wait and possibly check the remote for event 3
+        test('Missing an event in the sequence', () async {
+          givenAggregateIdRegistered(aggregateId.id);
+          givenLocallyPersistedEvent(event1);
+          givenLocallyPersistedEvent(event2);
+          await when(() => receivedRemoteEvent(event4));
+          thenNoExceptionShouldBeThrown();
+          // TODO: mss op aparte queue houden? of verwijderen en remote terug aanroepen?
+          thenSystemEventShouldBePublished(EventNotHandled(event4, 'Sequence invalid'));
+        });
+
+        /// Missing event 3 received after event 4
+        test('Receiving missing event in the sequence', () async {
+          givenAggregateIdRegistered(aggregateId.id);
+          givenLocallyPersistedEvent(event1);
+          givenLocallyPersistedEvent(event2);
+          await when(() => receivedRemoteEvent(event4));
+          await when(() => receivedRemoteEvent(event3));
+          thenNoExceptionShouldBeThrown();
+          thenSystemEventShouldBePublished(EventNotHandled(event4, 'Sequence invalid'));
+          // TODO: then 3 and 4 should be emitted / applied to aggregate !?
+          // TODO: what with the LinkedHashSet ordering???
+        });
+
+        /// Receiving the same event twice, the duplicate event should just be ignored
+        test('Duplicate DomainEvent in the sequence can be ignored', () async {
+          givenAggregateIdRegistered(aggregateId.id);
+          givenLocallyPersistedEvent(event1);
+          givenLocallyPersistedEvent(event2);
+          await when(() => receivedRemoteEvent(event2));
+          thenNoExceptionShouldBeThrown();
+          thenNoSystemEventShouldBePublished();
+          // TODO: then duplicate event should be logged?
+        });
+
+        /// Receiving the same event sequence twice, all other values alike, the duplicate event should just be ignored
+        test('DomainEvent with matching sequence and payload', () async {
+          givenAggregateIdRegistered(aggregateId.id);
+          givenLocallyPersistedEvent(event1);
+          thenNoExceptionShouldBeThrown();
+          givenLocallyPersistedEvent(event2);
+          thenNoExceptionShouldBeThrown();
+          await when(() => receivedRemoteEvent(event2b));
+          thenNoExceptionShouldBeThrown();
+          thenSystemEventShouldBePublished(EventNotHandled(event2b, 'Sequence invalid'));
+        });
+
+        /// Receiving the same event sequence twice, all other values alike, the duplicate event should just be ignored
+        test('DomainEvent with matching sequence, different payload', () async {
+          givenAggregateIdRegistered(aggregateId.id);
+          givenLocallyPersistedEvent(event1);
+          thenNoExceptionShouldBeThrown();
+          givenLocallyPersistedEvent(event2);
+          thenNoExceptionShouldBeThrown();
+          await when(() => receivedRemoteEvent(event2c));
+          thenNoExceptionShouldBeThrown();
+          thenSystemEventShouldBePublished(EventNotHandled(event2c, 'Sequence invalid'));
+        });
+
+      });
+
+
       // TODO: als we cache opzetten, moet ook ineens de volledig gehydrateerde aggregate in cache zitten!
       //  dus alle events moeten applied zijn!
 
@@ -501,7 +674,7 @@ void main() {
 
       /// TODO: Non-constructor commands can only be handled on aggregates that are registered??
 
-      group('Constrctor commands', () {
+      group('Constructor commands', () {
 
         /// A Constructor Command should result in a newly created, registered and cached Aggregate
         /// We want this in cache because the high probability of extra commands following the initial one
@@ -660,6 +833,17 @@ void main() {
       ///       -> als er niemand het command afhandelt, moet de issue'er van het command dit weten!
 
       /// TODO: wat met de flow waarin command handler met een lege aggregate achterblijft?
+
+    });
+
+    group('Remote event publication', () {
+
+      test('Events resulting from local commands should be published remotely', () async {
+        await when(() => createScorableCommand(scorableId, 'Test'));
+        thenEventTypeShouldBePublishedNumberOfTimes(scorableId, ScorableCreated, 1);
+      });
+
+      // TODO: failed commands should not result in publication of events
 
     });
 

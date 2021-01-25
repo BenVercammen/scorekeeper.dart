@@ -132,15 +132,15 @@ abstract class SystemEvent {
 /// SystemEvent that tells the system that a given event was not handled for some reason
 class EventNotHandled extends SystemEvent {
 
-  final DomainEventId notHandledEventId;
+  final DomainEvent notHandledEvent;
 
   final String reason;
 
-  EventNotHandled(this.notHandledEventId, this.reason) : super(SystemEventId.local());
+  EventNotHandled(this.notHandledEvent, this.reason) : super(SystemEventId.local());
 
   @override
   String toString() {
-    return "Event $notHandledEventId couldn't be handled because $reason";
+    return "Event $notHandledEvent.id couldn't be handled because $reason";
   }
 
 }

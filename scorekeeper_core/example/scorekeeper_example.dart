@@ -6,7 +6,9 @@ import 'package:uuid/uuid.dart';
 void main() {
 
   // Create an instance
-  final scorekeeper = Scorekeeper(EventStoreInMemoryImpl(), AggregateCacheImpl(), null, null)
+  final scorekeeper = Scorekeeper(
+      eventStore: EventStoreInMemoryImpl(),
+      aggregateCache: AggregateCacheInMemoryImpl())
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(ScorableCommandHandler())
     ..registerEventHandler(ScorableEventHandler());

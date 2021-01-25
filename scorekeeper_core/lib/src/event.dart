@@ -8,7 +8,10 @@ abstract class EventStore {
 
   /// Store the given DomainEvent.
   /// Returns whether or not the event was stored successfully.
-  bool store(DomainEvent event);
+  bool storeDomainEvent(DomainEvent event);
+
+  /// Store the given SystemEvent.
+  void storeSystemEvent(SystemEvent event);
 
   /// Get all events for a single aggregate
   Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId);
@@ -37,7 +40,12 @@ class InvalidEventException implements Exception {
 
   final DomainEvent event;
 
-  InvalidEventException(this.event);
+  final String message;
+
+  InvalidEventException(this.event, this.message);
+
+  @override
+  String toString() => message;
 
 }
 
@@ -59,7 +67,7 @@ class EventStoreInMemoryImpl implements EventStore {
   }
 
   @override
-  bool store(DomainEvent event) {
+  bool storeDomainEvent(DomainEvent event) {
     // Ignore this event. We only store events for the registered aggregates, the others will need to be pulled from the remote event manager
     if (!_registeredAggregateIds.contains(event.aggregateId)) {
       return false;
@@ -71,10 +79,15 @@ class EventStoreInMemoryImpl implements EventStore {
     }
     // Also check if the sequence is unique
     if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
-      throw InvalidEventException(event);
+      throw InvalidEventException(event, 'Sequence invalid');
     }
     _domainEventStore[event.aggregateId].add(event);
     return true;
+  }
+
+  @override
+  void storeSystemEvent(SystemEvent event) {
+    _systemEventStore.add(event);
   }
 
   /// Check if the DomainEvent sequence is OK.
