@@ -33,3 +33,5 @@ doc/api/
 *.jks.old
 
 **/ogurets_run.dart
+**/.test_coverage.dart
+**/lcov.info
