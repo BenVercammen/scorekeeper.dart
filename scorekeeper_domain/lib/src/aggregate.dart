@@ -27,6 +27,37 @@ abstract class Aggregate {
 }
 
 
+/// The Aggregate as a value-object, stripped of all its handler methods.
+/// This one can be passed along to clients without worrying that they'll call any handlers.
+///
+/// TODO: probleem is wel dat het nu niet duidelijk is wie dien DTO up-to-date gaat houden...
+/// Op zich, telkens een aggregate opgevraagd wordt, moet daar een DTO copy van gemaakt worden...
+/// In Axon doet de ViewProjector dat, die gaat een "JPA Repository" aansturen om @Entity te manipuleren en op te slaan
+/// Da's dan in het query model...
+/// Wij willen echter command/query model (voorlopig) nog gelijk houden... al kunnen andere implementaties daar mss nog wel anders op inspelen
+/// Soit, een soort projector genereren die dezelfde event handlers uit de Aggregate kopieert?
+///   -> alle "locally applied events" moeten dus zowel naar Aggregate handlers als naar Projection handlers gestuurd worden
+///   -> alle "remotely received events" moeten eveneens naar beide handlers gestuurd worden...
+/// Eigenlijk ben ik nu een manier aan't vinden om automatisch een 1-op-1 command/query model projector / event handler  te bouwen
+///
+/// OKE, WAAROM bother ik nog met die COMMANDS???
+///  - op zich ga ik toch gewoon lokaal rechtstreeks de nodige methodes uitvoeren en state updaten
+///  - ik kan in principe gewoon "doXxx" uitvoeren en de resulterende events opvragen en uitsturen...
+///   -> voordeel van event handlers te hebben, is dat die op 2 manieren getriggerd kunnen worden, dus geen duplicate code!
+///   -> de "doXxx" methodes gaan gewoon invariants afchecken en event(s) apply'en die opgeslagen worden voor later reference
+///   -> maar daar hebben we nog wel steeds niet per se commands voor nodig...
+///   -> voordeel van commands is dat ... den aggregate duidelijk opgesplitst wordt?
+///
+///
+abstract class AggregateDto {
+
+  final AggregateId aggregateId;
+
+  AggregateDto(this.aggregateId);
+
+}
+
+
 /// The ID of an aggregate.
 class AggregateId {
   final String id;

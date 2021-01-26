@@ -5,6 +5,7 @@ import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
 import 'package:test/test.dart';
+import 'package:uuid/uuid.dart';
 
 import 'features/step_definitions.dart';
 
@@ -307,6 +308,10 @@ void main() {
       }).length, equals(1));
     }
 
+    /// Then no SystemEvent should be published
+    void thenNoSystemEventShouldBePublished() {
+      expect(eventStore.getSystemEvents(), isEmpty);
+    }
 
     group('Test creation and initial usage of the Scorekeeper instance', () {
 
@@ -400,6 +405,7 @@ void main() {
       group('Constructor events', () {
 
         /// Not sure how we can register the aggregateId for a remotely created aggregate... :/
+        /// TODO: we'll have to device a way to receive events from related aggregates, and then register and pull events "manually"
         test('Handle constructor event for registered, non-cached aggregateId', () async {
           givenAggregateIdRegistered(scorableId);
           await when(() => receivedRemoteEvent(
@@ -423,7 +429,14 @@ void main() {
         /// even though we'll never make use of them
         test('Handle constructor event for unregistered aggregateId', () async {
           givenAggregateIdNotRegistered(scorableId);
-          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          await when(() => receivedRemoteEvent(
+              DomainEvent.of(
+                  DomainEventId.local(0),
+                  AggregateId.of(scorableId),
+                  ScorableCreated()
+                    ..aggregateId = scorableId
+                    ..name = 'Test'))
+          );
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
           thenAggregateShouldNotBeCached(scorableId);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
@@ -432,7 +445,14 @@ void main() {
         test('Handle constructor event for registered, cached aggregateId', () async {
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
-          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          await when(() => receivedRemoteEvent(
+              DomainEvent.of(
+                  DomainEventId.local(0),
+                  AggregateId.of(scorableId),
+                  ScorableCreated()
+                    ..aggregateId = scorableId
+                    ..name = 'Test'))
+          );
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           // TODO: but the cached state is not up-to-date, our whole "given event" premise is messed up... there's no WHEN action...
@@ -440,7 +460,8 @@ void main() {
 
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
         /// an exception will be thrown
-        test('Handle constructor event for already existing registered, cached aggregateId', () async {
+        /// TODO: move to EventStore tests
+        test('Storing constructor event for already existing registered, cached aggregateId', () async {
           final eventId1 = DomainEventId.local(0);
           final eventId2 = DomainEventId.local(0);
           givenAggregateIdRegistered(scorableId);
@@ -454,6 +475,27 @@ void main() {
           } on InvalidEventException catch (exception) {
             expect(exception.event.id, equals(eventId2));
           }
+        });
+
+        /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
+        /// an exception should be thrown
+        test('Handle constructor event for already existing registered, cached aggregateId', () async {
+          final eventId1 = DomainEventId.local(0);
+          final eventId2 = DomainEventId.local(0);
+          givenAggregateIdRegistered(scorableId);
+          givenAggregateIdCached(scorableId);
+          givenScorableCreatedEvent(scorableId, 'TEST 1', eventId1);
+          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await eventually(() => thenAggregateShouldBeCached(scorableId));
+          final conflictingEvent = DomainEvent.of(
+              eventId2,
+              AggregateId.of(scorableId),
+              ScorableCreated()
+                ..aggregateId = scorableId
+                ..name = 'TEST 1');
+          await when(() => receivedRemoteEvent(conflictingEvent));
+          thenNoExceptionShouldBeThrown();
+          thenSystemEventShouldBePublished(EventNotHandled(conflictingEvent, 'Sequence invalid'));
         });
 
         // TODO: only not-yet-handled events should get handled... (so look at EventId!)
@@ -528,11 +570,6 @@ void main() {
         });
 
       });
-
-      /// Then no SystemEvent should be published
-      void thenNoSystemEventShouldBePublished() {
-        expect(eventStore.getSystemEvents(), isEmpty);
-      }
 
       // TODO: test only DomainEvents for registered aggregates should be stored
       // TODO: test caching of aggregates?
@@ -806,6 +843,52 @@ void main() {
         });
 
       });
+
+      group('Command flow and default Aggregate DTO', () {
+
+        /// When we create a new Aggregate, the Scorekeeper instance should also provide a cached Aggregate DTO.
+        /// This DTO is what clients of the Scorekeeper application can actually use to have an immediately up-to-date
+        /// instance of the related Aggregate. This way clients can update their internal state without delay.
+        /// Of course, this is only useful when the client code runs the command/event handler in the same instance,
+        /// but that's exactly what we do here...
+        test("Scorekeeper should maintain AggregateDto's that will be cached and automatically kept up-to-date", () {
+          final aggregateId = AggregateId.random();
+          // Create Scorable
+          scorekeeper.handleCommand(CreateScorable()
+            ..aggregateId = aggregateId.id
+            ..name = 'Test Scorable');
+          // Check cached DTO
+          final scorableDto = scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
+          expect(scorableDto, isNotNull);
+          expect(scorableDto.name, equals('Test Scorable'));
+          expect(scorableDto.aggregateId, equals(aggregateId));
+          expect(scorableDto.participants, isEmpty);
+          // Add Participant
+          final player1 = Participant()
+            ..name = 'Player One'
+            ..participantId = Uuid().v4();
+          scorekeeper.handleCommand(AddParticipant()
+              ..aggregateId = aggregateId.id
+              ..participant = player1
+          );
+          // Check cached DTO (no need to retrieve the instance again...
+          expect(scorableDto.participants, isNotEmpty);
+          expect(scorableDto.participants, contains(player1));
+          // Adding participants doesn't affect the DTO's list
+          final player2 = Participant()
+            ..name = 'Player Two'
+            ..participantId = Uuid().v4();
+          scorableDto.participants.add(player2);
+          expect(scorableDto.participants.length, equals(1));
+          expect(scorableDto.participants, contains(player1));
+          expect(scorableDto.participants, isNot(contains(player2)));
+          // Removing participants doesn't affect the DTO's list
+          scorableDto.participants.clear();
+          expect(scorableDto.participants.length, equals(1));
+          expect(scorableDto.participants, contains(player1));
+        });
+      });
+
       /// TODO: regular command for not yet registered aggregate should fail, OR retrieve from remote..
       /// if we don't yet have a constructor event for the aggregate, then we're pretty much fucked...
 

@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_example_domain/example.dart';
 
 import 'aggregate.dart';
 import 'event.dart';
@@ -270,8 +271,10 @@ class Scorekeeper {
   }
 
   /// Load an aggregate by id from the cache...
-  T getCachedAggregateById<T extends Aggregate>(AggregateId aggregateId) {
-    return _aggregateCache.get(aggregateId);
+  /// This is actually a DTO wrapped around a private reference to the actual aggregate,
+  /// so we are sure that any changes to the aggregate immediately reflect the DTO
+  T getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) {
+    return AggregateDtoFactory.create(_aggregateCache.get(aggregateId));
   }
 
   void refreshCache(Type aggregateType, AggregateId aggregateId) {

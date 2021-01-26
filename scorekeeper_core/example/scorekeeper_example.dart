@@ -31,10 +31,19 @@ void main() {
   scorekeeper.handleCommand(addParticipantCommand);
 
   // Retrieve (cached) aggregate
-  final scorable = scorekeeper.getCachedAggregateById<Scorable>(aggregateId);
+  final scorable = scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
+
 
   // Work with the Scorable...
   // TODO: this Scorable should be a DTO instead of the actual aggregate! no?
+  /// de gegenereerde code aanpassen...
+  /// op zich moet de scorekeeper nog wel aan de aggregate kunnen
+  /// het is de "client" van de scorekeeper die met DTO's moet werken (dus een van @handler methodes gestripte versie)
+  ///
+  /// eigenlijk is het aan die handlers om alles af te schermen!
+  ///   ->
+  ///
+  ///
   //  of alle handler methodes moeten private zijn... maar dat gaat dan weer niet omdat die scorable.g.dart een aparte file / package is
   //  tenzij ik daar ook alles in kopieer en enkel die deel... en de scorable.dart file zelf niet... (exposen via example.dart file)
   // We don't want the aggregates to leave the domain...

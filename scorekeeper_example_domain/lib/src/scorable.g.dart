@@ -5,6 +5,7 @@
 // **************************************************************************
 
 import 'package:scorekeeper_domain/core.dart';
+
 import 'scorable.dart';
 
 class ScorableCommandHandler implements CommandHandler<Scorable> {
@@ -90,3 +91,40 @@ class ScorableEventHandler implements EventHandler<Scorable> {
     }
   }
 }
+
+
+/// TODO: generate this class!!!
+abstract class AggregateDtoFactory {
+
+  static R create<R extends AggregateDto>(Aggregate aggregate) {
+    switch (aggregate.runtimeType) {
+      case Scorable:
+        final scorable = aggregate as Scorable;
+        return ScorableDto._(scorable) as R;
+      default:
+        throw Exception('Cannot create $R for ${aggregate.runtimeType}');
+    }
+  }
+
+}
+
+/// TODO: generate this class!!!
+class ScorableDto extends AggregateDto {
+
+  final Scorable _scorable;
+
+  /// Protected constructor so outside packages cannot instantiate DTO's,
+  /// this will always need to go through the AggregateDtoFactory
+  ScorableDto._(this._scorable) : super(_scorable.aggregateId);
+
+  String get name => _scorable.name;
+
+  List<Participant> get participants => List.from(_scorable.participants);
+
+  @override
+  String toString() {
+    return _scorable.toString();
+  }
+
+}
+

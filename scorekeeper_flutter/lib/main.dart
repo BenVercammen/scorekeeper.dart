@@ -64,13 +64,13 @@ class ScorekeeperService {
   ScorekeeperService(this._scorekeeper);
 
   /// Add a new Scorable
-  Scorable createNewScorable(String scorableName) {
+  ScorableDto createNewScorable(String scorableName) {
     final aggregateId = AggregateId.random();
     final command = CreateScorable()
       ..aggregateId = aggregateId.id
       ..name = 'New Scorable';
     _scorekeeper.handleCommand(command);
-    return _scorekeeper.getCachedAggregateById<Scorable>(aggregateId);
+    return _scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
   }
 
   /// Add a newly created Participant to the Scorable
@@ -104,7 +104,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
 
   final ScorekeeperService _scorekeeperService;
 
-  final Map<AggregateId, Scorable> scorables = HashMap();
+  final Map<AggregateId, ScorableDto> scorables = HashMap();
 
   _ScorableOverviewPageState(this._scorekeeperService);
 

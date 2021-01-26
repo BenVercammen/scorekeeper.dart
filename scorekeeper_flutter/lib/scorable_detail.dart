@@ -6,7 +6,7 @@ import 'main.dart';
 
 class ScorableDetailPage extends StatefulWidget {
 
-  final Scorable scorable;
+  final ScorableDto scorable;
 
   final ScorekeeperService scorekeeperService;
 
@@ -21,7 +21,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
 
   final ScorekeeperService scorekeeperService;
 
-  final Scorable scorable;
+  final ScorableDto scorable;
 
   _ScorableDetailPageState(this.scorekeeperService, this.scorable);
 
