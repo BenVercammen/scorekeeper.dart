@@ -2,4 +2,5 @@
 library scorekeeper_example_domain;
 
 export 'src/scorable.dart';
-export 'src/scorable.g.dart';
+export 'src/scorable.f.dart';
+export 'src/scorable.h.dart';

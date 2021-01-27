@@ -1,0 +1,4 @@
+analyzer:
+  exclude:
+    - test/ogurets_run.dart
+    - test/.test_coverage.dart

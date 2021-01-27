@@ -1,9 +1,13 @@
 ---
 # Read about `build.yaml` at https://pub.dev/packages/build_config
+# TODO: this should/can be overridden depending on your domain??
 targets:
   $default:
     builders:
       handler_generator:
+        generate_for:
+          - lib/src/scorable.dart
+      aggregate_dto_factory_generator:
         generate_for:
           - lib/src/scorable.dart
 
@@ -11,7 +15,12 @@ builders:
   handler_generator:
     import: "package:scorekeeper_codegen/generator.dart"
     builder_factories: ["handlerGenerator"]
-    build_extensions: {".dart": [".handlers.g.part"]}
+    build_extensions: {".dart": [".h.dart"]}
     auto_apply: dependents
     build_to: source
-    # applies_builders: ["source_gen|combining_builder"]
+  aggregate_dto_factory_generator:
+    import: "package:scorekeeper_codegen/generator.dart"
+    builder_factories: ["aggregateDtoFactoryGenerator"]
+    build_extensions: {".dart": [".f.dart"]}
+    auto_apply: dependents
+    build_to: source

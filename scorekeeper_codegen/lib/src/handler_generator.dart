@@ -6,17 +6,14 @@ import 'package:dart_style/dart_style.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:source_gen/source_gen.dart' as src;
 
-
 /// Supports `package:build_runner` creation and configuration of
 /// `json_serializable`.
 ///
 /// Not meant to be invoked by hand-authored code.
 Builder handlerGenerator(BuilderOptions options) {
   return src.LibraryBuilder(
-    CommandEventHandlerGenerator()
-    ,
-    // 'json_serializable',
-    // formatOutput: true,
+      CommandEventHandlerGenerator(),
+      generatedExtension: '.h.dart'
   );
 }
 
@@ -87,7 +84,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     builder.requiredParameters.add(param2.build());
     final code = StringBuffer()
       ..write('switch (command.runtimeType) {');
-    for (var handlerMethod in commandHandlerMethods) {
+    for (final handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
       code.write('\ncase ${commandType.element.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${commandType.element.name});\nreturn;');
     }
