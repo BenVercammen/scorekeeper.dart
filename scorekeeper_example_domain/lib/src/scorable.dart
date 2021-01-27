@@ -58,7 +58,7 @@ class Scorable extends Aggregate {
 
   @eventHandler
   void handleParticipantRemoved(ParticipantRemoved event) {
-    // TODO: evt op id ipv object... (equals)
+    // TODO: evt op id ipv object... (equals moet in dit geval in Participant juist geimplementeerd zijn!)
     participants.remove(event.participant);
   }
 

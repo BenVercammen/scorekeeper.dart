@@ -63,8 +63,6 @@ class Scorekeeper {
 
     // Listen to the RemoteEventListener's event stream
     _remoteEventListener?.domainEventStream?.listen((DomainEvent event) {
-      // TODO: in case it cannot be stored, we can't apply the event locally!!
-      // TODO: what if it can be stored, but not applied???
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
       if (_registeredAggregates.containsKey(event.aggregateId)) {
         try {

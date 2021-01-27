@@ -400,6 +400,11 @@ void main() {
     /// Events should raise some sort of ExceptionEvent in case something went wrong
     /// Event handling should never (or very rarely) result in actual exceptions
     /// TODO: So we'll have some sort of EventHandlingException log??
+    ///
+    /// - TODO: Scenario: Remote event cannot be stored for whatever reason -> event should NOT be applied locally
+    /// - TODO: Scenario: Remote event can be stored, but not applied: ... REMOVE event from repository?? (store + state should be in sync)
+    /// If an event cannot be stored or applied: store it in a separate repository???
+    ///
     group('Event handling', () {
 
       group('Constructor events', () {
