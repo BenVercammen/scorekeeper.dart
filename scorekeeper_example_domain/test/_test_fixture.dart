@@ -4,6 +4,11 @@ import 'dart:collection';
 import 'package:scorekeeper_domain/core.dart';
 
 /// Class that will run the tests in a minimal setup so that commands and events are applied to a single Aggregate instance
+///
+/// TODO: currently we still need to generate the handler class every time we change our code...
+///       it would be better if this TestFixture could dynamically determine the right handlers...
+///       that would require some sort of "DynamicReflectionEventHandlerForAggregate" typed instance
+///       let's see if we can dig up our old reflection code somewhere...
 class TestFixture<T extends Aggregate> {
   final CommandHandler<T> commandHandler;
 

@@ -28,6 +28,12 @@ class ScorableCommandHandler implements CommandHandler<Scorable> {
       case RemoveParticipant:
         scorable.removeParticipant(command as RemoveParticipant);
         return;
+      case AddRound:
+        scorable.addRound(command as AddRound);
+        return;
+      case StrikeOutParticipant:
+        scorable.strikeOutParticipant(command as StrikeOutParticipant);
+        return;
       default:
         throw Exception('Unsupported command ${command.runtimeType}.');
     }
@@ -44,6 +50,8 @@ class ScorableCommandHandler implements CommandHandler<Scorable> {
       case CreateScorable:
       case AddParticipant:
       case RemoveParticipant:
+      case AddRound:
+      case StrikeOutParticipant:
         return true;
       default:
         return false;
@@ -63,6 +71,12 @@ class ScorableEventHandler implements EventHandler<Scorable> {
         return;
       case ParticipantRemoved:
         scorable.handleParticipantRemoved(event.payload as ParticipantRemoved);
+        return;
+      case RoundAdded:
+        scorable.roundAdded(event.payload as RoundAdded);
+        return;
+      case ParticipantStrikedOut:
+        scorable.participantStrikedOut(event.payload as ParticipantStrikedOut);
         return;
       default:
         throw Exception('Unsupported event ${event.payload.runtimeType}.');
@@ -85,6 +99,8 @@ class ScorableEventHandler implements EventHandler<Scorable> {
       case ScorableCreated:
       case ParticipantAdded:
       case ParticipantRemoved:
+      case RoundAdded:
+      case ParticipantStrikedOut:
         return true;
       default:
         return false;

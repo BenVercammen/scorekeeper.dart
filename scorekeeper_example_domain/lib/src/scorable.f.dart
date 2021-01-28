@@ -32,4 +32,8 @@ class ScorableDto extends AggregateDto {
   List get participants {
     return _scorable.participants;
   }
+
+  Map get rounds {
+    return _scorable.rounds;
+  }
 }

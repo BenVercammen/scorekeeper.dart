@@ -9,6 +9,8 @@ class Scorable extends Aggregate {
 
   final List<Participant> participants = List.empty(growable: true);
 
+  final Map<int, Round> rounds = Map();
+
   Scorable.aggregateId(AggregateId aggregateId) : super(aggregateId);
 
   @commandHandler
@@ -46,6 +48,24 @@ class Scorable extends Aggregate {
     apply(event);
   }
 
+  @commandHandler
+  void addRound(AddRound command) {
+    final event = RoundAdded()
+      ..aggregateId = command.aggregateId
+      ..roundIndex = rounds.length;
+    apply(event);
+  }
+
+  @commandHandler
+  void strikeOutParticipant(StrikeOutParticipant command) {
+    // TODO: check if participant wasn't already striked out... or roundindex is correct, or ...
+    final event = ParticipantStrikedOut()
+        ..aggregateId = command.aggregateId
+        ..roundIndex = command.roundIndex
+        ..participant = command.participant;
+    apply(event);
+  }
+
   @eventHandler
   void handleScorableCreated(ScorableCreated event) {
     name = event.name;
@@ -60,6 +80,18 @@ class Scorable extends Aggregate {
   void handleParticipantRemoved(ParticipantRemoved event) {
     // TODO: evt op id ipv object... (equals moet in dit geval in Participant juist geimplementeerd zijn!)
     participants.remove(event.participant);
+  }
+
+  @eventHandler
+  void roundAdded(RoundAdded event) {
+    final round = Round(event.roundIndex);
+    rounds.putIfAbsent(round.roundIndex, () => round);
+  }
+
+  @eventHandler
+  void participantStrikedOut(ParticipantStrikedOut event) {
+    final round = rounds[event.roundIndex];
+    round.strikeOutParticipant(event.participant);
   }
 
   @override
@@ -102,67 +134,110 @@ class Scorable extends Aggregate {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/// COMMANDS///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /// Command to create a new Scorable
 class CreateScorable {
-
   String aggregateId;
-
   String name;
+}
 
+/// Add an extra Round to the Scorable
+class AddRound {
+  String aggregateId;
 }
 
 /// Command to add a Participant to a Scorable
+/// TODO: moet ik in die commands en events ook niet meegeven voor welk type aggregate die gelden?
+/// alleszins expliciet maken dat het aan een Scorable toegevoegd wordt? desnoods in naamgeving?
 class AddParticipant {
-
-  /// TODO: moet ik in die commands en events ook niet meegeven voor welk type aggregate die gelden?
-  /// alleszins expliciet maken dat het aan een Scorable toegevoegd wordt? desnoods in naamgeving?
-
   String aggregateId;
-
   Participant participant;
-
 }
 
 class RemoveParticipant {
-
   String aggregateId;
-
   /// Note that we use a full participant object, and not just the ID.
   /// This way we might get some extra details about the user's state
   /// at the time of removal. This could be used in the command handler to
   /// determine whether or not the participant is actually allowed to be removed.
   Participant participant;
-
 }
+
+class StartScorable {
+  String aggregateId;
+}
+
+class FinishScorable {
+  String aggregateId;
+}
+
+/// When a participant strikes out, he/she will receive a fixed number of points depending
+/// on the order in which he was striked out.
+class StrikeOutParticipant {
+  String aggregateId;
+  Participant participant;
+  int roundIndex;
+}
+
+class UndoParticipantStrikeOut {
+  String aggregateId;
+  String participantId;
+  int roundIndex;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Event for a newly created Scorable
 class ScorableCreated {
-
   String aggregateId;
-
   String name;
-
 }
 
 /// Event for a newly added Participant
 class ParticipantAdded {
-
   String aggregateId;
-
   Participant participant;
-
 }
 
 /// Event for a removed Participant
 class ParticipantRemoved {
-
   String aggregateId;
-
   Participant participant;
-
 }
 
+class ParticipantStrikedOut {
+  String aggregateId;
+  Participant participant;
+  int roundIndex;
+}
+
+class ParticipantStrikeOutUndone {
+  String aggregateId;
+  String participantId;
+  int roundIndex;
+}
+
+class RoundAdded {
+  String aggregateId;
+  int roundIndex;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/// VALUE OBJECTS /////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /// Value object used within the Scorable aggregate
+/// TODO: are we allowed to pass these along? We'll probably have to de-dupe this usage...
+///  We now use Participant for 2 purposes:
+///   - for working with inside the internal state of the aggregate
+///   - for passing along in commands & events
 class Participant {
 
   String participantId;
@@ -176,3 +251,19 @@ class Participant {
 
 }
 
+/// Round as used within the Scorable
+class Round {
+  final int roundIndex;
+
+  final Map<int, Participant> strikeOutOrder = Map();
+
+  Round(this.roundIndex);
+
+  void strikeOutParticipant(Participant participant) {
+    strikeOutOrder[strikeOutOrder.length] = participant;
+  }
+
+  void _undoStrikeOutParticipant(Participant participant) {
+    strikeOutOrder.removeWhere((strikeOutIndex, strikedOutParticipant) => strikedOutParticipant == participant);
+  }
+}
