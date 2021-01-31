@@ -2,6 +2,17 @@
 import 'package:scorekeeper_domain/core.dart';
 
 /// The (root) aggregate of our domain
+/// TODO: Is it possible to "subclass" this aggregate? Should we try to do so?
+///  Idea:
+///   - Scorable
+///     - Muurke Klop N-Down
+///     - Muurke Klop 3-strikes-out
+///     OR
+///     - Muurke Klop
+///       - N-down
+///       - 3-strikes-out
+///        => both have same commands and events, but differ in scoring, in starting order, in number of rounds, ...
+///
 @aggregate
 class Scorable extends Aggregate {
 

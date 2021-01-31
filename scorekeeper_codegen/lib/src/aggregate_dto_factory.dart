@@ -60,11 +60,16 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
 
     // All fields have to be converted to getters that will proxy the calls to the private aggregate instance
     for (var field in aggregate.fields) {
+      var body = Code('return $aggregateFieldName.${field.name};');
+      // TODO: TEST!!! lists should become immutable copy...
+      if (field.type.element.name == 'List') {
+        body = Code('return List.of($aggregateFieldName.${field.name}, growable: false);');
+      }
       final builder = MethodBuilder()
         ..name = field.name
         ..type = MethodType.getter
         ..returns = Reference(field.type.element.name)
-        ..body = Code('return $aggregateFieldName.${field.name};')
+        ..body = body
       ;
       aggregateDtoBuilder.methods.add(builder.build());
     }

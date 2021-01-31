@@ -879,18 +879,24 @@ void main() {
           // Check cached DTO (no need to retrieve the instance again...
           expect(scorableDto.participants, isNotEmpty);
           expect(scorableDto.participants, contains(player1));
-          // Adding participants doesn't affect the DTO's list
+          // Adding participants shouldn't be possible
           final player2 = Participant()
             ..name = 'Player Two'
             ..participantId = Uuid().v4();
-          scorableDto.participants.add(player2);
+          try {
+            scorableDto.participants.add(player2);
+          } on Error catch (error) {
+            expect(error.toString(), contains('Cannot add to a fixed-length list'));
+          }
+          // Removing participants shouldn't be possible
+          try {
+            scorableDto.participants.clear();
+          } on Error catch (error) {
+            expect(error.toString(), contains('Cannot clear a fixed-length list'));
+          }
           expect(scorableDto.participants.length, equals(1));
           expect(scorableDto.participants, contains(player1));
           expect(scorableDto.participants, isNot(contains(player2)));
-          // Removing participants doesn't affect the DTO's list
-          scorableDto.participants.clear();
-          expect(scorableDto.participants.length, equals(1));
-          expect(scorableDto.participants, contains(player1));
         });
       });
 
