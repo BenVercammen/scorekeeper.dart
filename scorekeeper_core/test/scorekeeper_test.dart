@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:logger/logger.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
@@ -17,12 +18,18 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
 
   final Map<AggregateId, Set<DomainEvent>> _handledEvents = HashMap();
 
+  Function(Aggregate aggregate, DomainEvent domainEvent) _handlerInterceptor = null;
+
   _EventHandlerCountWrapper(this._eventHandler);
 
   @override
   void handle(Aggregate aggregate, DomainEvent event) {
     _handledEvents.putIfAbsent(aggregate.aggregateId, () => <DomainEvent>{});
-    _eventHandler.handle(aggregate, event);
+    if (null == _handlerInterceptor) {
+      _eventHandler.handle(aggregate, event);
+    } else {
+      _handlerInterceptor(aggregate, event);
+    }
     _handledEvents[aggregate.aggregateId].add(event);
   }
 
@@ -46,6 +53,58 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
       return 0;
     }
     return _handledEvents[aggregateId].where((event) => event.payload.runtimeType == eventType).toSet().length;
+  }
+
+  void addHandlerInterceptor(Function(Aggregate aggregate, DomainEvent event) interceptor) {
+    this._handlerInterceptor = interceptor;
+  }
+
+}
+
+class _CommandHandlerWrapper<T extends CommandHandler> implements CommandHandler {
+
+  final T _commandHandler;
+
+  Function(String beforeAfter, Aggregate aggregate, dynamic command) _handlerInterceptor = null;
+
+  _CommandHandlerWrapper(this._commandHandler);
+
+  @override
+  void handle(Aggregate aggregate, command) {
+    if (null != _handlerInterceptor) {
+      _handlerInterceptor("BEFORE", aggregate, command);
+    }
+    _commandHandler.handle(aggregate, command);
+    if (null != _handlerInterceptor) {
+      _handlerInterceptor("AFTER", aggregate, command);
+    }
+  }
+
+  @override
+  Aggregate handleConstructorCommand(command) {
+    var aggregate = _commandHandler.handleConstructorCommand(command);
+    return aggregate;
+  }
+
+  @override
+  bool handles(command) {
+    return _commandHandler.handles(command);
+  }
+
+  @override
+  bool isConstructorCommand(command) {
+    return _commandHandler.isConstructorCommand(command);
+  }
+
+  @override
+  Aggregate newInstance(AggregateId aggregateId) {
+    return _commandHandler.newInstance(aggregateId);
+  }
+
+  /// Extra callback method to be called before actually handling the method.
+  /// This allows us to add some "magic" to the command handlers which might be useful for testing.
+  void addHandlerInterceptor(void Function(String beforeAfter, Aggregate aggregate, dynamic command) interceptor) {
+    _handlerInterceptor = interceptor;
   }
 
 }
@@ -85,7 +144,7 @@ void main() {
 
     MockRemoteEventListener remoteEventListener;
 
-    CommandHandler commandHandler;
+    _CommandHandlerWrapper<ScorableCommandHandler> commandHandler;
 
     _EventHandlerCountWrapper<ScorableEventHandler> eventHandler;
 
@@ -95,7 +154,7 @@ void main() {
       remoteEventPublisher = MockRemoteEventPublisher();
       remoteEventListener = MockRemoteEventListener();
       aggregateCache = AggregateCacheInMemoryImpl();
-      commandHandler = ScorableCommandHandler();
+      commandHandler = _CommandHandlerWrapper<ScorableCommandHandler>(ScorableCommandHandler());
       eventHandler = _EventHandlerCountWrapper<ScorableEventHandler>(ScorableEventHandler());
       scorekeeper = Scorekeeper(
           eventStore: eventStore,
@@ -121,7 +180,7 @@ void main() {
 
     /// Given the aggregate with Id should be cached by the Scorekeeper
     void givenAggregateIdCached(String aggregateId) {
-      scorekeeper.addAggregateToCache(AggregateId.of(aggregateId), Scorable);
+      scorekeeper.loadAndAddAggregateToCache(AggregateId.of(aggregateId), Scorable);
     }
 
     /// Given the aggregate with Id is not cached by the Scorekeeper
@@ -173,6 +232,17 @@ void main() {
       try {
         _lastThrownWhenException = null;
         await callback();
+      } on Exception catch (exception) {
+        _lastThrownWhenException = exception;
+      }
+    }
+
+    /// Asynchronously run 2 callbacks without waiting on the results...
+    Future<void> whenSimultaneously(Function() callback1, Function() callback2) async {
+      try {
+        _lastThrownWhenException = null;
+        callback1();
+        callback2();
       } on Exception catch (exception) {
         _lastThrownWhenException = exception;
       }
@@ -270,6 +340,12 @@ void main() {
         return publishedEvent.aggregateId.id == aggregateId;
       });
       expect(matches, isEmpty);
+    }
+
+    /// Check the last thrown exception
+    void thenAssertException(Function(Exception exception) assertionCallback) {
+      expect(_lastThrownWhenException, isNotNull);
+      assertionCallback(_lastThrownWhenException);
     }
 
     /// Then the given Exception should have been thrown
@@ -909,6 +985,131 @@ void main() {
       ///       -> als er niemand het command afhandelt, moet de issue'er van het command dit weten!
 
       /// TODO: wat met de flow waarin command handler met een lege aggregate achterblijft?
+
+    });
+
+    group('Potential conflicts', () {
+
+      /// We handle our commands synchronously.
+      /// When we receive an external event at the same time,
+      /// the command will first be handled, the relevant event will be logged,
+      /// and in the end, the remote event will be rejected because of invalid sequences
+      test('Receiving external event while handling command', () async {
+        givenAggregateIdRegistered(scorableId);
+        givenAggregateIdCached(scorableId);
+        givenScorableCreatedEvent(scorableId, 'Test Scorable');
+        givenCacheIsUpToDate(scorableId);
+        thenAssertCachedState(scorableId, (Scorable scorable) => expect(scorable.name, equals('Test Scorable')));
+        // Make sure handling commands takes a while
+        commandHandler.addHandlerInterceptor((beforeAfter, aggregate, command) async {
+          if (command is AddParticipant && command.participant.name == 'Player One' && beforeAfter == 'BEFORE') {
+            sleep(Duration(milliseconds: 10));
+            return new Future.delayed(const Duration(milliseconds: 10), () => null);
+          }
+        });
+        // Set up the (conflicting) remote event
+        final participant = Participant()
+          ..participantId = Uuid().v4()
+          ..name = 'Player Two';
+        final remoteDomainEvent = DomainEvent.of(
+            DomainEventId.local(2),
+            AggregateId.of(scorableId),
+            ParticipantAdded()
+              ..aggregateId = scorableId
+              ..participant = participant
+        );
+        // Let's presume adding participant One takes a while...
+        await whenSimultaneously(
+          // First action: the command
+          () => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'),
+          // Second action: the remote event
+          () => receivedRemoteEvent(remoteDomainEvent),
+        );
+        // Because our (currenty) synchronous behaviour, the command will be handled without interrupting for the remote event
+        // meaning the remote event will become stale...
+
+        await Future.delayed(const Duration(milliseconds: 1000));
+        await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
+        await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1));
+        await eventually(() => thenSystemEventShouldBePublished(EventNotHandled(remoteDomainEvent, 'Sequence invalid')));
+        thenAggregateShouldBeCached(scorableId);
+        // Check if Participant is actually added
+        thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
+          expect(scorable.participants, isNotNull);
+          expect(scorable.participants.length, equals(1));
+          expect(scorable.participants[0].name, equals('Player One'));
+        });
+      });
+
+      /// This case should actually not be possible on the local client,
+      /// but it could be possible if we provide a REST client or something that multiple clients can send commands to.
+      test('Handling command while receiving another command', () async {
+        // TODO: implement!
+      });
+
+      /// ATOMICITY
+      /// When the handling of a command results in an exception while handling the resulting events
+      /// Then the events should not be stored or emitted, and the actual command handling should fail.
+      ///
+      /// Note that we invest heavily in synchronous command handling,
+      /// in an attempt to keep write consistency as high as possible.
+      /// If we would allow asynchronous command handling, multiple commands for the same Aggregate could compete
+      /// and possibly conflict with each other.
+      test('Exception while handling domain event', () async {
+        givenAggregateIdRegistered(scorableId);
+        givenAggregateIdCached(scorableId);
+        givenScorableCreatedEvent(scorableId, 'Test Scorable');
+        givenCacheIsUpToDate(scorableId);
+        // Make sure that the handling of the command results in multiple events,
+        // because ALL previously applied events should be undone as well.
+        commandHandler.addHandlerInterceptor((beforeAfter, aggregate, command) {
+          if ('BEFORE' == beforeAfter && command is AddParticipant) {
+            final participant = Participant()..name = 'Player Two';
+            aggregate.apply(ParticipantAdded()..participant = participant);
+          }
+        });
+        // Make sure handling of the applied events of the commands throws an exception
+        var mockException = Exception('Some random exception thrown in the event handler');
+        eventHandler.addHandlerInterceptor((aggregate, event) {
+          if (event.payload is ParticipantAdded && event.payload.participant.name == 'Player One') {
+            throw mockException;
+          }
+        });
+        when(() => addParticipantCommand(scorableId, 'PARTICIPANT_ID', 'Player One'));
+        await eventually(() => thenExceptionShouldBeThrown(mockException));
+        // The first event should be handled (add Player Two), but it should not be stored because of failure adding Player One
+        thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1);
+        thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 0);
+        thenNoSystemEventShouldBePublished();
+        // Participant cannot be added
+        thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
+          expect(scorable.participants, isNotNull);
+          expect(scorable.participants.length, equals(0));
+        });
+      });
+
+      /// ATOMICITY
+      /// When one or more locally created events cannot be stored (after handling the command),
+      /// then command handler should fail and none of the related events should be stored
+      test('Exception while storing locally emitted domain event', () async {
+        // TODO: implement!
+      });
+
+      /// CONSISTENCY? ATOMICITY?
+      /// When we receive a domain event from a remote source,
+      /// and it cannot be stored for some reason
+      /// we should raise an exception.
+      /// This way the event broker can possibly detect the failure and retry.
+      ///
+      /// TODO: what if we fail to do so multiple times in a row? Because of invalid sequence!!??
+      test('Exception while storing remotely received domain event', () async {
+        // TODO: implement!
+      });
+
+      /// TODO: mss commands bijhouden totdat remote storage oke is?
+      /// als mechanisme om events automatisch te reconciliaten?
+      /// eerst naar remote state forwarden, als command dan geldig is, mogen die events applied worden?
+      /// indien command geweigerd wordt, effectief conflict gooien?
 
     });
 

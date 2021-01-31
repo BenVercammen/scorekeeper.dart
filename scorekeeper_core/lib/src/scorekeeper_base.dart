@@ -63,6 +63,7 @@ class Scorekeeper {
 
     // Listen to the RemoteEventListener's event stream
     _remoteEventListener?.domainEventStream?.listen((DomainEvent event) {
+      _logger.d('Received remote event');
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
       if (_registeredAggregates.containsKey(event.aggregateId)) {
         try {
@@ -71,16 +72,15 @@ class Scorekeeper {
             if (_aggregateCache.contains(event.aggregateId)) {
               _handleEvent(event);
             }
+          } else {
+            _logger.w('ignored event because it could not be stored...');
           }
         } on Exception catch (exception) {
+          _logger.w(exception);
           _eventStore.storeSystemEvent(EventNotHandled(event, exception.toString()));
         }
       }
     });
-    // _eventManager.systemEventStream.listen((SystemEvent event) {
-    //   // TODO: handle system events properly...
-    //   _logger.w('System Event received: $event');
-    // });
   }
 
   /// Register the given event handler
@@ -120,19 +120,82 @@ class Scorekeeper {
 
   /// Handle the given command using the wired (generated) CommandHandler
   void handleCommand(dynamic command) {
-    try {
-      // ignore: unnecessary_statements
-      command.aggregateId;
-    // ignore: avoid_catching_errors
-    } on NoSuchMethodError {
-      throw InvalidCommandException(command);
+    _validateCommand(command);
+    final aggregate = _handleCommand(command);
+    // Make sure the aggregate is now registered and cached.
+    // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
+    _cacheAndRegisterAggregate(aggregate);
+    // De appliedEvents nog effectief handlen
+    _handleEventsAppliedByCommand(aggregate);
+  }
+
+  /// Load an aggregate by id from the cache...
+  /// This is actually a DTO wrapped around a private reference to the actual aggregate,
+  /// so we are sure that any changes to the aggregate immediately reflect the DTO
+  T getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) {
+    return AggregateDtoFactory.create(_aggregateCache.get(aggregateId));
+  }
+
+  void evictAggregateFromCache(AggregateId aggregateId) {
+    _aggregateCache.purge(aggregateId);
+  }
+
+  /// Enable caching for a given aggregate
+  void loadAndAddAggregateToCache(AggregateId aggregateId, Type aggregateType) {
+    if (!_aggregateCache.contains(aggregateId)) {
+      final aggregate = _loadHydratedAggregate(aggregateType, aggregateId);
+      _aggregateCache.store(aggregate);
     }
-    if (command.aggregateId == null) {
-      throw InvalidCommandException(command);
+  }
+
+  bool isRegistered(AggregateId aggregateId) {
+    return _registeredAggregates.containsKey(aggregateId);
+  }
+
+  void refreshCache(Type aggregateType, AggregateId aggregateId) {
+    _aggregateCache.store(_loadHydratedAggregate(aggregateType, aggregateId));
+  }
+
+  /// All events that have been applied by the command handler, should be handled and published remotely
+  void _handleEventsAppliedByCommand(Aggregate aggregate) {
+    final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
+    final appliedDomainEvents = <DomainEvent>{};
+    for (var event in aggregate.appliedEvents) {
+      final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
+      final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
+      _logger.d('Handling event triggered by command: $domainEvent');
+      try {
+        eventHandler.handle(aggregate, domainEvent);
+        appliedDomainEvents.add(domainEvent);
+      } on Exception catch (exception) {
+        // In case something should go wrong, we'll need to roll back everything!
+        // This means any previously applied events as well
+        // We need this because of "atomicity"!
+        // We cannot have a command of which only half its applied events are actually handled and stored
+        // So we'll just invalidate the cached aggregate, the events are stored after all events have been applied successfully
+        aggregate = _loadHydratedAggregate(aggregate.runtimeType, aggregate.aggregateId);
+        throw exception;
+      }
     }
+    // Actually store the events now that we know they've all been applied properly
+    for (var domainEvent in appliedDomainEvents) {
+      try {
+        _eventStore.storeDomainEvent(domainEvent);
+        _remoteEventPublisher.publishDomainEvent(domainEvent);
+      } on Exception catch(exception) {
+        // TODO: testen + afhandelen!
+        _logger.e(exception);
+      }
+    }
+    aggregate.appliedEvents.clear();
+  }
+
+  /// Call the correct command handler for the given command,
+  /// and return the relevant aggregate.
+  Aggregate _handleCommand(dynamic command) {
+    AggregateId aggregateId = _extractAggregateId(command);
     // The aggregate on which the command should be applied.
     // We'll use the registered command handler(s) to create a new Aggregate instances based on the given command
-    final aggregateId = AggregateId.of(command.aggregateId as String);
     Aggregate aggregate;
     final commandHandler = _getCommandHandlerFor(command);
     if (commandHandler.isConstructorCommand(command)) {
@@ -144,7 +207,6 @@ class Scorekeeper {
         throw AggregateIdAlreadyExistsException(aggregateId);
       }
       aggregate = commandHandler.handleConstructorCommand(command);
-      _aggregateCache.store(aggregate);
     } else {
       if (_aggregateCache.contains(aggregateId)) {
         aggregate = _aggregateCache.get(aggregateId);
@@ -154,40 +216,41 @@ class Scorekeeper {
         _eventStore.getEventsForAggregate(aggregateId).forEach((event) {
           aggregate.apply(event.payload);
         });
-        _aggregateCache.store(aggregate);
       }
       commandHandler.handle(aggregate, command);
     }
-    // Make sure the aggregate is now registered and cached.
-    // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
+    return aggregate;
+  }
+
+  /// Make sure the aggregate is properly cached and registered.
+  /// We do this because aggregates for which we're handling commands are pretty likely to be "commanded" again.
+  void _cacheAndRegisterAggregate(Aggregate aggregate) {
     if (null == aggregate) {
-      _logger.e('Aggregate not loaded, but this should never happen... (here be nullpointers)');
+      throw Exception('Aggregate not loaded, but this should never happen... (here be nullpointers)');
     }
-    registerAggregate(aggregateId, aggregate.runtimeType);
-    addAggregateToCache(aggregateId, aggregate.runtimeType);
-    // De appliedEvents nog effectief handlen
-    final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
-    for (var event in aggregate.appliedEvents) {
-      final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
-      final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
-      _logger.d('Handling event triggerd by command: $domainEvent');
-      try {
-        eventHandler.handle(aggregate, domainEvent);
-      } on Exception catch(exception) {
-        // TODO: testen en afhandelen!
-        _logger.e(exception);
-      }
-      try {
-        _eventStore.storeDomainEvent(domainEvent);
-        _remoteEventPublisher.publishDomainEvent(domainEvent);
-      } on Exception catch(exception) {
-        // TODO: testen + afhandelen!
-        _logger.e(exception);
-      }
+    _aggregateCache.store(aggregate);
+    registerAggregate(aggregate.aggregateId, aggregate.runtimeType);
+    loadAndAddAggregateToCache(aggregate.aggregateId, aggregate.runtimeType);
+  }
+
+  /// Basic command validation
+  /// Make sure the aggregateId is available.
+  void _validateCommand(command) {
+    try {
+      // ignore: unnecessary_statements
+      command.aggregateId;
+      // ignore: avoid_catching_errors
+    } on NoSuchMethodError {
+      throw InvalidCommandException(command);
     }
-    aggregate.appliedEvents.clear();
-    // And make sure the aggregate is registered. If this instance is handling commands, it's best that the aggregate is cached
-    _eventStore.registerAggregateId(aggregateId);
+    if (command.aggregateId == null) {
+      throw InvalidCommandException(command);
+    }
+  }
+
+  AggregateId _extractAggregateId(command) {
+    final aggregateId = AggregateId.of(command.aggregateId as String);
+    return aggregateId;
   }
 
   int _getNextSequenceValueForAggregateEvent(Aggregate aggregate) {
@@ -219,35 +282,21 @@ class Scorekeeper {
     }
     // Load the matching event handler and apply the event!
     final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
-    _logger.d('Handling event triggerd by eventmanager (local) stream: $domainEvent');
+    _logger.d('Handling event triggered by eventmanager (local) stream: $domainEvent');
     eventHandler.handle(aggregate, domainEvent);
   }
 
+  /// Loads a fully (re)hydrated aggregate based on all currently stored events
   T _loadHydratedAggregate<T extends Aggregate>(Type runtimeType, AggregateId aggregateId) {
     final eventHandler = _getDomainEventHandlerFor(runtimeType);
     // Nieuwe instance maken
     final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
     _eventStore.getEventsForAggregate(aggregateId).forEach((DomainEvent domainEvent) {
-      _logger.d('Handling event triggerd by hydration: $domainEvent');
+      _logger.d('Handling event triggered by hydration: $domainEvent');
       eventHandler.handle(aggregate, domainEvent);
     });
     return aggregate as T;
-  }
-
-  void evictAggregateFromCache(AggregateId aggregateId) {
-    _aggregateCache.purge(aggregateId);
-  }
-
-  void addAggregateToCache(AggregateId aggregateId, Type aggregateType) {
-    if (!_aggregateCache.contains(aggregateId)) {
-      final aggregate = _loadHydratedAggregate(aggregateType, aggregateId);
-      _aggregateCache.store(aggregate);
-    }
-  }
-
-  bool isRegistered(AggregateId aggregateId) {
-    return _registeredAggregates.containsKey(aggregateId);
   }
 
   CommandHandler<Aggregate> _getCommandHandlerFor(dynamic command) {
@@ -266,17 +315,6 @@ class Scorekeeper {
   /// we'll have to make use of IntegrationEvents...
   EventHandler _getDomainEventHandlerFor(Type runtimeType) {
     return _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType)).first;
-  }
-
-  /// Load an aggregate by id from the cache...
-  /// This is actually a DTO wrapped around a private reference to the actual aggregate,
-  /// so we are sure that any changes to the aggregate immediately reflect the DTO
-  T getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) {
-    return AggregateDtoFactory.create(_aggregateCache.get(aggregateId));
-  }
-
-  void refreshCache(Type aggregateType, AggregateId aggregateId) {
-    _aggregateCache.store(_loadHydratedAggregate(aggregateType, aggregateId));
   }
 
 }
