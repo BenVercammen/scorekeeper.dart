@@ -55,7 +55,7 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     final constructorBuilder = ConstructorBuilder()
       ..name = '_'
       ..requiredParameters.add(aggregateParam.build())
-      ..initializers.add(const Code('super(_scorable.aggregateId)'));
+      ..initializers.add(Code('super($aggregateFieldName.aggregateId)'));
     aggregateDtoBuilder.constructors.add(constructorBuilder.build());
 
     // All fields have to be converted to getters that will proxy the calls to the private aggregate instance

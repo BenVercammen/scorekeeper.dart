@@ -23,18 +23,23 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
   @override
   String generateForAnnotatedElement(Element element, src.ConstantReader annotation, BuildStep buildStep) {
     final aggregateName = element.name;
-
     if (element is! ClassElement) {
       throw src.InvalidGenerationSourceError(
         '`@aggregate` can only be used on classes.',
         element: element,
       );
     }
-
+    // Collect input for the handler methods
     final aggregate = element as ClassElement;
     final constructor = _getCommandHandlerConstructor(aggregate);
     final commandHandlerMethods = _getHandlerMethods('commandHandler', aggregate);
     final eventHandlerMethods = _getHandlerMethods('eventHandler', aggregate);
+
+    // Keep track of the imported libraries
+    final importedLibraries = <String>{}
+      ..add('package:scorekeeper_domain/core.dart')
+      ..addAll(_getRelevantImports([aggregate, ...commandHandlerMethods, ...eventHandlerMethods]))
+    ;
 
     // Command Handler
     final commandHandlerBuilder = ClassBuilder()
@@ -56,11 +61,6 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..methods.add(_eventHandlesMethod(aggregate, eventHandlerMethods));
 
     // Import the current aggregate package + scorekeeper_domain...
-    final fullLibraryIdentifier = element.library.identifier;
-    final relativeIdentifier = fullLibraryIdentifier.substring(fullLibraryIdentifier.lastIndexOf('/') + 1);
-    final importedLibraries = <String>{}
-      ..add('package:scorekeeper_domain/core.dart')
-      ..add(relativeIdentifier);
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
     // Put everything together!
     final emitter = DartEmitter();
@@ -164,6 +164,8 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
   }
 
   /// Get the (one and only) constructor command from the aggregate class
+  /// We'll first look into the given aggregate class, but if there's nothing there,
+  /// we'll see if we can get any of the parent's constructor command handlers.
   ConstructorElement _getCommandHandlerConstructor(ClassElement aggregate) {
     final constructorCommands = aggregate.constructors.where((constructor) {
       final commandArguments = constructor.parameters.where((element) {
@@ -172,11 +174,18 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       }).toList();
       return commandArguments.isNotEmpty;
     }).toList();
-    if (constructorCommands.isEmpty) {
-      throw Exception('No constructor command handlers were found. Add at least one with a "command" parameter');
-    }
     if (constructorCommands.length > 1) {
       throw Exception('Too many constructor command handlers were found. There can be only one!');
+    }
+    if (constructorCommands.isEmpty) {
+      // Note that we cannot just refer to the parent class constructor,
+      // so guess we'll have to require each subclass to have a dedicated command constructor
+      // final superClass = _getSuperClass(aggregate);
+      // if (null == superClass) {
+        throw Exception('No constructor command handlers were found. Add at least one constructor with a "command" parameter');
+      // } else {
+      //   return _getCommandHandlerConstructor(superClass as ClassElement);
+      // }
     }
     return constructorCommands.first;
   }
@@ -251,13 +260,42 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
   String _camelName(String name) => '${name[0].toLowerCase()}${name.substring(1)}';
 
   /// Get methods annotated with the given annotationName
+  /// Also grab annotated methods from super classes
   List<MethodElement> _getHandlerMethods(String annotationName, ClassElement aggregate) {
     final handlerMethods = aggregate.methods.where((method) {
       return method.metadata.where((meta) {
         return meta.element.name == annotationName;
       }).isNotEmpty;
-    }).toList(growable: false);
+    }).toList(growable: true);
+    // Check super classes
+    final superClass = _getSuperClass(aggregate);
+    if (null != superClass) {
+      handlerMethods.addAll(_getHandlerMethods(annotationName, superClass));
+    }
     return handlerMethods;
+  }
+
+  /// Get the first superclass (if any)
+  ClassElement _getSuperClass(ClassElement aggregate) {
+    try {
+      return aggregate.allSupertypes
+          ?.firstWhere((element) => element.element is ClassElement)
+          ?.element;
+    // ignore: avoid_catching_errors
+    } on Error catch (_) {
+      return null;
+    }
+  }
+
+  /// Get the import statement that refers to the
+  Iterable<String> _getRelevantImports(List<Element> list) {
+    final imports = <String>{};
+    for (final element in list) {
+      final fullLibraryIdentifier = element.library.identifier;
+      final relativeIdentifier = fullLibraryIdentifier.substring(fullLibraryIdentifier.lastIndexOf('/') + 1);
+      imports.add(relativeIdentifier);
+    }
+    return imports;
   }
 
 

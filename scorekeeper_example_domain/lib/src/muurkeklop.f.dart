@@ -6,30 +6,27 @@
 
 import 'package:scorekeeper_domain/core.dart';
 
-import 'scorable.dart';
+import 'muurkeklop.dart';
 
 class AggregateDtoFactory {
   static R create<R extends AggregateDto>(Aggregate aggregate) {
     switch (aggregate.runtimeType) {
-      case Scorable:
-        final scorable = aggregate as Scorable;
-        return ScorableDto._(scorable) as R;
+      case MuurkeKlopNDown:
+        final muurkeKlopNDown = aggregate as MuurkeKlopNDown;
+        return MuurkeKlopNDownDto._(muurkeKlopNDown) as R;
       default:
         throw Exception('Cannot create $R for ${aggregate.runtimeType}');
     }
   }
 }
 
-class ScorableDto extends AggregateDto {
-  ScorableDto._(this._scorable) : super(_scorable.aggregateId);
+class MuurkeKlopNDownDto extends AggregateDto {
+  MuurkeKlopNDownDto._(this._muurkeKlopNDown)
+      : super(_muurkeKlopNDown.aggregateId);
 
-  final Scorable _scorable;
+  final MuurkeKlopNDown _muurkeKlopNDown;
 
-  String get name {
-    return _scorable.name;
-  }
-
-  List get participants {
-    return List.of(_scorable.participants, growable: false);
+  Map get rounds {
+    return _muurkeKlopNDown.rounds;
   }
 }

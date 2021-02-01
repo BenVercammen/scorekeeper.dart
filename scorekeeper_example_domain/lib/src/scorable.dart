@@ -2,16 +2,10 @@
 import 'package:scorekeeper_domain/core.dart';
 
 /// The (root) aggregate of our domain
-/// TODO: Is it possible to "subclass" this aggregate? Should we try to do so?
-///  Idea:
-///   - Scorable
-///     - Muurke Klop N-Down
-///     - Muurke Klop 3-strikes-out
-///     OR
-///     - Muurke Klop
-///       - N-down
-///       - 3-strikes-out
-///        => both have same commands and events, but differ in scoring, in starting order, in number of rounds, ...
+/// It is possible to extend this one. The generated handler classes will also contain these handler methods.
+/// TODO: only strange thing is the "CreateScorable" command that can be inherited
+///  well, actually a custom constructor is required (or handler generator will fail)
+///  but I guess that's the only command/event combo that explicitly uses "Scorable" in its name?
 ///
 @aggregate
 class Scorable extends Aggregate {
@@ -19,8 +13,6 @@ class Scorable extends Aggregate {
   String name;
 
   final List<Participant> participants = List.empty(growable: true);
-
-  final Map<int, Round> rounds = Map();
 
   Scorable.aggregateId(AggregateId aggregateId) : super(aggregateId);
 
@@ -59,23 +51,6 @@ class Scorable extends Aggregate {
     apply(event);
   }
 
-  @commandHandler
-  void addRound(AddRound command) {
-    final event = RoundAdded()
-      ..aggregateId = command.aggregateId
-      ..roundIndex = rounds.length;
-    apply(event);
-  }
-
-  @commandHandler
-  void strikeOutParticipant(StrikeOutParticipant command) {
-    // TODO: check if participant wasn't already striked out... or roundindex is correct, or ...
-    final event = ParticipantStrikedOut()
-        ..aggregateId = command.aggregateId
-        ..roundIndex = command.roundIndex
-        ..participant = command.participant;
-    apply(event);
-  }
 
   @eventHandler
   void handleScorableCreated(ScorableCreated event) {
@@ -91,18 +66,6 @@ class Scorable extends Aggregate {
   void handleParticipantRemoved(ParticipantRemoved event) {
     // TODO: evt op id ipv object... (equals moet in dit geval in Participant juist geimplementeerd zijn!)
     participants.remove(event.participant);
-  }
-
-  @eventHandler
-  void roundAdded(RoundAdded event) {
-    final round = Round(event.roundIndex);
-    rounds.putIfAbsent(round.roundIndex, () => round);
-  }
-
-  @eventHandler
-  void participantStrikedOut(ParticipantStrikedOut event) {
-    final round = rounds[event.roundIndex];
-    round.strikeOutParticipant(event.participant);
   }
 
   @override
@@ -159,6 +122,12 @@ class CreateScorable {
 /// Add an extra Round to the Scorable
 class AddRound {
   String aggregateId;
+}
+
+/// Remove an existing Round from the Scorable
+class RemoveRound {
+  String aggregateId;
+  int roundIndex;
 }
 
 /// Command to add a Participant to a Scorable
@@ -235,6 +204,11 @@ class ParticipantStrikeOutUndone {
 }
 
 class RoundAdded {
+  String aggregateId;
+  int roundIndex;
+}
+
+class RoundRemoved {
   String aggregateId;
   int roundIndex;
 }
