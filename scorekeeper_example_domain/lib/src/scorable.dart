@@ -51,7 +51,6 @@ class Scorable extends Aggregate {
     apply(event);
   }
 
-
   @eventHandler
   void handleScorableCreated(ScorableCreated event) {
     name = event.name;
@@ -119,17 +118,6 @@ class CreateScorable {
   String name;
 }
 
-/// Add an extra Round to the Scorable
-class AddRound {
-  String aggregateId;
-}
-
-/// Remove an existing Round from the Scorable
-class RemoveRound {
-  String aggregateId;
-  int roundIndex;
-}
-
 /// Command to add a Participant to a Scorable
 /// TODO: moet ik in die commands en events ook niet meegeven voor welk type aggregate die gelden?
 /// alleszins expliciet maken dat het aan een Scorable toegevoegd wordt? desnoods in naamgeving?
@@ -155,19 +143,6 @@ class FinishScorable {
   String aggregateId;
 }
 
-/// When a participant strikes out, he/she will receive a fixed number of points depending
-/// on the order in which he was striked out.
-class StrikeOutParticipant {
-  String aggregateId;
-  Participant participant;
-  int roundIndex;
-}
-
-class UndoParticipantStrikeOut {
-  String aggregateId;
-  String participantId;
-  int roundIndex;
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,28 +166,6 @@ class ParticipantRemoved {
   Participant participant;
 }
 
-class ParticipantStrikedOut {
-  String aggregateId;
-  Participant participant;
-  int roundIndex;
-}
-
-class ParticipantStrikeOutUndone {
-  String aggregateId;
-  String participantId;
-  int roundIndex;
-}
-
-class RoundAdded {
-  String aggregateId;
-  int roundIndex;
-}
-
-class RoundRemoved {
-  String aggregateId;
-  int roundIndex;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /// VALUE OBJECTS /////////////////////////////////////////////////////////////////////////////////////
@@ -234,21 +187,4 @@ class Participant {
     return 'Participant $name ($participantId)';
   }
 
-}
-
-/// Round as used within the Scorable
-class Round {
-  final int roundIndex;
-
-  final Map<int, Participant> strikeOutOrder = Map();
-
-  Round(this.roundIndex);
-
-  void strikeOutParticipant(Participant participant) {
-    strikeOutOrder[strikeOutOrder.length] = participant;
-  }
-
-  void _undoStrikeOutParticipant(Participant participant) {
-    strikeOutOrder.removeWhere((strikeOutIndex, strikedOutParticipant) => strikedOutParticipant == participant);
-  }
 }

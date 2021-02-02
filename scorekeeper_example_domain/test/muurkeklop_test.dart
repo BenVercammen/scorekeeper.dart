@@ -10,6 +10,13 @@ void main() {
   group('Command handling', () {
     TestFixture<MuurkeKlopNDown> fixture;
 
+    final player1 = Participant()
+      ..name = 'Player 1'
+      ..participantId = Uuid().v4();
+    final player2 = Participant()
+      ..name = 'Player 2'
+      ..participantId = Uuid().v4();
+
     setUp(() {
       fixture = TestFixture<MuurkeKlopNDown>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
     });
@@ -57,16 +64,11 @@ void main() {
 
     test('Strike out a participant', () {
       final _aggregateId = Uuid().v4();
-      final player1 = Participant()
-        ..name = 'Player 1'
-        ..participantId = Uuid().v4();
-      final player2 = Participant()
-        ..name = 'Player 2'
-        ..participantId = Uuid().v4();
       fixture
         ..given(ScorableCreated()
           ..name = 'Test'
-          ..aggregateId = _aggregateId)
+          ..aggregateId = _aggregateId
+        )
         ..given(RoundAdded()
           ..aggregateId = _aggregateId
           ..roundIndex = 0
@@ -100,6 +102,98 @@ void main() {
           expect(scorable.rounds[1].strikeOutOrder, isEmpty);
         });
     });
+
+    test('Strike out a participant twice in same round', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId
+        )
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0
+        )
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 1)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1
+        )
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player2
+        )
+        ..given(ParticipantStrikedOut()
+            ..aggregateId = _aggregateId
+            ..participant = player1
+            ..roundIndex = 0
+        )
+        ..then((scorable) {
+          expect(scorable.rounds.length, equals(2));
+          expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
+          expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+        })
+        ..when(StrikeOutParticipant()
+          ..aggregateId = _aggregateId
+          ..participant = player1
+          ..roundIndex = 0
+        )
+        ..then((scorable) {
+          expect(fixture.lastThrownException.toString(), contains('Player 1 already striked out in round 1'));
+          expect(scorable.rounds.length, equals(2));
+          expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
+          expect(scorable.rounds[0].strikeOutOrder[0], equals(player1));
+          expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+        });
+    });
+
+    test('Undo participant strike out', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId
+        )
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0
+        )
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 1)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1
+        )
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player2
+        )
+        ..given(ParticipantStrikedOut()
+            ..aggregateId = _aggregateId
+            ..participant = player1
+            ..roundIndex = 0
+        )
+        ..then((scorable) {
+          expect(scorable.rounds.length, equals(2));
+          expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
+          expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+        })
+        ..when(UndoParticipantStrikeOut()
+          ..aggregateId = _aggregateId
+          ..participant = player1
+          ..roundIndex = 0
+        )
+        ..then((scorable) {
+          expect(fixture.lastThrownException, isNull);
+          expect(scorable.rounds.length, equals(2));
+          expect(scorable.rounds[0].strikeOutOrder, isEmpty);
+          expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+        });
+    });
+
 
   });
 
