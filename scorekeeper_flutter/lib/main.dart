@@ -75,15 +75,12 @@ class ScorekeeperService {
 
   /// Add a newly created Participant to the Scorable
   void addParticipantToScorable(AggregateId aggregateId, String participantName) {
-    final participant = Participant()
-      ..name = participantName
-      ..participantId = Uuid().v4();
+    final participant = Participant(Uuid().v4(), participantName);
     final command = AddParticipant()
         ..participant = participant
         ..aggregateId = aggregateId.id;
     _scorekeeper.handleCommand(command);
   }
-
 
 }
 
@@ -177,10 +174,11 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
   /// The Scorable ListView item builder
   Widget scorableItemBuilder(BuildContext context, int index) {
     final scorable = scorables.values.elementAt(index);
-    return GestureDetector(
-      child: Text('Scorable $index ($scorable)'),
+    return ListTile(
+      title: Text('Scorable $index ($scorable)'),
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ScorableDetailPage(_scorekeeperService, scorable)));
+        Navigator.push(context,
+            MaterialPageRoute(builder: (BuildContext context) => ScorableDetailPage(_scorekeeperService, scorable)));
       },
     );
   }
