@@ -29,7 +29,7 @@ class ScorableDto extends AggregateDto {
     return _scorable.name;
   }
 
-  List get participants {
+  List<Participant> get participants {
     return List.of(_scorable.participants, growable: false);
   }
 }

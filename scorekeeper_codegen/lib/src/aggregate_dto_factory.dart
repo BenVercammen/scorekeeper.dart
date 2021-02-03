@@ -1,5 +1,6 @@
 
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
@@ -62,13 +63,21 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     for (var field in aggregate.fields) {
       var body = Code('return $aggregateFieldName.${field.name};');
       // TODO: TEST!!! lists should become immutable copy...
-      if (field.type.element.name == 'List') {
-        body = Code('return List.of($aggregateFieldName.${field.name}, growable: false);');
+      var returnType = field.type.element.name;
+      if (returnType == 'List') {
+        body = Code('return $returnType.of($aggregateFieldName.${field.name}, growable: false);');
+        // If it's a parameterized type, make sure that gets included as well
+        if (field.type is ParameterizedType) {
+          final pType = field.type as ParameterizedType;
+          if (!pType.typeArguments.isEmpty) {
+            returnType += '<${pType.typeArguments[0].element.name}>';
+          }
+        }
       }
       final builder = MethodBuilder()
         ..name = field.name
         ..type = MethodType.getter
-        ..returns = Reference(field.type.element.name)
+        ..returns = Reference(returnType)
         ..body = body
       ;
       aggregateDtoBuilder.methods.add(builder.build());
