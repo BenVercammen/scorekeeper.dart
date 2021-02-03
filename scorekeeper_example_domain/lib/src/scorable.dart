@@ -6,7 +6,6 @@ import 'package:scorekeeper_domain/core.dart';
 /// TODO: only strange thing is the "CreateScorable" command that can be inherited
 ///  well, actually a custom constructor is required (or handler generator will fail)
 ///  but I guess that's the only command/event combo that explicitly uses "Scorable" in its name?
-///
 @aggregate
 class Scorable extends Aggregate {
 
@@ -70,6 +69,38 @@ class Scorable extends Aggregate {
   @override
   String toString() {
     return 'Scorable $name ($aggregateId)';
+  }
+
+  /// Is it possible to provide a method that returns the currently allowed commands?
+  /// This works on multiple levels
+  ///   - the main command level, without taking actual parameters into account
+  ///       eg: Scorable is not yet started && minimal numer of participants is available -> StartScorable
+  ///       actually, this translates to a map of <"Command" => "isAllowed+Reason">
+  ///   - the command content level, taking actual parameters into account
+  ///       eg: Participant 1 is already striked out for a given round, so he cannot strike-out again
+  ///       this translates to a map of <"Command" => <"Participant" => "isAllowed+Reason">>
+  ///       -> but then again, any parameter of the command can be a reason for allowing or disallowing it
+  ///       -> so we'd have to create an entire permutation map, which could become quite big quite easily...
+  ///       -> still, if done properly, the UI could greatly benefit from this, since we already block certain "buttons"
+  ///          based on the current state...
+  ///   => in the end, we'd be checking the resulting Map of allowances and disable/enable command buttons based on it
+  ///     -> in our current implementation however, we're in luck because the aggregate model is available on the (flutter) client
+  ///     -> this means we could potentially call a "isCommandAllowed" method on the AggregateDto
+  ///         -> instead of prematurely creating a Map that would probably contain more allowances than we care for
+  ///            we'd just have the DTO answer the question when asked...
+  ///     => of course, when doing REST, we'll still have to ask these questions, but that's not our problem right now
+  ///
+  /// We could possibly add and update a list on each event with the "main level commands",
+  /// but that would probably just be some premature optimzation...
+  ///
+  /// Checks whether or not the given command is currently allowed.
+  /// This depends on the state of the aggregate and the attribute values of the command itself.
+  ///
+  CommandAllowance isAllowed(dynamic command) {
+    switch (command.runtimeType) {
+      default:
+        return CommandAllowance(command, true, null);
+    }
   }
 
 }
@@ -178,13 +209,50 @@ class ParticipantRemoved {
 ///   - for passing along in commands & events
 class Participant {
 
-  String participantId;
+  final String participantId;
 
-  String name;
+  final String name;
+
+  Participant(this.participantId, this.name);
 
   @override
   String toString() {
     return 'Participant $name ($participantId)';
   }
 
+}
+
+/// DTO that tells whether or not a given command is allowed, along with a possible reason for it.
+class CommandAllowance {
+
+  final dynamic command;
+
+  final bool isAllowed;
+
+  final String reason;
+
+  CommandAllowance(this.command, this.isAllowed, this.reason);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CommandAllowance &&
+          runtimeType == other.runtimeType &&
+          command == other.command &&
+          isAllowed == other.isAllowed &&
+          reason == other.reason;
+
+  @override
+  int get hashCode => command.hashCode ^ isAllowed.hashCode ^ reason.hashCode;
+
+  @override
+  String toString() {
+    if (isAllowed) {
+      return '${command.runtimeType} allowed';
+    }
+    if (null != reason) {
+      return '${command.runtimeType} not allowed because $reason';
+    }
+    return '${command.runtimeType} not allowed';
+  }
 }

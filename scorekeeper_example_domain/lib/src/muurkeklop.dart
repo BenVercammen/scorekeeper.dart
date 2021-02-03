@@ -78,6 +78,25 @@ class MuurkeKlopNDown extends Scorable {
     round.undoStrikeOutParticipant(event.participant);
   }
 
+  /// Checks whether or not the given command is currently allowed.
+  /// This depends on the state of the aggregate and the attribute values of the command itself.
+  ///
+  /// NOTE: the system can already validate against this method before accepting the actual command,
+  /// although the superficial validation should already be done before (we assume it has already been done before calling this method)
+  CommandAllowance isAllowed(dynamic command) {
+    switch (command.runtimeType) {
+      case StrikeOutParticipant:
+        if (rounds[command.roundIndex].strikeOutOrder.containsValue(command.participant)) {
+          return CommandAllowance(command, false, "Player was already striked out in this round");
+        }
+        return CommandAllowance(command, true, null);
+      default:
+        return super.isAllowed(command);
+    }
+  }
+
+
+
 }
 
 
@@ -167,3 +186,4 @@ class MuurkeKlopNDownRound extends Round {
     strikeOutOrder.removeWhere((strikeOutIndex, strikedOutParticipant) => strikedOutParticipant == participant);
   }
 }
+

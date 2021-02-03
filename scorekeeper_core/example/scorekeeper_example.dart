@@ -22,9 +22,7 @@ void main() {
   scorekeeper.handleCommand(createScorableCommand);
 
   // Handle another command
-  final participant = Participant()
-    ..participantId = Uuid().v4()
-    ..name = 'Player One';
+  final participant = Participant(Uuid().v4(), 'Player One');
   final addParticipantCommand = AddParticipant()
     ..aggregateId = aggregateId.id
     ..participant = participant;

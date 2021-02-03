@@ -181,7 +181,7 @@ class Scorekeeper {
     for (var domainEvent in appliedDomainEvents) {
       try {
         _eventStore.storeDomainEvent(domainEvent);
-        _remoteEventPublisher.publishDomainEvent(domainEvent);
+        _remoteEventPublisher?.publishDomainEvent(domainEvent);
       } on Exception catch(exception) {
         // TODO: testen + afhandelen!
         _logger.e(exception);

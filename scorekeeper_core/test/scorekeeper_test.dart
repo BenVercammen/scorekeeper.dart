@@ -208,9 +208,7 @@ void main() {
     void givenParticipantAddedEvent(String aggregateIdValue, String participantId, String participantName, [DomainEventId eventId]) {
       final participantAdded = ParticipantAdded()
         ..aggregateId = aggregateIdValue;
-      final participant = Participant()
-        ..participantId = participantId
-        ..name = participantName;
+      final participant = Participant(participantId, participantName);
       participantAdded.participant = participant;
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
@@ -265,9 +263,7 @@ void main() {
     void addParticipantCommand(String aggregateId, String participantId, String participantName) {
       final command = AddParticipant()
         ..aggregateId = aggregateId
-        ..participant = Participant()
-        ..participant.participantId = participantId
-        ..participant.name = participantName;
+        ..participant = Participant(participantId, participantName);
       scorekeeper.handleCommand(command);
     }
 
@@ -682,15 +678,15 @@ void main() {
           event1 = DomainEvent.of(DomainEventId.local(0), aggregateId, payload1);
           final payload2 = ParticipantAdded()
             ..aggregateId = aggregateId.id
-            ..participant = Participant();
+            ..participant = Participant(null, null);
           event2 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
           final payload3 = ParticipantAdded()
             ..aggregateId = aggregateId.id
-            ..participant = Participant();
+            ..participant = Participant(null, null);
           event3 = DomainEvent.of(DomainEventId.local(2), aggregateId, payload3);
           final payload4 = ParticipantAdded()
             ..aggregateId = aggregateId.id
-            ..participant = Participant();
+            ..participant = Participant(null, null);
           event4 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload4);
           // Same aggregate, same sequence, same payload, different UUID, so different origin
           event2b = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
@@ -945,9 +941,7 @@ void main() {
           expect(scorableDto.aggregateId, equals(aggregateId));
           expect(scorableDto.participants, isEmpty);
           // Add Participant
-          final player1 = Participant()
-            ..name = 'Player One'
-            ..participantId = Uuid().v4();
+          final player1 = Participant(Uuid().v4(), 'Player One');
           scorekeeper.handleCommand(AddParticipant()
               ..aggregateId = aggregateId.id
               ..participant = player1
@@ -956,9 +950,7 @@ void main() {
           expect(scorableDto.participants, isNotEmpty);
           expect(scorableDto.participants, contains(player1));
           // Adding participants shouldn't be possible
-          final player2 = Participant()
-            ..name = 'Player Two'
-            ..participantId = Uuid().v4();
+          final player2 = Participant(Uuid().v4(), 'Player Two');
           try {
             scorableDto.participants.add(player2);
           } on Error catch (error) {
@@ -1008,9 +1000,7 @@ void main() {
           }
         });
         // Set up the (conflicting) remote event
-        final participant = Participant()
-          ..participantId = Uuid().v4()
-          ..name = 'Player Two';
+        final participant = Participant(Uuid().v4(), 'Player Two');
         final remoteDomainEvent = DomainEvent.of(
             DomainEventId.local(2),
             AggregateId.of(scorableId),
@@ -1064,7 +1054,7 @@ void main() {
         // because ALL previously applied events should be undone as well.
         commandHandler.addHandlerInterceptor((beforeAfter, aggregate, command) {
           if ('BEFORE' == beforeAfter && command is AddParticipant) {
-            final participant = Participant()..name = 'Player Two';
+            final participant = Participant(null, 'Player Two');
             aggregate.apply(ParticipantAdded()..participant = participant);
           }
         });

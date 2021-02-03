@@ -33,7 +33,7 @@ void main() {
           ..aggregateId = _aggregateId)
         ..when(AddParticipant()
           ..aggregateId = _aggregateId
-          ..participant = Participant())
+          ..participant = Participant(null, null))
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
@@ -41,9 +41,7 @@ void main() {
 
     test('RemoveParticipant failed (non-existing participant)', () {
       final _aggregateId = Uuid().v4();
-      final participant = Participant()
-        ..name = 'Participant 1'
-        ..participantId = Uuid().v4();
+      final participant = Participant(Uuid().v4(), 'Participant 1');
       fixture
         ..given(ScorableCreated()
           ..name = 'Test'
@@ -87,7 +85,7 @@ void main() {
           ..aggregateId = _aggregateId)
         ..given(ParticipantAdded()
           ..aggregateId = _aggregateId
-          ..participant = Participant())
+          ..participant = Participant(null, null))
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
@@ -101,7 +99,7 @@ void main() {
           ..aggregateId = _aggregateId)
         ..given(ParticipantRemoved()
           ..aggregateId = _aggregateId
-          ..participant = Participant())
+          ..participant = Participant(null, null))
         ..then((scorable) {
           expect(scorable.participants.length, equals(0));
         });

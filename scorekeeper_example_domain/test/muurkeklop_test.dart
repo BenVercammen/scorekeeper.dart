@@ -7,19 +7,18 @@ import 'package:uuid/uuid.dart';
 import '_test_fixture.dart';
 
 void main() {
+
+  final player1 = Participant(Uuid().v4(), 'Player 1');
+
+  final player2 = Participant(Uuid().v4(), 'Player 2');
+
+  TestFixture<MuurkeKlopNDown> fixture;
+
+  setUp(() {
+    fixture = TestFixture<MuurkeKlopNDown>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
+  });
+
   group('Command handling', () {
-    TestFixture<MuurkeKlopNDown> fixture;
-
-    final player1 = Participant()
-      ..name = 'Player 1'
-      ..participantId = Uuid().v4();
-    final player2 = Participant()
-      ..name = 'Player 2'
-      ..participantId = Uuid().v4();
-
-    setUp(() {
-      fixture = TestFixture<MuurkeKlopNDown>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
-    });
 
     test('Add round', () {
       final _aggregateId = Uuid().v4();
@@ -197,12 +196,39 @@ void main() {
 
   });
 
-  group('Event handling', () {
-    TestFixture<Scorable> fixture;
-
-    setUp(() {
-      fixture = TestFixture<Scorable>(ScorableCommandHandler(), ScorableEventHandler());
+  group('Command allowances', () {
+    test('PlayerStrikedOut when already striked out in the given round', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 1)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player2)
+        ..given(ParticipantStrikedOut()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0
+            ..participant = player1)
+        ..then((scorable) {
+          var command = StrikeOutParticipant()
+            ..roundIndex = 0
+            ..participant = player1;
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, false, "Player was already striked out in this round")));
+        });
     });
+  });
+
+  group('Event handling', () {
 
     test('RoundAdded', () {
       // TODO: is it still useful to check events? We're testing the outcomes in the command handler section anyway...
