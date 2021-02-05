@@ -6,6 +6,8 @@ import 'package:dart_style/dart_style.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:source_gen/source_gen.dart' as src;
 
+import 'common.dart';
+
 /// Supports `package:build_runner` creation and configuration of
 /// `json_serializable`.
 ///
@@ -38,7 +40,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     // Keep track of the imported libraries
     final importedLibraries = <String>{}
       ..add('package:scorekeeper_domain/core.dart')
-      ..addAll(_getRelevantImports([aggregate, ...commandHandlerMethods, ...eventHandlerMethods]))
+      ..addAll(getRelevantImports([aggregate, ...commandHandlerMethods, ...eventHandlerMethods]))
     ;
 
     // Command Handler
@@ -75,7 +77,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'handle'
       ..returns = const Reference('void');
     final param1 = ParameterBuilder()
-      ..name = _camelName(aggregate.name)
+      ..name = camelName(aggregate.name)
       ..type = Reference(aggregate.name);
     builder.requiredParameters.add(param1.build());
     final param2 = ParameterBuilder()
@@ -220,7 +222,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'handle'
       ..returns = const Reference('void');
     final param1 = ParameterBuilder()
-      ..name = _camelName(aggregate.name)
+      ..name = camelName(aggregate.name)
       ..type = Reference(aggregate.name);
     builder.requiredParameters.add(param1.build());
     final param2 = ParameterBuilder()
@@ -257,46 +259,11 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     return builder.build();
   }
 
-  String _camelName(String name) => '${name[0].toLowerCase()}${name.substring(1)}';
-
-  /// Get methods annotated with the given annotationName
-  /// Also grab annotated methods from super classes
   List<MethodElement> _getHandlerMethods(String annotationName, ClassElement aggregate) {
-    final handlerMethods = aggregate.methods.where((method) {
+    return getFilteredMethods(aggregate, (method) {
       return method.metadata.where((meta) {
         return meta.element.name == annotationName;
       }).isNotEmpty;
     }).toList(growable: true);
-    // Check super classes
-    final superClass = _getSuperClass(aggregate);
-    if (null != superClass) {
-      handlerMethods.addAll(_getHandlerMethods(annotationName, superClass));
-    }
-    return handlerMethods;
   }
-
-  /// Get the first superclass (if any)
-  ClassElement _getSuperClass(ClassElement aggregate) {
-    try {
-      return aggregate.allSupertypes
-          ?.firstWhere((element) => element.element is ClassElement)
-          ?.element;
-    // ignore: avoid_catching_errors
-    } on Error catch (_) {
-      return null;
-    }
-  }
-
-  /// Get the import statement that refers to the
-  Iterable<String> _getRelevantImports(List<Element> list) {
-    final imports = <String>{};
-    for (final element in list) {
-      final fullLibraryIdentifier = element.library.identifier;
-      final relativeIdentifier = fullLibraryIdentifier.substring(fullLibraryIdentifier.lastIndexOf('/') + 1);
-      imports.add(relativeIdentifier);
-    }
-    return imports;
-  }
-
-
 }

@@ -7,6 +7,8 @@ import 'package:dart_style/dart_style.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:source_gen/source_gen.dart' as src;
 
+import 'common.dart';
+
 /// Supports `package:build_runner` creation and configuration of the AggregateDtoFactory.
 ///
 /// Not meant to be invoked by hand-authored code.
@@ -60,7 +62,8 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     aggregateDtoBuilder.constructors.add(constructorBuilder.build());
 
     // All fields have to be converted to getters that will proxy the calls to the private aggregate instance
-    for (var field in aggregate.fields) {
+    final fields = getFilteredFields(aggregate, (field) => !field.name.startsWith('_'));
+    for (var field in fields) {
       var body = Code('return $aggregateFieldName.${field.name};');
       // TODO: TEST!!! lists should become immutable copy...
       var returnType = field.type.element.name;
@@ -84,11 +87,7 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     }
 
     // Import the current aggregate package + scorekeeper_domain...
-    final fullLibraryIdentifier = element.library.identifier;
-    final relativeIdentifier = fullLibraryIdentifier.substring(fullLibraryIdentifier.lastIndexOf('/') + 1);
-    final importedLibraries = <String>{}
-      ..add('package:scorekeeper_domain/core.dart')
-      ..add(relativeIdentifier);
+    final importedLibraries = getRelevantImports([aggregate, ...fields]);
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
     // Put everything together!
     final emitter = DartEmitter();
