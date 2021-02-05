@@ -15,8 +15,8 @@ void main() {
       eventStore: EventStoreInMemoryImpl(),
       aggregateCache: AggregateCacheInMemoryImpl())
   // Register the command and event handlers for the relevant domain
-    ..registerCommandHandler(ScorableCommandHandler())
-    ..registerEventHandler(ScorableEventHandler());
+    ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
+    ..registerEventHandler(MuurkeKlopNDownEventHandler());
 
   final scorekeeperService = ScorekeeperService(scorekeeper);
 
@@ -64,13 +64,13 @@ class ScorekeeperService {
   ScorekeeperService(this._scorekeeper);
 
   /// Add a new Scorable
-  ScorableDto createNewScorable(String scorableName) {
+  MuurkeKlopNDownDto createNewScorable(String scorableName) {
     final aggregateId = AggregateId.random();
     final command = CreateScorable()
       ..aggregateId = aggregateId.id
       ..name = 'New Scorable';
     _scorekeeper.handleCommand(command);
-    return _scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
+    return _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
   }
 
   /// Add a newly created Participant to the Scorable
@@ -101,7 +101,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
 
   final ScorekeeperService _scorekeeperService;
 
-  final Map<AggregateId, ScorableDto> scorables = HashMap();
+  final Map<AggregateId, MuurkeKlopNDownDto> scorables = HashMap();
 
   _ScorableOverviewPageState(this._scorekeeperService);
 

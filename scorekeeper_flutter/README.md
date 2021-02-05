@@ -39,7 +39,7 @@ Build steps
    - deploy to the web
       - install firebase CLI
         - https://firebase.google.com/docs/cli#install-cli-windows
-      - open flutter CLI
+      - open firebase CLI
         - `cd \Workspace\dart\scorekeeper\scorekeeper_flutter`
         - `firebase init` (eenmalig)
         - `flutter build web`

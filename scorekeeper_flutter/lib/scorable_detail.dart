@@ -5,7 +5,7 @@ import 'main.dart';
 
 class ScorableDetailPage extends StatefulWidget {
 
-  final ScorableDto scorable;
+  final MuurkeKlopNDownDto scorable;
 
   final ScorekeeperService scorekeeperService;
 
@@ -22,7 +22,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
 
   final ScorekeeperService scorekeeperService;
 
-  final ScorableDto scorable;
+  final MuurkeKlopNDownDto scorable;
 
   _ScorableDetailPageState(this.scorekeeperService, this.scorable);
 
@@ -55,70 +55,62 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   }
 
   /// create a list of table rows used
-  List<TableRow> scorableParticipantList(ScorableDto scorable) {
+  List<TableRow> scorableParticipantList(MuurkeKlopNDownDto scorable) {
     final rowList = List<TableRow>.empty(growable: true);
+
+    var headerCells =
+
     // Header row
-    rowList.add(
-        TableRow(
-            children: [
-              TableCell(
-                child: _ParticipantTableContainer(const Text('Player'))
-              ),
-              TableCell(
-                  child: _ParticipantTableContainer(const Text('Round ?'))
-              ),
-              TableCell(
-                  child: _ParticipantTableContainer(const Text('Total'))
-              ),
-            ]
-        )
+    rowList.add(TableRow(
+            children: [TableCell(child: _ParticipantTableContainer(const Text('Player')))]
+              ..addAll(roundHeadTableCells())
+              ..add(TableCell(child: _ParticipantTableContainer(const Text('Total')))))
     );
     // Body row
     for (Participant participant in scorable.participants) {
-      rowList.add(
-          TableRow(
-              children: [
-                TableCell(
-                    child: _ParticipantTableContainer(Text(participant.name))
-                ),
-                TableCell(
-                    child: _ParticipantTableContainer(const Text('Strike out?'))
-                ),
-                TableCell(
-                    child: _ParticipantTableContainer(const Text('Total'))
-                ),
-              ]
-          )
+      rowList.add(TableRow(
+          children: [TableCell(child: _ParticipantTableContainer(Text(participant.name)))]
+            ..addAll(participantRoundBody(participant))
+            ..add(TableCell(child: _ParticipantTableContainer(const Text('Total')))))
       );
     }
     // Footer row
-    rowList.add(
-        TableRow(
-          children: [
-            TableCell(
-                child: _ParticipantTableContainer(
+    rowList.add(TableRow(
+        children: [
+          TableCell(
+              child: _ParticipantTableContainer(
                   FlatButton(
                     onPressed: () => _showAddParticipantDialog(context),
                     // tooltip: 'Add new Participant',
                     child: const Icon(Icons.add),
                   )
               )
-            ),
-            TableCell(
-              child: Container(
-                child: const Text('Remove round?'),
-              )
-            ),
-            TableCell(
-              child: Container(
-                child: const Text('Add extra round?')
-              )
-            )
-          ]
-        )
+          )
+        ]
+          ..addAll(_roundsFooter())
+          ..add(TableCell(child: _ParticipantTableContainer(const Text('Total')))))
     );
 
     return rowList;
+  }
+
+  /// Return TableCell
+  List<TableCell> roundHeadTableCells() {
+    return scorable.rounds.values.map((round) => TableCell(
+                child: _ParticipantTableContainer(const Text('Round ?'))
+            )).toList(growable: false);
+  }
+
+  List<TableCell> participantRoundBody(Participant participant) {
+    return scorable.rounds.values.map((round) => TableCell(
+        child: _ParticipantTableContainer(const Text('Strike out ?'))
+    )).toList(growable: false);
+  }
+
+  List<TableCell> _roundsFooter() {
+    return scorable.rounds.values.map((round) => TableCell(
+        child: _ParticipantTableContainer(const Text('Remove Round ?'))
+    )).toList(growable: false);
   }
 
 }
@@ -185,34 +177,39 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Name *',
-                hintText: 'The name of the participant to be added',
-              ),
-              validator: (value) {
-                if (value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
-              controller: nameController,
-              onFieldSubmitted: (name) => _submitForm(),
-            ),
-            const Spacer(),
-            ElevatedButton(
-                onPressed: _submitForm,
-                child: Container(
-                  child: const Text('Add player'),
+    return
+      Container(
+          constraints: const BoxConstraints(minHeight: 100, minWidth: double.infinity, maxHeight: 300),
+          child:
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    hintText: 'The name of the player',
+                  ),
+                  validator: (value) {
+                    if (value.isEmpty) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                  controller: nameController,
+                  onFieldSubmitted: (name) => _submitForm(),
+                ),
+                const Spacer(),
+                ElevatedButton(
+                    onPressed: _submitForm,
+                    child: Container(
+                      child: const Text('Add player'),
+                    )
                 )
-            )
-          ]
-      ),
+              ]
+          ),
+        )
     );
   }
 
