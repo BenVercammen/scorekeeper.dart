@@ -5,8 +5,7 @@
 // **************************************************************************
 
 import 'package:scorekeeper_domain/core.dart';
-
-import 'scorable.dart';
+import 'package:scorekeeper_example_domain/src/scorable.dart';
 
 class ScorableCommandHandler implements CommandHandler<Scorable> {
   @override

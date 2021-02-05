@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
+import 'dart:core';
+
+import 'package:scorekeeper_domain/src/aggregate.dart';
 // **************************************************************************
 // AggregateDtoFactoryGenerator
 // **************************************************************************
 
-import 'package:scorekeeper_domain/core.dart';
-
-import 'scorable.dart';
+import 'package:scorekeeper_example_domain/src/scorable.dart';
 
 class AggregateDtoFactory {
   static R create<R extends AggregateDto>(Aggregate aggregate) {
@@ -31,5 +32,21 @@ class ScorableDto extends AggregateDto {
 
   List<Participant> get participants {
     return List.of(_scorable.participants, growable: false);
+  }
+
+  Set get appliedEvents {
+    return _scorable.appliedEvents;
+  }
+
+  AggregateId get aggregateId {
+    return _scorable.aggregateId;
+  }
+
+  int get hashCode {
+    return _scorable.hashCode;
+  }
+
+  Type get runtimeType {
+    return _scorable.runtimeType;
   }
 }
