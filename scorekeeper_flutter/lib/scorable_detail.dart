@@ -40,6 +40,12 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     });
   }
 
+  void _addRound() {
+    scorekeeperService.addRoundToScorable(scorable.aggregateId);
+    setState(() {
+      // We don't need to set anything explicitly, we know our commands are handled synchronously
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,9 +55,21 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
         title: Text(scorable.name),
       ),
       body: Table(
-        children: scorableParticipantList(scorable)
+        children: scorableParticipantList(scorable),
+        columnWidths: scorableTableColWidth(scorable),
+        defaultColumnWidth: const IntrinsicColumnWidth(),
       ),
     );
+  }
+
+  /// By default we got the "Participant" column, ROUNDS + 1 Round columns, Total column
+  /// This map will only provide column widths for the "round" columns
+  Map<int, TableColumnWidth> scorableTableColWidth(MuurkeKlopNDownDto scorable) {
+    final map = <int, TableColumnWidth>{};
+    for (var roundIndex = 0; roundIndex < scorable.rounds.length; roundIndex++) {
+      map[roundIndex + 1] = const FixedColumnWidth(50.0);
+    }
+    return map;
   }
 
   /// create a list of table rows used
@@ -88,29 +106,70 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
           )
         ]
           ..addAll(_roundsFooter())
-          ..add(TableCell(child: _ParticipantTableContainer(const Text('Total')))))
-    );
+          ..add(TableCell(child: _ParticipantTableContainer(
+            // TODO: button van maken gebaseerd op allowance "FinishScorable" / "Restart Scorable"
+              const Text('Spel afronden')))
+          )
+    ));
 
     return rowList;
   }
 
   /// Return TableCell
   List<TableCell> roundHeadTableCells() {
+    if (scorable.rounds.isEmpty) {
+      return List.of([TableCell(
+          child: _ParticipantTableContainer(const Text('Rounds'))
+      )]);
+    }
     return scorable.rounds.values.map((round) => TableCell(
-                child: _ParticipantTableContainer(const Text('Round ?'))
-            )).toList(growable: false);
+                child: _ParticipantTableContainer(Text('Round ${round.roundIndex + 1}'))
+            )).toList(growable: true)
+    ..add(TableCell(
+        child: _ParticipantTableContainer(const Text(''))
+    ))
+    ;
   }
 
   List<TableCell> participantRoundBody(Participant participant) {
+    if (scorable.rounds.isEmpty) {
+      return List.of([TableCell(
+          child: _ParticipantTableContainer(const Text(''))
+      )]);
+    }
     return scorable.rounds.values.map((round) => TableCell(
         child: _ParticipantTableContainer(const Text('Strike out ?'))
-    )).toList(growable: false);
+    )).toList(growable: true)
+    ..add(TableCell(
+        child: _ParticipantTableContainer(const Text('-'))
+    ));
   }
 
   List<TableCell> _roundsFooter() {
-    return scorable.rounds.values.map((round) => TableCell(
-        child: _ParticipantTableContainer(const Text('Remove Round ?'))
-    )).toList(growable: false);
+    if (scorable.rounds.isEmpty) {
+      return List.of([TableCell(
+          child: _ParticipantTableContainer(
+              FlatButton(
+                onPressed: _addRound,
+                // tooltip: 'Add new Round',
+                child: const Icon(Icons.add),
+              )
+          )
+      )]);
+    }
+    return scorable.rounds.values
+        .map((round) =>
+            TableCell(child: _ParticipantTableContainer(const Text('Start/Finish/Remove Round, based on allowances'))))
+        .toList(growable: true)
+        // Add a column to add an additional round
+        ..add(TableCell(
+            child: _ParticipantTableContainer(
+                FlatButton(
+                onPressed: _addRound,
+                  // tooltip: 'Add new Round',
+                  child: const Icon(Icons.add),
+              )
+            )));
   }
 
 }

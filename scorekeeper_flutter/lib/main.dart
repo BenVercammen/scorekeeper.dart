@@ -55,6 +55,7 @@ class MyApp extends StatelessWidget {
 /// TODO: deze mag mss toch nog in een aparte package? Is een API layer bovenop de commands en events...
 ///   Op die manier kunnen we die commands/events van de UI afschermen
 ///   Maar dan kunnen we wel naar onze "allowances" fluiten, niet?
+///     => gewoon aan de service vragen of die knop/action toegestaan is of niet he...
 ///   Is weer een extra tussenlaag....
 class ScorekeeperService {
 
@@ -78,6 +79,13 @@ class ScorekeeperService {
     final participant = Participant(Uuid().v4(), participantName);
     final command = AddParticipant()
         ..participant = participant
+        ..aggregateId = aggregateId.id;
+    _scorekeeper.handleCommand(command);
+  }
+
+  /// Add a new Round to the Scorable
+  void addRoundToScorable(AggregateId aggregateId) {
+    final command = AddRound()
         ..aggregateId = aggregateId.id;
     _scorekeeper.handleCommand(command);
   }
