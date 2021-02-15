@@ -8,22 +8,30 @@ String camelName(String name) => '${name[0].toLowerCase()}${name.substring(1)}';
 
 /// Get methods annotated with the given annotationName
 /// Also grab annotated methods from super classes
-List<MethodElement> getFilteredMethods(ClassElement aggregate, bool Function(MethodElement method) methodFilterFunction) {
-  final handlerMethods = aggregate.methods.where(methodFilterFunction).toList(growable: true);
+List<MethodElement> getFilteredMethods(ClassElement element, bool Function(MethodElement method) methodFilterFunction) {
+  if (element.name == 'Object') {
+    return List.empty();
+  }
+  final handlerMethods = element.methods.where(methodFilterFunction).toList(growable: true);
   // Check super classes
-  final superClass = getSuperClass(aggregate);
+  final superClass = getSuperClass(element);
   if (null != superClass) {
     handlerMethods.addAll(getFilteredMethods(superClass, methodFilterFunction));
   }
   return handlerMethods;
 }
 
-Iterable<FieldElement> getFilteredFields(ClassElement element, bool Function(FieldElement field) fieldFilterFunction) {
+Iterable<FieldElement> getFilteredFields(ClassElement element, bool Function(FieldElement field) fieldFilterFunction, bool includeInheritedFields) {
+  if (element.name == 'Object') {
+    return List.empty();
+  }
   final fields = List.of(element.fields.where(fieldFilterFunction).toList(growable: true), growable: true);
   // Check super classes
-  final superClass = getSuperClass(element);
-  if (null != superClass) {
-    fields.addAll(getFilteredFields(superClass, fieldFilterFunction));
+  if (includeInheritedFields) {
+    final superClass = getSuperClass(element);
+    if (null != superClass) {
+      fields.addAll(getFilteredFields(superClass, fieldFilterFunction, includeInheritedFields));
+    }
   }
   return fields;
 }
@@ -41,7 +49,7 @@ ClassElement getSuperClass(ClassElement aggregate) {
 }
 
 /// Get the import statement that refers to the
-Iterable<String> getRelevantImports(List<Element> list) {
+Set<String> getRelevantImports(List<Element> list) {
   final fullImports = <String>{};
   for (final element in list) {
     // element.library.imports.map((importElement) => importElement.)

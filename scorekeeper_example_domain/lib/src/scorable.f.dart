@@ -1,12 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-import 'dart:core';
-
-import 'package:scorekeeper_domain/src/aggregate.dart';
 // **************************************************************************
 // AggregateDtoFactoryGenerator
 // **************************************************************************
 
+import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/src/scorable.dart';
 
 class AggregateDtoFactory {
@@ -14,7 +12,7 @@ class AggregateDtoFactory {
     switch (aggregate.runtimeType) {
       case Scorable:
         final scorable = aggregate as Scorable;
-        return ScorableDto._(scorable) as R;
+        return ScorableDto(scorable) as R;
       default:
         throw Exception('Cannot create $R for ${aggregate.runtimeType}');
     }
@@ -22,7 +20,7 @@ class AggregateDtoFactory {
 }
 
 class ScorableDto extends AggregateDto {
-  ScorableDto._(this._scorable) : super(_scorable.aggregateId);
+  ScorableDto(this._scorable) : super(_scorable);
 
   final Scorable _scorable;
 
@@ -32,21 +30,5 @@ class ScorableDto extends AggregateDto {
 
   List<Participant> get participants {
     return List.of(_scorable.participants, growable: false);
-  }
-
-  Set get appliedEvents {
-    return _scorable.appliedEvents;
-  }
-
-  AggregateId get aggregateId {
-    return _scorable.aggregateId;
-  }
-
-  int get hashCode {
-    return _scorable.hashCode;
-  }
-
-  Type get runtimeType {
-    return _scorable.runtimeType;
   }
 }

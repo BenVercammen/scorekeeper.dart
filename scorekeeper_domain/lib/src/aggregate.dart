@@ -8,6 +8,12 @@ abstract class Aggregate {
 
   AggregateId get aggregateId => _aggregateId;
 
+  /// The time at which the last event was applied.
+  /// TODO: this does NOT correspond to the actual DomainEvent's timestamp! is that okay?
+  DateTime _lastModified;
+
+  DateTime get lastModified => _lastModified;
+
   /// We always require an aggregateId
   Aggregate(this._aggregateId);
 
@@ -22,6 +28,7 @@ abstract class Aggregate {
   /// Please note that anything can be used as an eventPayload, as this method will wrap it into a DomainEvent for us.
   void apply(dynamic event) {
     appliedEvents.add(event);
+    _lastModified = DateTime.now();
   }
 
 }
@@ -49,11 +56,15 @@ abstract class Aggregate {
 ///   -> voordeel van commands is dat ... den aggregate duidelijk opgesplitst wordt?
 ///
 ///
-abstract class AggregateDto {
+abstract class AggregateDto<T extends Aggregate> {
 
-  final AggregateId aggregateId;
+  final T _aggregate;
 
-  AggregateDto(this.aggregateId);
+  AggregateDto(this._aggregate);
+
+  AggregateId get aggregateId => _aggregate.aggregateId;
+
+  DateTime get lastModified => _aggregate.lastModified;
 
 }
 

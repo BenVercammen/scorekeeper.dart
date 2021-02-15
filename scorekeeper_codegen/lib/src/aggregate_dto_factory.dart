@@ -19,6 +19,8 @@ Builder aggregateDtoFactoryGenerator(BuilderOptions options) {
   );
 }
 
+/// Generate the AggregateDto, which follows the inheritance structure of the actual Aggregate.
+///
 class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateAnnotation> {
 
   @override
@@ -41,9 +43,10 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     ;
 
     // AggregateDto
+    final parentDtoClass = getSuperClass(aggregate);
     final aggregateDtoBuilder = ClassBuilder()
       ..name = '${aggregateName}Dto'
-      ..extend = refer('AggregateDto');
+      ..extend = refer('${parentDtoClass.name}Dto');
     // The only field this DTO will have, is a final, protected reference to the actual aggregate
     final aggregateFieldName = '_${_camelName(aggregateName)}';
     final fieldBuilder = FieldBuilder()
@@ -56,13 +59,13 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     final aggregateParam = ParameterBuilder()
       ..name = 'this.$aggregateFieldName';
     final constructorBuilder = ConstructorBuilder()
-      ..name = '_'
+      ..name = null
       ..requiredParameters.add(aggregateParam.build())
-      ..initializers.add(Code('super($aggregateFieldName.aggregateId)'));
+      ..initializers.add(Code('super($aggregateFieldName)'));
     aggregateDtoBuilder.constructors.add(constructorBuilder.build());
 
     // All fields have to be converted to getters that will proxy the calls to the private aggregate instance
-    final fields = getFilteredFields(aggregate, (field) => !field.name.startsWith('_'));
+    final fields = getFilteredFields(aggregate, (field) => !field.name.startsWith('_'), false);
     for (var field in fields) {
       var body = Code('return $aggregateFieldName.${field.name};');
       // TODO: TEST!!! lists should become immutable copy...
@@ -83,11 +86,19 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
         ..returns = Reference(returnType)
         ..body = body
       ;
+
+      // TODO: equals, hashcode en tostring methodes ook genereren?
+
       aggregateDtoBuilder.methods.add(builder.build());
     }
 
     // Import the current aggregate package + scorekeeper_domain...
-    final importedLibraries = getRelevantImports([aggregate, ...fields]);
+    var importedLibraries = {'package:scorekeeper_domain/core.dart'}
+      ..addAll(getRelevantImports([aggregate, ...fields]));
+    // In case we are inheriting from another generated parent AggregateDto class, we'll have to jump some hoops to add the import
+    if ('Aggregate' != parentDtoClass.name) {
+      importedLibraries = {...importedLibraries, parentDtoClass.library.identifier.replaceAll('dart', 'f.dart')};
+    }
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
     // Put everything together!
     final emitter = DartEmitter();
@@ -108,7 +119,7 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
     for (final aggregate in aggregates) {
       final varName = _camelName(aggregate.name);
       final varType = aggregate.name;
-      code.write('\ncase $varType:\n\tfinal $varName = aggregate as $varType;\n\treturn ${varType}Dto._($varName) as R;');
+      code.write('\ncase $varType:\n\tfinal $varName = aggregate as $varType;\n\treturn ${varType}Dto($varName) as R;');
     }
     code.write("\ndefault:\n\tthrow Exception('Cannot create \$R for \${aggregate.runtimeType}');\n}");
     final builder = MethodBuilder()
