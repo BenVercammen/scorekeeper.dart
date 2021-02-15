@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-import 'package:uuid/uuid.dart';
+import 'package:scorekeeper_flutter/service.dart';
 
 import 'scorable_detail.dart';
 
@@ -20,20 +20,33 @@ void main() {
 
   final scorekeeperService = ScorekeeperService(scorekeeper);
 
-  runApp(MyApp(scorekeeperService));
+  // Default data for testing purposes
+  final defaultScorable = scorekeeperService.createNewScorable('Default Game');
+  final aggregateId = defaultScorable.aggregateId;
+  scorekeeperService
+      ..addParticipantToScorable(aggregateId, 'Player 1')
+      ..addParticipantToScorable(aggregateId, 'Player 2')
+      ..addParticipantToScorable(aggregateId, 'Player 3')
+      ..addRoundToScorable(aggregateId)
+      ..addRoundToScorable(aggregateId)
+      ..addRoundToScorable(aggregateId)
+      ..addRoundToScorable(aggregateId)
+      ..addRoundToScorable(aggregateId);
+
+  runApp(ScorableApp(scorekeeperService));
 }
 
-class MyApp extends StatelessWidget {
+class ScorableApp extends StatelessWidget {
 
   final ScorekeeperService _scorekeeperService;
 
-  MyApp(this._scorekeeperService);
+  ScorableApp(this._scorekeeperService);
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Scorekeeper Demo Application',
+      title: 'Scorekeeper Demo Application - Muurke Klop',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -46,50 +59,9 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: ScorableOverviewPage(title: 'Scorekeeper Demo Home Page', scorekeeperService: _scorekeeperService),
+      home: ScorableOverviewPage(title: 'Scorekeeper Demo Application - Muurke Klop', scorekeeperService: _scorekeeperService),
     );
   }
-}
-
-/// An API implementation designed specifically for the UI
-/// TODO: deze mag mss toch nog in een aparte package? Is een API layer bovenop de commands en events...
-///   Op die manier kunnen we die commands/events van de UI afschermen
-///   Maar dan kunnen we wel naar onze "allowances" fluiten, niet?
-///     => gewoon aan de service vragen of die knop/action toegestaan is of niet he...
-///   Is weer een extra tussenlaag....
-class ScorekeeperService {
-
-  // The actual Scorekeeper application
-  final Scorekeeper _scorekeeper;
-
-  ScorekeeperService(this._scorekeeper);
-
-  /// Add a new Scorable
-  MuurkeKlopNDownDto createNewScorable(String scorableName) {
-    final aggregateId = AggregateId.random();
-    final command = CreateScorable()
-      ..aggregateId = aggregateId.id
-      ..name = 'New Scorable';
-    _scorekeeper.handleCommand(command);
-    return _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
-  }
-
-  /// Add a newly created Participant to the Scorable
-  void addParticipantToScorable(AggregateId aggregateId, String participantName) {
-    final participant = Participant(Uuid().v4(), participantName);
-    final command = AddParticipant()
-        ..participant = participant
-        ..aggregateId = aggregateId.id;
-    _scorekeeper.handleCommand(command);
-  }
-
-  /// Add a new Round to the Scorable
-  void addRoundToScorable(AggregateId aggregateId) {
-    final command = AddRound()
-        ..aggregateId = aggregateId.id;
-    _scorekeeper.handleCommand(command);
-  }
-
 }
 
 
@@ -111,7 +83,10 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
 
   final Map<AggregateId, MuurkeKlopNDownDto> scorables = HashMap();
 
-  _ScorableOverviewPageState(this._scorekeeperService);
+  _ScorableOverviewPageState(this._scorekeeperService) {
+    // Load the 10 most recent scorables from the ScorableProjection
+    scorables.addAll({for (var e in _scorekeeperService.loadScorables(0, 10)) e.aggregateId: e});
+  }
 
   void _createNewScorable() {
     final scorable = _scorekeeperService.createNewScorable('New Scorable Name');

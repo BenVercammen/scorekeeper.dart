@@ -83,6 +83,9 @@ class Scorekeeper {
     });
   }
 
+  /// Get the registered AggregateIds
+  Set<AggregateId> get registeredAggregateIds => Set.from(_registeredAggregates.keys);
+
   /// Register the given event handler
   void registerEventHandler(EventHandler handler) {
     _eventHandlers.add(handler);

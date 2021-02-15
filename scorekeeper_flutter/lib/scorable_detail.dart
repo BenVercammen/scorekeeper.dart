@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-
-import 'main.dart';
+import 'package:scorekeeper_flutter/service.dart';
 
 class ScorableDetailPage extends StatefulWidget {
 
@@ -67,7 +66,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   Map<int, TableColumnWidth> scorableTableColWidth(MuurkeKlopNDownDto scorable) {
     final map = <int, TableColumnWidth>{};
     for (var roundIndex = 0; roundIndex < scorable.rounds.length; roundIndex++) {
-      map[roundIndex + 1] = const FixedColumnWidth(50.0);
+      map[roundIndex + 1] = const FixedColumnWidth(100.0);
     }
     return map;
   }
