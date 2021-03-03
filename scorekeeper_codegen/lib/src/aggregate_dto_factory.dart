@@ -72,12 +72,13 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
       var returnType = field.type.element.name;
       if (returnType == 'List') {
         body = Code('return $returnType.of($aggregateFieldName.${field.name}, growable: false);');
-        // If it's a parameterized type, make sure that gets included as well
-        if (field.type is ParameterizedType) {
-          final pType = field.type as ParameterizedType;
-          if (!pType.typeArguments.isEmpty) {
-            returnType += '<${pType.typeArguments[0].element.name}>';
-          }
+      }
+      // If it's a parameterized type, make sure that gets included as well
+      if (field.type is ParameterizedType) {
+        final pType = field.type as ParameterizedType;
+        if (!pType.typeArguments.isEmpty) {
+          final typeNames = pType.typeArguments.map((t) => t.element.name);
+          returnType += '<${typeNames.join(', ')}>';
         }
       }
       final builder = MethodBuilder()

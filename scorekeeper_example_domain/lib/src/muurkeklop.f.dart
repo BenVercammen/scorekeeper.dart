@@ -25,7 +25,7 @@ class MuurkeKlopNDownDto extends ScorableDto {
 
   final MuurkeKlopNDown _muurkeKlopNDown;
 
-  Map get rounds {
+  Map<int, MuurkeKlopNDownRound> get rounds {
     return _muurkeKlopNDown.rounds;
   }
 }
