@@ -61,6 +61,48 @@ void main() {
         });
     });
 
+    test('Start round', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0
+        )
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1
+        )
+        ..when(StartRound()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0
+        )
+        ..then((scorable) {
+          expect(scorable.rounds[0].started, equals(true));
+        });
+    });
+
+    test('Start round without participants', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)..given(RoundAdded()
+        ..aggregateId = _aggregateId
+        ..roundIndex = 0
+      )
+        ..when(StartRound()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0
+        )
+        ..then((scorable) {
+          expect(fixture.lastThrownException.toString(),
+              contains('Round cannot start without any players'));
+        });
+    });
+
     test('Strike out a participant', () {
       final _aggregateId = Uuid().v4();
       fixture
@@ -197,7 +239,8 @@ void main() {
   });
 
   group('Command allowances', () {
-    test('PlayerStrikedOut when already striked out in the given round', () {
+
+    test('StrikeOutParticipant allowed', () {
       final _aggregateId = Uuid().v4();
       fixture
         ..given(ScorableCreated()
@@ -206,26 +249,101 @@ void main() {
         ..given(RoundAdded()
           ..aggregateId = _aggregateId
           ..roundIndex = 0)
-        ..given(RoundAdded()
-          ..aggregateId = _aggregateId
-          ..roundIndex = 1)
         ..given(ParticipantAdded()
           ..aggregateId = _aggregateId
           ..participant = player1)
-        ..given(ParticipantAdded()
-          ..aggregateId = _aggregateId
-          ..participant = player2)
-        ..given(ParticipantStrikedOut()
-            ..aggregateId = _aggregateId
-            ..roundIndex = 0
-            ..participant = player1)
         ..then((scorable) {
           var command = StrikeOutParticipant()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0
+            ..participant = player1;
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, true, "Strike out player")));
+        });
+    });
+
+    test('StrikeOutParticipant when already striked out in the given round', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1)
+        ..given(ParticipantStrikedOut()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0
+          ..participant = player1)
+        ..then((scorable) {
+          var command = StrikeOutParticipant()
+            ..aggregateId = _aggregateId
             ..roundIndex = 0
             ..participant = player1;
           expect(scorable.isAllowed(command), equals(CommandAllowance(command, false, "Player was already striked out in this round")));
         });
     });
+
+    test('StrikeOutParticipant for Participant not in Scorable', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1)
+        ..then((scorable) {
+          var command = StrikeOutParticipant()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0
+            ..participant = player2;
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, false, "Player is not participating in this game")));
+        });
+    });
+
+    test('StartRound allowed', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        ..given(ParticipantAdded()
+          ..aggregateId = _aggregateId
+          ..participant = player1)
+        ..then((scorable) {
+          var command = StartRound()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0;
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, true, "Start round")));
+        });
+    });
+
+    test('StartRound without players', () {
+      final _aggregateId = Uuid().v4();
+      fixture
+        ..given(ScorableCreated()
+          ..name = 'Test'
+          ..aggregateId = _aggregateId)
+        ..given(RoundAdded()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        ..then((scorable) {
+          var command = StartRound()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0;
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, false, "Round cannot start without any players")));
+        });
+    });
+
   });
 
   group('Event handling', () {

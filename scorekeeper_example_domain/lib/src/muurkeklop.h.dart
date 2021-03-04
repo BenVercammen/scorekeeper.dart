@@ -28,6 +28,9 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
       case RemoveRound:
         muurkeKlopNDown.removeRound(command as RemoveRound);
         return;
+      case StartRound:
+        muurkeKlopNDown.startRound(command as StartRound);
+        return;
       case StrikeOutParticipant:
         muurkeKlopNDown.strikeOutParticipant(command as StrikeOutParticipant);
         return;
@@ -57,6 +60,7 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
       case CreateScorable:
       case AddRound:
       case RemoveRound:
+      case StartRound:
       case StrikeOutParticipant:
       case UndoParticipantStrikeOut:
       case AddParticipant:
@@ -77,6 +81,9 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
         return;
       case RoundRemoved:
         muurkeKlopNDown.roundRemoved(event.payload as RoundRemoved);
+        return;
+      case RoundStarted:
+        muurkeKlopNDown.roundStarted(event.payload as RoundStarted);
         return;
       case ParticipantStrikedOut:
         muurkeKlopNDown
@@ -117,6 +124,7 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
     switch (event.payload.runtimeType) {
       case RoundAdded:
       case RoundRemoved:
+      case RoundStarted:
       case ParticipantStrikedOut:
       case ParticipantStrikeOutUndone:
       case ScorableCreated:

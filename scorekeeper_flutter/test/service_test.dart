@@ -23,7 +23,6 @@ void main() {
         ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
         ..registerEventHandler(MuurkeKlopNDownEventHandler()
         );
-      final _scorableProjection = ScorableProjection();
       scorekeeperService = ScorekeeperService(_scorekeeper);
     });
 

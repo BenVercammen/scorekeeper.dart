@@ -30,6 +30,20 @@ class MuurkeKlopNDown extends Scorable {
   }
 
   @commandHandler
+  void startRound(StartRound command) {
+    // TODO: validate command! (make generic?)
+    final allowance = isAllowed(command);
+    if (!allowance.isAllowed) {
+      throw Exception(allowance.reason);
+    }
+
+    final event = RoundStarted()
+      ..aggregateId = command.aggregateId
+      ..roundIndex = command.roundIndex;
+    apply(event);
+  }
+
+  @commandHandler
   void strikeOutParticipant(StrikeOutParticipant command) {
     // TODO: check if roundindex is correct, or ...
     // TODO: deze contains (equals) is ook maar geldig zolang participant hetzelfde blijft he
@@ -47,7 +61,6 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   void undoParticipantStrikeout(UndoParticipantStrikeOut command) {
-    // TODO: validate command!
     final event = ParticipantStrikeOutUndone()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex
@@ -64,6 +77,11 @@ class MuurkeKlopNDown extends Scorable {
   @eventHandler
   void roundRemoved(RoundRemoved event) {
     rounds.remove(event.roundIndex);
+  }
+
+  @eventHandler
+  void roundStarted(RoundStarted event) {
+    rounds[event.roundIndex].start();
   }
 
   @eventHandler
@@ -86,10 +104,24 @@ class MuurkeKlopNDown extends Scorable {
   CommandAllowance isAllowed(dynamic command) {
     switch (command.runtimeType) {
       case StrikeOutParticipant:
+        if (!rounds.containsKey(command.roundIndex)) {
+          return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
+        }
         if (rounds[command.roundIndex].strikeOutOrder.containsValue(command.participant)) {
           return CommandAllowance(command, false, "Player was already striked out in this round");
         }
-        return CommandAllowance(command, true, null);
+        if (!participants.contains(command.participant)) {
+          return CommandAllowance(command, false, "Player is not participating in this game");
+        }
+        return CommandAllowance(command, true, "Strike out player");
+      case StartRound:
+        if (!rounds.containsKey(command.roundIndex)) {
+          return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
+        }
+        if (participants.isEmpty) {
+          return CommandAllowance(command, false, "Round cannot start without any players");
+        }
+        return CommandAllowance(command, true, "Start round");
       default:
         return super.isAllowed(command);
     }
@@ -130,6 +162,18 @@ class RemoveRound {
   int roundIndex;
 }
 
+/// Start a given Round of the Scorable
+class StartRound {
+  String aggregateId;
+  int roundIndex;
+}
+
+/// Finish a given Round of the Scorable
+class FinishRound {
+  String aggregateId;
+  int roundIndex;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,6 +200,16 @@ class RoundRemoved {
   int roundIndex;
 }
 
+class RoundStarted {
+  String aggregateId;
+  int roundIndex;
+}
+
+class RoundFinished {
+  String aggregateId;
+  int roundIndex;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /// VALUE OBJECTS /////////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +230,11 @@ class Round {
 class MuurkeKlopNDownRound extends Round {
   final Map<int, Participant> strikeOutOrder = Map();
 
+  bool _started;
+
   MuurkeKlopNDownRound(int roundIndex) : super(roundIndex);
+
+  bool get started => _started;
 
   void strikeOutParticipant(Participant participant) {
     strikeOutOrder[strikeOutOrder.length] = participant;
@@ -184,6 +242,11 @@ class MuurkeKlopNDownRound extends Round {
 
   void undoStrikeOutParticipant(Participant participant) {
     strikeOutOrder.removeWhere((strikeOutIndex, strikedOutParticipant) => strikedOutParticipant == participant);
+  }
+
+  void start() {
+    // TODO: throw exception when already started??
+    _started = true;
   }
 }
 

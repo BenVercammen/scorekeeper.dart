@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_flutter/main.dart';
+import 'package:scorekeeper_flutter/service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {

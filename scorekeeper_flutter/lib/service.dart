@@ -61,4 +61,11 @@ class ScorekeeperService {
     return resultDtos;
   }
 
+  /// Send an arbitrary command to the Scorekeeper instance.
+  /// TODO: is this something we actually want to be doing?
+  /// Something to think about...
+  void sendCommand(command) {
+    _scorekeeper.handleCommand(command);
+  }
+
 }

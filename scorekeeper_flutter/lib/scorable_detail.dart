@@ -32,6 +32,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     );
   }
 
+  /// Actually add the participant
   void _addParticipant(String name) {
     scorekeeperService.addParticipantToScorable(scorable.aggregateId, name);
     setState(() {
@@ -39,11 +40,18 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     });
   }
 
+  /// Add a round
   void _addRound() {
     scorekeeperService.addRoundToScorable(scorable.aggregateId);
     setState(() {
       // We don't need to set anything explicitly, we know our commands are handled synchronously
     });
+  }
+
+  /// Start a round
+  void _sendCommand(command) {
+    scorekeeperService.sendCommand(command);
+    setState((){});
   }
 
   @override
@@ -157,8 +165,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
       )]);
     }
     return scorable.rounds.values
-        .map((round) =>
-            TableCell(child: _ParticipantTableContainer(const Text('Start/Finish/Remove Round, based on allowances'))))
+        .map((round) => _roundAllowanceOptions(round as MuurkeKlopNDownRound))
         .toList(growable: true)
         // Add a column to add an additional round
         ..add(TableCell(
@@ -169,6 +176,35 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
                   child: const Icon(Icons.add),
               )
             )));
+  }
+
+  TableCell _roundAllowanceOptions(MuurkeKlopNDownRound round) {
+    // First list all commands we are considering here
+    final commands = [
+      StartRound()
+        ..aggregateId = scorable.aggregateId.id
+        ..roundIndex = round.roundIndex,
+      FinishRound()
+        ..aggregateId = scorable.aggregateId.id
+        ..roundIndex = round.roundIndex
+    ];
+
+    // Then check whether or not they're allowed
+
+    // Finally display the allowed commands
+    var icons = Wrap(
+      children: [
+        ...commands.map((command) =>
+          FlatButton(
+              onPressed: () => _sendCommand(command),
+              // TODO: Icon moet nog dynamisch bepaald worden!
+              child: Icon(Icons.play_arrow, semanticLabel: command.runtimeType.toString())
+          )
+        )
+      ]
+    );
+
+    return TableCell(child: _ParticipantTableContainer(icons));
   }
 
 }
