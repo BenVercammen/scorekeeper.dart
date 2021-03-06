@@ -11,7 +11,9 @@ class MuurkeKlopNDown extends Scorable {
   MuurkeKlopNDown.aggregateId(AggregateId aggregateId) : super.aggregateId(aggregateId);
 
   @commandHandler
-  MuurkeKlopNDown.command(CreateScorable command) : super.command(command);
+  MuurkeKlopNDown.command(CreateScorable command) : super.command(command) {
+    // TODO: By default a Muurke Klop game starts with 1 round
+  }
 
   @commandHandler
   void addRound(AddRound command) {
@@ -36,8 +38,46 @@ class MuurkeKlopNDown extends Scorable {
     if (!allowance.isAllowed) {
       throw Exception(allowance.reason);
     }
-
     final event = RoundStarted()
+      ..aggregateId = command.aggregateId
+      ..roundIndex = command.roundIndex;
+    apply(event);
+  }
+
+  @commandHandler
+  void pauseRound(PauseRound command) {
+    // TODO: validate command! (make generic?)
+    final allowance = isAllowed(command);
+    if (!allowance.isAllowed) {
+      throw Exception(allowance.reason);
+    }
+    final event = RoundPaused()
+      ..aggregateId = command.aggregateId
+      ..roundIndex = command.roundIndex;
+    apply(event);
+  }
+
+  @commandHandler
+  void resumeRound(ResumeRound command) {
+    // TODO: validate command! (make generic?)
+    final allowance = isAllowed(command);
+    if (!allowance.isAllowed) {
+      throw Exception(allowance.reason);
+    }
+    final event = RoundResumed()
+      ..aggregateId = command.aggregateId
+      ..roundIndex = command.roundIndex;
+    apply(event);
+  }
+
+  @commandHandler
+  void finishRound(FinishRound command) {
+    // TODO: validate command! (make generic?)
+    final allowance = isAllowed(command);
+    if (!allowance.isAllowed) {
+      throw Exception(allowance.reason);
+    }
+    final event = RoundFinished()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex;
     apply(event);
@@ -85,6 +125,21 @@ class MuurkeKlopNDown extends Scorable {
   }
 
   @eventHandler
+  void roundPaused(RoundPaused event) {
+    rounds[event.roundIndex].pause();
+  }
+
+  @eventHandler
+  void roundResumed(RoundResumed event) {
+    rounds[event.roundIndex].resume();
+  }
+
+  @eventHandler
+  void roundFinished(RoundFinished event) {
+    rounds[event.roundIndex].finish();
+  }
+
+  @eventHandler
   void participantStrikedOut(ParticipantStrikedOut event) {
     final round = rounds[event.roundIndex];
     round.strikeOutParticipant(event.participant);
@@ -102,6 +157,7 @@ class MuurkeKlopNDown extends Scorable {
   /// NOTE: the system can already validate against this method before accepting the actual command,
   /// although the superficial validation should already be done before (we assume it has already been done before calling this method)
   CommandAllowance isAllowed(dynamic command) {
+    var roundState = rounds[command.roundIndex].state;
     switch (command.runtimeType) {
       case StrikeOutParticipant:
         if (!rounds.containsKey(command.roundIndex)) {
@@ -121,7 +177,45 @@ class MuurkeKlopNDown extends Scorable {
         if (participants.isEmpty) {
           return CommandAllowance(command, false, "Round cannot start without any players");
         }
+        if (roundState == RoundState.STARTED) {
+          return CommandAllowance(command, false, "Round already started");
+        }
+        if (roundState == RoundState.PAUSED) {
+          return CommandAllowance(command, false, "Round has already been started, please resume instead of restart it");
+        }
+        if (roundState == RoundState.FINISHED) {
+          return CommandAllowance(command, false, "Round has already been finished, no going back now");
+        }
         return CommandAllowance(command, true, "Start round");
+      case PauseRound:
+        if (!rounds.containsKey(command.roundIndex)) {
+          return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
+        }
+        if (roundState == RoundState.PAUSED) {
+          return CommandAllowance(command, false, "Round has already been paused");
+        }
+        if (roundState == RoundState.FINISHED) {
+          return CommandAllowance(command, false, "Round has already been finished");
+        }
+        if (roundState == null || roundState == RoundState.NONE) {
+          return CommandAllowance(command, false, "Round has not yet been started");
+        }
+        return CommandAllowance(command, true, "Pause round");
+      case ResumeRound:
+        if (!rounds.containsKey(command.roundIndex)) {
+          return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
+        }
+        if (roundState != RoundState.PAUSED) {
+          return CommandAllowance(command, false, "Round is not paused");
+        }
+        return CommandAllowance(command, true, "Resume round");
+      case FinishRound:
+        if (!rounds.containsKey(command.roundIndex)) {
+          return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
+        }
+        // TODO: perhaps add some more logic in order to not finish a round prematurely?
+        return CommandAllowance(command, true, "Finish round");
+
       default:
         return super.isAllowed(command);
     }
@@ -174,9 +268,21 @@ class FinishRound {
   int roundIndex;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-/// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Pause a given Round of the Scorable
+class PauseRound {
+  String aggregateId;
+  int roundIndex;
+}
+
+/// Resume a given Round of the Scorable
+class ResumeRound {
+  String aggregateId;
+  int roundIndex;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// EVENTS /////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ParticipantStrikedOut {
   String aggregateId;
@@ -210,10 +316,20 @@ class RoundFinished {
   int roundIndex;
 }
 
+class RoundPaused {
+  String aggregateId;
+  int roundIndex;
+}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-/// VALUE OBJECTS /////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////
+class RoundResumed {
+  String aggregateId;
+  int roundIndex;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// VALUE OBJECTS //////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /// Round as used within the Scorable
@@ -230,11 +346,11 @@ class Round {
 class MuurkeKlopNDownRound extends Round {
   final Map<int, Participant> strikeOutOrder = Map();
 
-  bool _started;
+  RoundState _state;
 
   MuurkeKlopNDownRound(int roundIndex) : super(roundIndex);
 
-  bool get started => _started;
+  RoundState get state => _state;
 
   void strikeOutParticipant(Participant participant) {
     strikeOutOrder[strikeOutOrder.length] = participant;
@@ -244,9 +360,35 @@ class MuurkeKlopNDownRound extends Round {
     strikeOutOrder.removeWhere((strikeOutIndex, strikedOutParticipant) => strikedOutParticipant == participant);
   }
 
+  /// Move a Round to state STARTED.
+  /// We don't validate, if the Scorable aggregate wishes to do so, it can still do it by itself...
   void start() {
-    // TODO: throw exception when already started??
-    _started = true;
+    _state = RoundState.STARTED;
+  }
+
+  /// Move a Round to state PAUSED.
+  /// We don't validate, if the Scorable aggregate wishes to do so, it can still do it by itself...
+  void pause() {
+    _state = RoundState.PAUSED;
+  }
+
+  /// Move a Round to state STARTED.
+  /// We don't validate, if the Scorable aggregate wishes to do so, it can still do it by itself...
+  void resume() {
+    _state = RoundState.STARTED;
+  }
+
+  /// Move a Round to state FINISHED.
+  /// We don't validate, if the Scorable aggregate wishes to do so, it can still do it by itself...
+  void finish() {
+    _state = RoundState.FINISHED;
   }
 }
 
+/// The state of a round.
+enum RoundState {
+  NONE,
+  STARTED,
+  PAUSED,
+  FINISHED
+}

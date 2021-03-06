@@ -48,7 +48,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     });
   }
 
-  /// Start a round
+  /// Send an arbitrary command
   void _sendCommand(command) {
     scorekeeperService.sendCommand(command);
     setState((){});

@@ -31,6 +31,15 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
       case StartRound:
         muurkeKlopNDown.startRound(command as StartRound);
         return;
+      case PauseRound:
+        muurkeKlopNDown.pauseRound(command as PauseRound);
+        return;
+      case ResumeRound:
+        muurkeKlopNDown.resumeRound(command as ResumeRound);
+        return;
+      case FinishRound:
+        muurkeKlopNDown.finishRound(command as FinishRound);
+        return;
       case StrikeOutParticipant:
         muurkeKlopNDown.strikeOutParticipant(command as StrikeOutParticipant);
         return;
@@ -61,6 +70,9 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
       case AddRound:
       case RemoveRound:
       case StartRound:
+      case PauseRound:
+      case ResumeRound:
+      case FinishRound:
       case StrikeOutParticipant:
       case UndoParticipantStrikeOut:
       case AddParticipant:
@@ -84,6 +96,15 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
         return;
       case RoundStarted:
         muurkeKlopNDown.roundStarted(event.payload as RoundStarted);
+        return;
+      case RoundPaused:
+        muurkeKlopNDown.roundPaused(event.payload as RoundPaused);
+        return;
+      case RoundResumed:
+        muurkeKlopNDown.roundResumed(event.payload as RoundResumed);
+        return;
+      case RoundFinished:
+        muurkeKlopNDown.roundFinished(event.payload as RoundFinished);
         return;
       case ParticipantStrikedOut:
         muurkeKlopNDown
@@ -125,6 +146,9 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
       case RoundAdded:
       case RoundRemoved:
       case RoundStarted:
+      case RoundPaused:
+      case RoundResumed:
+      case RoundFinished:
       case ParticipantStrikedOut:
       case ParticipantStrikeOutUndone:
       case ScorableCreated:
