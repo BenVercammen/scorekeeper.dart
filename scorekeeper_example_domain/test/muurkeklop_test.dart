@@ -14,8 +14,7 @@ void main() {
   TestFixture<MuurkeKlopNDown> fixture;
 
   setUp(() {
-    fixture = TestFixture<MuurkeKlopNDown>(
-        MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
+    fixture = TestFixture<MuurkeKlopNDown>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
   });
 
   group('Command handling', () {
@@ -90,8 +89,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(fixture.lastThrownException.toString(),
-                contains('Round cannot start without any players'));
+            expect(fixture.lastThrownException.toString(), contains('Round cannot start without any players'));
           });
       });
 
@@ -167,8 +165,8 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(fixture.lastThrownException.toString(),
-                contains('Round has already been finished, no going back now'));
+            expect(
+                fixture.lastThrownException.toString(), contains('Round has already been finished, no going back now'));
           });
       });
 
@@ -211,8 +209,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(
-                fixture.lastThrownException.toString(), contains('Round has not yet been started'));
+            expect(fixture.lastThrownException.toString(), contains('Round has not yet been started'));
           });
       });
 
@@ -238,8 +235,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(
-                fixture.lastThrownException.toString(), contains('Round has already been paused'));
+            expect(fixture.lastThrownException.toString(), contains('Round has already been paused'));
           });
       });
 
@@ -294,8 +290,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(fixture.lastThrownException.toString(),
-                contains('Round has already been finished'));
+            expect(fixture.lastThrownException.toString(), contains('Round has already been finished'));
           });
       });
 
@@ -392,7 +387,7 @@ void main() {
       });
     });
 
-    group('Participants', () {
+    group('Participant strike-out', () {
       test('Strike out a participant', () {
         final _aggregateId = Uuid().v4();
         fixture
@@ -411,6 +406,9 @@ void main() {
           ..given(ParticipantAdded()
             ..aggregateId = _aggregateId
             ..participant = player2)
+          ..given(RoundStarted()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(2));
             expect(scorable.rounds[0].strikeOutOrder, isEmpty);
@@ -446,7 +444,10 @@ void main() {
           ..given(ParticipantAdded()
             ..aggregateId = _aggregateId
             ..participant = player2)
-          ..given(ParticipantStrikedOut()
+          ..given(RoundStarted()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0)
+          ..given(ParticipantStruckOut()
             ..aggregateId = _aggregateId
             ..participant = player1
             ..roundIndex = 0)
@@ -460,8 +461,7 @@ void main() {
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(fixture.lastThrownException.toString(),
-                contains('Player 1 already striked out in round 1'));
+            expect(fixture.lastThrownException.toString(), contains('Player 1 was already struck out in round 1'));
             expect(scorable.rounds.length, equals(2));
             expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
             expect(scorable.rounds[0].strikeOutOrder[0], equals(player1));
@@ -487,7 +487,10 @@ void main() {
           ..given(ParticipantAdded()
             ..aggregateId = _aggregateId
             ..participant = player2)
-          ..given(ParticipantStrikedOut()
+          ..given(RoundStarted()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0)
+          ..given(ParticipantStruckOut()
             ..aggregateId = _aggregateId
             ..participant = player1
             ..roundIndex = 0)
@@ -507,6 +510,66 @@ void main() {
             expect(scorable.rounds[1].strikeOutOrder, isEmpty);
           });
       });
+
+      /// This scenario points out that we can use Participant VO's interchangeably,
+      /// as long as the actual ParticipantId remains the same.
+      /// We (currently) want to pass along Participant VO's in our commands so that we
+      ///  - can use its properties in command allowance messages
+      ///  - can show some basic properties immediately without having to look them up
+      test('Strike out modified participant (only matching participantId)', () {
+        final _aggregateId = Uuid().v4();
+        final player1b = Participant(player1.participantId, 'Player 1B');
+        fixture
+          ..given(ScorableCreated()
+            ..name = 'Test'
+            ..aggregateId = _aggregateId)
+          ..given(RoundAdded()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0)
+          ..given(RoundAdded()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 1)
+          ..given(RoundStarted()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0)
+          ..given(ParticipantAdded()
+            ..aggregateId = _aggregateId
+            ..participant = player1)
+          ..when(StrikeOutParticipant()
+            ..aggregateId = _aggregateId
+            ..participant = player1b
+            ..roundIndex = 0)
+          ..then((scorable) {
+            expect(fixture.lastThrownException, isNull);
+            expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
+            expect(scorable.rounds[0].strikeOutOrder[0], equals(player1));
+            expect(scorable.rounds[0].strikeOutOrder[0], equals(player1b));
+          });
+      });
+
+      test('Strike out a participant in a round that has not yet been started', () {
+        final _aggregateId = Uuid().v4();
+        fixture
+          ..given(ScorableCreated()
+            ..name = 'Test'
+            ..aggregateId = _aggregateId)
+          ..given(RoundAdded()
+            ..aggregateId = _aggregateId
+            ..roundIndex = 0)
+          ..given(ParticipantAdded()
+            ..aggregateId = _aggregateId
+            ..participant = player1)
+          ..given(ParticipantAdded()
+            ..aggregateId = _aggregateId
+            ..participant = player2)
+          ..when(StrikeOutParticipant()
+            ..aggregateId = _aggregateId
+            ..participant = player1
+            ..roundIndex = 0)
+          ..then((scorable) {
+            expect(fixture.lastThrownException.toString(), contains('Round is not in progress'));
+          });
+      });
     });
   });
 
@@ -523,17 +586,20 @@ void main() {
         ..given(ParticipantAdded()
           ..aggregateId = _aggregateId
           ..participant = player1)
+        ..given(RoundStarted()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        // No "when" because we're directly testing the command allowance. Maybe we should not do this?
         ..then((scorable) {
-          var command = StrikeOutParticipant()
+          final command = StrikeOutParticipant()
             ..aggregateId = _aggregateId
             ..roundIndex = 0
             ..participant = player1;
-          expect(scorable.isAllowed(command),
-              equals(CommandAllowance(command, true, "Strike out player")));
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, true, "Strike out player")));
         });
     });
 
-    test('StrikeOutParticipant when already striked out in the given round', () {
+    test('StrikeOutParticipant when already struck out in the given round', () {
       final _aggregateId = Uuid().v4();
       fixture
         ..given(ScorableCreated()
@@ -545,19 +611,24 @@ void main() {
         ..given(ParticipantAdded()
           ..aggregateId = _aggregateId
           ..participant = player1)
-        ..given(ParticipantStrikedOut()
+        ..given(RoundStarted()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        ..given(ParticipantStruckOut()
           ..aggregateId = _aggregateId
           ..roundIndex = 0
           ..participant = player1)
+        ..given(RoundStarted()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
+        // No "when" because we're directly testing the command allowance. Maybe we should not do this?
         ..then((scorable) {
-          var command = StrikeOutParticipant()
+          final command = StrikeOutParticipant()
             ..aggregateId = _aggregateId
             ..roundIndex = 0
             ..participant = player1;
-          expect(
-              scorable.isAllowed(command),
-              equals(CommandAllowance(
-                  command, false, "Player was already striked out in this round")));
+          expect(scorable.isAllowed(command),
+              equals(CommandAllowance(command, false, "Player 1 was already struck out in round 1")));
         });
     });
 
@@ -573,6 +644,9 @@ void main() {
         ..given(ParticipantAdded()
           ..aggregateId = _aggregateId
           ..participant = player1)
+        ..given(RoundStarted()
+          ..aggregateId = _aggregateId
+          ..roundIndex = 0)
         ..then((scorable) {
           var command = StrikeOutParticipant()
             ..aggregateId = _aggregateId
@@ -599,8 +673,7 @@ void main() {
           var command = StartRound()
             ..aggregateId = _aggregateId
             ..roundIndex = 0;
-          expect(
-              scorable.isAllowed(command), equals(CommandAllowance(command, true, "Start round")));
+          expect(scorable.isAllowed(command), equals(CommandAllowance(command, true, "Start round")));
         });
     });
 

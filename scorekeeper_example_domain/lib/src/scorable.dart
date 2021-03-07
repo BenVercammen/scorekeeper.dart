@@ -77,7 +77,7 @@ class Scorable extends Aggregate {
   ///       eg: Scorable is not yet started && minimal numer of participants is available -> StartScorable
   ///       actually, this translates to a map of <"Command" => "isAllowed+Reason">
   ///   - the command content level, taking actual parameters into account
-  ///       eg: Participant 1 is already striked out for a given round, so he cannot strike-out again
+  ///       eg: Participant 1 is already struck out for a given round, so he cannot strike-out again
   ///       this translates to a map of <"Command" => <"Participant" => "isAllowed+Reason">>
   ///       -> but then again, any parameter of the command can be a reason for allowing or disallowing it
   ///       -> so we'd have to create an entire permutation map, which could become quite big quite easily...
@@ -96,6 +96,7 @@ class Scorable extends Aggregate {
   /// Checks whether or not the given command is currently allowed.
   /// This depends on the state of the aggregate and the attribute values of the command itself.
   ///
+  /// TODO: shouldn't we "disallow" by default? unknown commands aren't allowed?
   CommandAllowance isAllowed(dynamic command) {
     switch (command.runtimeType) {
       default:
@@ -202,11 +203,14 @@ class ParticipantRemoved {
 /// VALUE OBJECTS /////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 /// Value object used within the Scorable aggregate
 /// TODO: are we allowed to pass these along? We'll probably have to de-dupe this usage...
 ///  We now use Participant for 2 purposes:
 ///   - for working with inside the internal state of the aggregate
 ///   - for passing along in commands & events
+///
+/// TODO: another question, should we treat Entity/Aggregate referrin VO DTO's differently?
 class Participant {
 
   final String participantId;
@@ -220,6 +224,13 @@ class Participant {
     return 'Participant $name ($participantId)';
   }
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Participant && runtimeType == other.runtimeType && participantId == other.participantId;
+
+  @override
+  int get hashCode => participantId.hashCode;
 }
 
 /// DTO that tells whether or not a given command is allowed, along with a possible reason for it.

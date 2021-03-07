@@ -21,6 +21,11 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
 
   @override
   void handle(MuurkeKlopNDown muurkeKlopNDown, dynamic command) {
+    // Validate the incoming command (allowance)
+    final allowance = muurkeKlopNDown.isAllowed(command);
+    if (!allowance.isAllowed) {
+      throw Exception(allowance.reason);
+    }
     switch (command.runtimeType) {
       case AddRound:
         muurkeKlopNDown.addRound(command as AddRound);
@@ -106,9 +111,9 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
       case RoundFinished:
         muurkeKlopNDown.roundFinished(event.payload as RoundFinished);
         return;
-      case ParticipantStrikedOut:
+      case ParticipantStruckOut:
         muurkeKlopNDown
-            .participantStrikedOut(event.payload as ParticipantStrikedOut);
+            .participantStruckOut(event.payload as ParticipantStruckOut);
         return;
       case ParticipantStrikeOutUndone:
         muurkeKlopNDown.participantStrikeOutUndone(
@@ -149,7 +154,7 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
       case RoundPaused:
       case RoundResumed:
       case RoundFinished:
-      case ParticipantStrikedOut:
+      case ParticipantStruckOut:
       case ParticipantStrikeOutUndone:
       case ScorableCreated:
       case ParticipantAdded:

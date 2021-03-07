@@ -33,11 +33,6 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   void startRound(StartRound command) {
-    // TODO: validate command! (make generic?)
-    final allowance = isAllowed(command);
-    if (!allowance.isAllowed) {
-      throw Exception(allowance.reason);
-    }
     final event = RoundStarted()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex;
@@ -46,11 +41,6 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   void pauseRound(PauseRound command) {
-    // TODO: validate command! (make generic?)
-    final allowance = isAllowed(command);
-    if (!allowance.isAllowed) {
-      throw Exception(allowance.reason);
-    }
     final event = RoundPaused()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex;
@@ -59,11 +49,6 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   void resumeRound(ResumeRound command) {
-    // TODO: validate command! (make generic?)
-    final allowance = isAllowed(command);
-    if (!allowance.isAllowed) {
-      throw Exception(allowance.reason);
-    }
     final event = RoundResumed()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex;
@@ -72,11 +57,6 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   void finishRound(FinishRound command) {
-    // TODO: validate command! (make generic?)
-    final allowance = isAllowed(command);
-    if (!allowance.isAllowed) {
-      throw Exception(allowance.reason);
-    }
     final event = RoundFinished()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex;
@@ -85,14 +65,7 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   void strikeOutParticipant(StrikeOutParticipant command) {
-    // TODO: check if roundindex is correct, or ...
-    // TODO: deze contains (equals) is ook maar geldig zolang participant hetzelfde blijft he
-    //  tenzij we de equals enkel op participantId zetten... wat voor value objects niet oké is...
-    //  dus: test voor schrijven en fixen!
-    if (rounds[command.roundIndex].strikeOutOrder.containsValue(command.participant)) {
-      throw Exception('${command.participant.name} already striked out in round ${command.roundIndex + 1}');
-    }
-    final event = ParticipantStrikedOut()
+    final event = ParticipantStruckOut()
       ..aggregateId = command.aggregateId
       ..roundIndex = command.roundIndex
       ..participant = command.participant;
@@ -140,7 +113,7 @@ class MuurkeKlopNDown extends Scorable {
   }
 
   @eventHandler
-  void participantStrikedOut(ParticipantStrikedOut event) {
+  void participantStruckOut(ParticipantStruckOut event) {
     final round = rounds[event.roundIndex];
     round.strikeOutParticipant(event.participant);
   }
@@ -157,19 +130,31 @@ class MuurkeKlopNDown extends Scorable {
   /// NOTE: the system can already validate against this method before accepting the actual command,
   /// although the superficial validation should already be done before (we assume it has already been done before calling this method)
   CommandAllowance isAllowed(dynamic command) {
-    var roundState = rounds[command.roundIndex].state;
     switch (command.runtimeType) {
       case StrikeOutParticipant:
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
-        if (rounds[command.roundIndex].strikeOutOrder.containsValue(command.participant)) {
-          return CommandAllowance(command, false, "Player was already striked out in this round");
+        final round = rounds[command.roundIndex];
+        if (round.state != RoundState.STARTED) {
+          return CommandAllowance(command, false, "Round is not in progress");
         }
-        if (!participants.contains(command.participant)) {
+        if (round.isStruckOut(command.participant)) {
+          return CommandAllowance(command, false, "${command.participant.name} was already struck out in round ${command.roundIndex + 1}");
+        }
+        if (!isParticipating(command.participant)) {
           return CommandAllowance(command, false, "Player is not participating in this game");
         }
         return CommandAllowance(command, true, "Strike out player");
+      case UndoParticipantStrikeOut:
+        if (!rounds.containsKey(command.roundIndex)) {
+          return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
+        }
+        final round = rounds[command.roundIndex];
+        if (round.state != RoundState.STARTED) {
+          return CommandAllowance(command, false, "Round is not in progress");
+        }
+        return CommandAllowance(command, true, "Undo player struck out");
       case StartRound:
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
@@ -177,6 +162,7 @@ class MuurkeKlopNDown extends Scorable {
         if (participants.isEmpty) {
           return CommandAllowance(command, false, "Round cannot start without any players");
         }
+        final roundState = rounds[command.roundIndex].state;
         if (roundState == RoundState.STARTED) {
           return CommandAllowance(command, false, "Round already started");
         }
@@ -191,6 +177,7 @@ class MuurkeKlopNDown extends Scorable {
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
+        final roundState = rounds[command.roundIndex].state;
         if (roundState == RoundState.PAUSED) {
           return CommandAllowance(command, false, "Round has already been paused");
         }
@@ -205,6 +192,7 @@ class MuurkeKlopNDown extends Scorable {
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
+        final roundState = rounds[command.roundIndex].state;
         if (roundState != RoundState.PAUSED) {
           return CommandAllowance(command, false, "Round is not paused");
         }
@@ -221,6 +209,10 @@ class MuurkeKlopNDown extends Scorable {
     }
   }
 
+  /// Check if the given participant is participating in this Scorable
+  bool isParticipating(Participant participant) {
+    return participants.contains(participant);
+  }
 
 
 }
@@ -232,7 +224,7 @@ class MuurkeKlopNDown extends Scorable {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// When a participant strikes out, he/she will receive a fixed number of points depending
-/// on the order in which he was striked out.
+/// on the order in which he was struck out.
 class StrikeOutParticipant {
   String aggregateId;
   Participant participant;
@@ -284,7 +276,7 @@ class ResumeRound {
 /// EVENTS /////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ParticipantStrikedOut {
+class ParticipantStruckOut {
   String aggregateId;
   Participant participant;
   int roundIndex;
@@ -357,7 +349,7 @@ class MuurkeKlopNDownRound extends Round {
   }
 
   void undoStrikeOutParticipant(Participant participant) {
-    strikeOutOrder.removeWhere((strikeOutIndex, strikedOutParticipant) => strikedOutParticipant == participant);
+    strikeOutOrder.removeWhere((strikeOutIndex, struckOutParticipant) => struckOutParticipant == participant);
   }
 
   /// Move a Round to state STARTED.
@@ -382,6 +374,11 @@ class MuurkeKlopNDownRound extends Round {
   /// We don't validate, if the Scorable aggregate wishes to do so, it can still do it by itself...
   void finish() {
     _state = RoundState.FINISHED;
+  }
+
+  /// Check if the given participant is already struck out in this round
+  bool isStruckOut(Participant participant) {
+    return strikeOutOrder.values.contains(participant);
   }
 }
 

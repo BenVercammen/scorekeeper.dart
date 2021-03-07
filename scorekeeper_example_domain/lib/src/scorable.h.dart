@@ -20,6 +20,11 @@ class ScorableCommandHandler implements CommandHandler<Scorable> {
 
   @override
   void handle(Scorable scorable, dynamic command) {
+    // Validate the incoming command (allowance)
+    final allowance = scorable.isAllowed(command);
+    if (!allowance.isAllowed) {
+      throw Exception(allowance.reason);
+    }
     switch (command.runtimeType) {
       case AddParticipant:
         scorable.addParticipant(command as AddParticipant);
