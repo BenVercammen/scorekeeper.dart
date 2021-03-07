@@ -1,3 +1,4 @@
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
@@ -6,9 +7,9 @@ import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
 import 'package:scorekeeper_flutter/service.dart';
 
+/// Testing the ScorekeeperService
 void main() {
   group('ScorekeeperService', () {
-
     // The unit under test
     ScorekeeperService scorekeeperService;
 
@@ -16,13 +17,10 @@ void main() {
     Scorekeeper _scorekeeper;
 
     setUp(() {
-      _scorekeeper = Scorekeeper(
-          eventStore: EventStoreInMemoryImpl(),
-          aggregateCache: AggregateCacheInMemoryImpl())
-      // Register the command and event handlers for the relevant domain
+      _scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())
+        // Register the command and event handlers for the relevant domain
         ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
-        ..registerEventHandler(MuurkeKlopNDownEventHandler()
-        );
+        ..registerEventHandler(MuurkeKlopNDownEventHandler());
       scorekeeperService = ScorekeeperService(_scorekeeper);
     });
 
@@ -32,20 +30,24 @@ void main() {
       final registeredAggregateIds = List.empty(growable: true);
       // Given 20 Registered AggregateIds
       // (Aggregates the current instance is interested in, in this case because it created them itself)
-      for (var i = 0; i < 20; i++) {
+      for (var i = 1; i <= 20; i++) {
         final aggregateId = AggregateId.random();
         _scorekeeper.handleCommand(CreateScorable()
-            ..aggregateId = aggregateId.id
-            ..name = 'Aggregate $i'
-        );
+          ..aggregateId = aggregateId.id
+          ..name = 'Aggregate $i');
+        sleep(Duration(milliseconds: 1));
         registeredAggregateIds.add(aggregateId);
       }
       // When we want to load a limited list of aggregateIds..
       var registeredScorablesPage = scorekeeperService.loadScorables(0, 5);
       // Then we should get the 5 latest aggregateIds because they were modified last
       expect(registeredScorablesPage.length, equals(5));
-      expect(registeredScorablesPage.first.aggregateId, equals(registeredAggregateIds.last));
-      expect(registeredScorablesPage, containsAllInOrder(registeredAggregateIds.getRange(14, 19)));
+      final pagedItems = List.of(registeredScorablesPage);
+      expect(pagedItems[0].name, equals('Aggregate 20'));
+      expect(pagedItems[1].name, equals('Aggregate 19'));
+      expect(pagedItems[2].name, equals('Aggregate 18'));
+      expect(pagedItems[3].name, equals('Aggregate 17'));
+      expect(pagedItems[4].name, equals('Aggregate 16'));
     });
   });
 }
