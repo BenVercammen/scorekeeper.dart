@@ -85,6 +85,13 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..type = const Reference('dynamic');
     builder.requiredParameters.add(param2.build());
     final code = StringBuffer()
+      // First validate the incoming command
+      ..write('// Validate the incoming command (allowance)\n')
+      ..write('final allowance = ${camelName(aggregate.name)}.isAllowed(command);\n')
+      ..write('if (!allowance.isAllowed) {\n')
+      ..write('\tthrow Exception(allowance.reason);\n')
+      ..write('}\n')
+      // Then try to find and execute the correct handler
       ..write('switch (command.runtimeType) {');
     for (final handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
