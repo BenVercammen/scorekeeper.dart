@@ -45,3 +45,19 @@ Build steps
         - `flutter build web`
         - `firebase deploy --only hosting`
       - https://scorekeeper-flutter-poc-v1.web.app
+
+
+## Authentication
+For authentication, we'll rely on firebase authentication.
+This will require a Google Firebase project
+ - Go to https://console.firebase.google.com/
+ - Select the "Scorekeeper Flutter POC v1" (https://console.firebase.google.com/u/0/project/scorekeeper-flutter-poc-v1/overview)
+ - Select "Authentication" under the "Build" section in the Firebase menu
+ - Sign-in providers:
+    - Google:
+        - simpel... https://console.firebase.google.com/u/0/project/scorekeeper-flutter-poc-v1/authentication/providers
+    - Facebook:
+        - https://developers.facebook.com/docs/facebook-login/security#appsecret
+        - get app id and secret (https://developers.facebook.com/apps/2550940618562699/settings/basic/)
+        - add oauth redirect url (https://developers.facebook.com/apps/2550940618562699/fb-login/settings/)
+    

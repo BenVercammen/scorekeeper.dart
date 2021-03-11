@@ -24,9 +24,11 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.1
+  firebase_auth: ^1.0.1
+  firebase_core: ^1.0.0
   flutter:
     sdk: flutter
-  ordered_set: 2.0.1
+  ordered_set: ^2.0.2
   scorekeeper_core:
     path: ../scorekeeper_core
   # TODO: why doesn't the scorekeeper_example_domain bring this transitive dependency along?
@@ -37,12 +39,13 @@ dependencies:
   uuid: ^2.2.2
 
 dev_dependencies:
-  # Te gebruiken om via CLI icons aan te passen fzo... (voorlopig nog nie gebruikt, ma bon)
-  flutter_launcher_icons: 0.8.1
-  flutter_test:
+  flutter_driver:
     sdk: flutter
+#  flutter_test:
+#    sdk: flutter
   integration_test:
     sdk: flutter
+  test: ^1.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
