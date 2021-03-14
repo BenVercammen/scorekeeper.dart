@@ -8,15 +8,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
-import 'package:scorekeeper_flutter/main.dart';
-import 'package:scorekeeper_flutter/service.dart';
+import 'package:scorekeeper_flutter/src/screens/scorable_overview.dart';
+import 'package:scorekeeper_flutter/src/services/service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    final scorekeeper = Scorekeeper(
-        eventStore: EventStoreInMemoryImpl(),
-        aggregateCache: AggregateCacheInMemoryImpl());
+    final scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl());
     await tester.pumpWidget(ScorableOverviewPage(title: 'Test', scorekeeperService: ScorekeeperService(scorekeeper)));
 
     // Verify that our counter starts at 0.

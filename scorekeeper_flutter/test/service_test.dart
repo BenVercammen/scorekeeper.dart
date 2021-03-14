@@ -5,7 +5,7 @@ import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_core/src/scorekeeper_base.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-import 'package:scorekeeper_flutter/service.dart';
+import 'package:scorekeeper_flutter/src/services/service.dart';
 
 /// Testing the ScorekeeperService
 void main() {

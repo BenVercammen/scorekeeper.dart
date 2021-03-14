@@ -28,7 +28,7 @@ Build steps
       - `cd C:\Workspace\dart\scorekeeper\scorekeeper_flutter`
       - `flutter build appbundle`
    - Then create the APKS file, once again using build
-      - Use the `C:\Tools\bundletool-all-1.4.0.jar` to create the AAB file
+      - Use the `C:\Tools\bundletool-all-1.4.0.jar` to create the AAB file (pw=mm)
       - `java -jar C:\Tools\bundletool-all-1.4.0.jar build-apks --bundle=build\app\outputs\bundle\release\app-release.aab --output=build\app\outputs\apks\scorekeeper_flutter.apks --ks=..\key.jks --ks-key-alias=key`
    - For testing, deploy on a connected device (https://developer.android.com/studio/command-line/bundletool#deploy_with_bundletool)
       - `java -jar C:\Tools\bundletool-all-1.4.0.jar install-apks --apks=build\app\outputs\apks\scorekeeper_flutter.apks`
@@ -61,3 +61,37 @@ This will require a Google Firebase project
         - get app id and secret (https://developers.facebook.com/apps/2550940618562699/settings/basic/)
         - add oauth redirect url (https://developers.facebook.com/apps/2550940618562699/fb-login/settings/)
     
+
+# Emulating with Android SDK command line tools
+ - Check 
+    - https://medium.com/michael-wallace/how-to-install-android-sdk-and-setup-avd-emulator-without-android-studio-aeb55c014264
+    - https://proandroiddev.com/automated-android-emulator-setup-and-configuration-23accc11a325
+ - General setup:
+    - Env Path "ANDROID_CLI_TOOLS" = `C:\Tools\AndroidSDK\cmdline-tools\latest`
+    - `sdkmanager platform-tools emulator`
+    - Env Path "ANDROID_EMULATOR" = `C:\Tools\AndroidSDK\emulator`
+    - Env Path "ANDROID_PLATFORM_TOOLS" = `C:\Tools\AndroidSDK\emulator`
+    - Env Path "ANDROID_TOOLS" = `C:\Tools\AndroidSDK\tools\bin`
+ - API level specific setup
+    - Android 7.0 on my phone, has Android API level 24...
+        - `sdkmanager "platforms;android-24"`
+ - Create AVD device (Android Virtual Device)
+    - `sdkmanager "system-images;android-24;google_apis;x86"`
+    - `sdkmanager --licenses` (accept all licenses)
+    - `avdmanager create avd --name android24 --package "system-images;android-24;google_apis;x86"` (just say no to custom profile, for now)
+ - Run the emulator
+    - `emulator -avd android24` or `emulator @android24`
+ - Set up in IntelliJ IDEA
+    - `flutter doctor` to make sure everything is okay
+    - restart IntelliJ and the emulator should show up in devices
+ - Customize AVD:
+    - Go to the (default) AVD location
+        - `%USR_HOME%\.android\avd\android24.avd`
+    - Check the `.config.ini` file
+    - To enable keyboard, set `hw.keyboard=yes`
+ - Check console.log 
+    - `adb logcat browser:V *:S` (does not seem to log anything, but intelliJ actually does, after rebooting the app in the emulator)
+    - Encountered issues:
+        - Permission denied (missing INTERNET permission?)
+            - https://stackoverflow.com/questions/17360924/securityexception-permission-denied-missing-internet-permission
+            - remove maxSdkVersion...

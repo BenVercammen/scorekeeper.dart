@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-import 'package:scorekeeper_flutter/service.dart';
+
+import '../services/service.dart';
 
 class ScorableDetailPage extends StatefulWidget {
-
   final MuurkeKlopNDownDto scorable;
 
   final ScorekeeperService scorekeeperService;
@@ -12,13 +12,9 @@ class ScorableDetailPage extends StatefulWidget {
 
   @override
   _ScorableDetailPageState createState() => _ScorableDetailPageState(scorekeeperService, scorable);
-
 }
 
-
-
 class _ScorableDetailPageState extends State<ScorableDetailPage> {
-
   final ScorekeeperService scorekeeperService;
 
   final MuurkeKlopNDownDto scorable;
@@ -27,9 +23,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
 
   /// Show the dialog to input a new Participant
   void _showAddParticipantDialog(BuildContext context) {
-    showDialog(context: context,
-     builder: (context) => _AddParticipantDialog(_addParticipant)
-    );
+    showDialog(context: context, builder: (context) => _AddParticipantDialog(_addParticipant));
   }
 
   /// Actually add the participant
@@ -51,12 +45,11 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   /// Send an arbitrary command
   void _sendCommand(command) {
     scorekeeperService.sendCommand(command);
-    setState((){});
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: Text(scorable.name),
@@ -85,39 +78,32 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
 
     var headerCells =
 
-    // Header row
-    rowList.add(TableRow(
+        // Header row
+        rowList.add(TableRow(
             children: [TableCell(child: _ParticipantTableContainer(const Text('Player')))]
               ..addAll(roundHeadTableCells())
-              ..add(TableCell(child: _ParticipantTableContainer(const Text('Total')))))
-    );
+              ..add(TableCell(child: _ParticipantTableContainer(const Text('Total'))))));
     // Body row
     for (Participant participant in scorable.participants) {
       rowList.add(TableRow(
           children: [TableCell(child: _ParticipantTableContainer(Text(participant.name)))]
             ..addAll(participantRoundBody(participant))
-            ..add(TableCell(child: _ParticipantTableContainer(const Text('Total')))))
-      );
+            ..add(TableCell(child: _ParticipantTableContainer(const Text('Total'))))));
     }
     // Footer row
     rowList.add(TableRow(
         children: [
-          TableCell(
-              child: _ParticipantTableContainer(
-                  FlatButton(
-                    onPressed: () => _showAddParticipantDialog(context),
-                    // tooltip: 'Add new Participant',
-                    child: const Icon(Icons.add),
-                  )
-              )
-          )
-        ]
+      TableCell(
+          child: _ParticipantTableContainer(FlatButton(
+        onPressed: () => _showAddParticipantDialog(context),
+        // tooltip: 'Add new Participant',
+        child: const Icon(Icons.add),
+      )))
+    ]
           ..addAll(_roundsFooter())
           ..add(TableCell(child: _ParticipantTableContainer(
-            // TODO: button van maken gebaseerd op allowance "FinishScorable" / "Restart Scorable"
-              const Text('Spel afronden')))
-          )
-    ));
+              // TODO: button van maken gebaseerd op allowance "FinishScorable" / "Restart Scorable"
+              const Text('Spel afronden'))))));
 
     return rowList;
   }
@@ -125,57 +111,45 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   /// Return TableCell
   List<TableCell> roundHeadTableCells() {
     if (scorable.rounds.isEmpty) {
-      return List.of([TableCell(
-          child: _ParticipantTableContainer(const Text('Rounds'))
-      )]);
+      return List.of([TableCell(child: _ParticipantTableContainer(const Text('Rounds')))]);
     }
-    return scorable.rounds.values.map((round) => TableCell(
-                child: _ParticipantTableContainer(Text('Round ${round.roundIndex + 1}'))
-            )).toList(growable: true)
-    ..add(TableCell(
-        child: _ParticipantTableContainer(const Text(''))
-    ))
-    ;
+    return scorable.rounds.values
+        .map((round) => TableCell(child: _ParticipantTableContainer(Text('Round ${round.roundIndex + 1}'))))
+        .toList(growable: true)
+          ..add(TableCell(child: _ParticipantTableContainer(const Text(''))));
   }
 
   List<TableCell> participantRoundBody(Participant participant) {
     if (scorable.rounds.isEmpty) {
-      return List.of([TableCell(
-          child: _ParticipantTableContainer(const Text(''))
-      )]);
+      return List.of([TableCell(child: _ParticipantTableContainer(const Text('')))]);
     }
-    return scorable.rounds.values.map((round) => TableCell(
-        child: _ParticipantTableContainer(const Text('Strike out ?'))
-    )).toList(growable: true)
-    ..add(TableCell(
-        child: _ParticipantTableContainer(const Text('-'))
-    ));
+    return scorable.rounds.values
+        .map((round) => TableCell(child: _ParticipantTableContainer(const Text('Strike out ?'))))
+        .toList(growable: true)
+          ..add(TableCell(child: _ParticipantTableContainer(const Text('-'))));
   }
 
   List<TableCell> _roundsFooter() {
     if (scorable.rounds.isEmpty) {
-      return List.of([TableCell(
-          child: _ParticipantTableContainer(
-              FlatButton(
-                onPressed: _addRound,
-                // tooltip: 'Add new Round',
-                child: const Icon(Icons.add),
-              )
-          )
-      )]);
+      return List.of([
+        TableCell(
+            child: _ParticipantTableContainer(FlatButton(
+          onPressed: _addRound,
+          // tooltip: 'Add new Round',
+          child: const Icon(Icons.add),
+        )))
+      ]);
     }
     return scorable.rounds.values
         .map((round) => _roundAllowanceOptions(round as MuurkeKlopNDownRound))
         .toList(growable: true)
-        // Add a column to add an additional round
-        ..add(TableCell(
-            child: _ParticipantTableContainer(
-                FlatButton(
-                onPressed: _addRound,
-                  // tooltip: 'Add new Round',
-                  child: const Icon(Icons.add),
-              )
-            )));
+          // Add a column to add an additional round
+          ..add(TableCell(
+              child: _ParticipantTableContainer(FlatButton(
+            onPressed: _addRound,
+            // tooltip: 'Add new Round',
+            child: const Icon(Icons.add),
+          ))));
   }
 
   TableCell _roundAllowanceOptions(MuurkeKlopNDownRound round) {
@@ -192,26 +166,19 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     // Then check whether or not they're allowed
 
     // Finally display the allowed commands
-    var icons = Wrap(
-      children: [
-        ...commands.map((command) =>
-          FlatButton(
-              onPressed: () => _sendCommand(command),
-              // TODO: Icon moet nog dynamisch bepaald worden!
-              child: Icon(Icons.play_arrow, semanticLabel: command.runtimeType.toString())
-          )
-        )
-      ]
-    );
+    var icons = Wrap(children: [
+      ...commands.map((command) => FlatButton(
+          onPressed: () => _sendCommand(command),
+          // TODO: Icon moet nog dynamisch bepaald worden!
+          child: Icon(Icons.play_arrow, semanticLabel: command.runtimeType.toString())))
+    ]);
 
     return TableCell(child: _ParticipantTableContainer(icons));
   }
-
 }
 
 /// The dialog for adding a new Participant to the Scorable
 class _AddParticipantDialog extends StatelessWidget {
-
   final void Function(String name) callback;
 
   _AddParticipantDialog(this.callback);
@@ -228,11 +195,9 @@ class _AddParticipantDialog extends StatelessWidget {
       // ],
     );
   }
-
 }
 
 class _AddParticipantForm extends StatefulWidget {
-
   final void Function(String name) callback;
 
   _AddParticipantForm(this.callback);
@@ -241,11 +206,9 @@ class _AddParticipantForm extends StatefulWidget {
   State<StatefulWidget> createState() {
     return _AddParticipantFormState(callback);
   }
-
 }
 
 class _AddParticipantFormState extends State<_AddParticipantForm> {
-
   // Create a global key that uniquely identifies the Form widget and allows validation of the form.
   final _formKey = GlobalKey<FormState>();
 
@@ -271,46 +234,38 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
 
   @override
   Widget build(BuildContext context) {
-    return
-      Container(
-          constraints: const BoxConstraints(minHeight: 100, minWidth: double.infinity, maxHeight: 300),
-          child:
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Name *',
-                    hintText: 'The name of the player',
-                  ),
-                  validator: (value) {
-                    if (value.isEmpty) {
-                      return 'Please enter a name';
-                    }
-                    return null;
-                  },
-                  controller: nameController,
-                  onFieldSubmitted: (name) => _submitForm(),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                    onPressed: _submitForm,
-                    child: Container(
-                      child: const Text('Add player'),
-                    )
-                )
-              ]
-          ),
-        )
-    );
+    return Container(
+        constraints: const BoxConstraints(minHeight: 100, minWidth: double.infinity, maxHeight: 300),
+        child: Form(
+          key: _formKey,
+          child: Column(children: [
+            TextFormField(
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Name *',
+                hintText: 'The name of the player',
+              ),
+              validator: (value) {
+                if (value.isEmpty) {
+                  return 'Please enter a name';
+                }
+                return null;
+              },
+              controller: nameController,
+              onFieldSubmitted: (name) => _submitForm(),
+            ),
+            const Spacer(),
+            ElevatedButton(
+                onPressed: _submitForm,
+                child: Container(
+                  child: const Text('Add player'),
+                ))
+          ]),
+        ));
   }
-
 }
 
 class _ParticipantTableContainer extends StatelessWidget {
-
   final Widget content;
 
   _ParticipantTableContainer(this.content);
