@@ -1,10 +1,11 @@
-# Created with package:mono_repo v3.4.4
+# Created with package:mono_repo v3.4.7
 language: dart
 
 # Custom configuration
 branches:
   - master
   - develop
+  - firebase-auth
 after_failure:
   - tool/report_failure.sh
 
@@ -13,24 +14,24 @@ jobs:
     - stage: analyzer_and_format
       name: mono_repo self validate
       os: linux
-      script: "pub global activate mono_repo 3.4.4 && pub global run mono_repo generate --validate"
+      script: "pub global activate mono_repo 3.4.7 && pub global run mono_repo generate --validate"
     - stage: analyzer_and_format
-      name: "PKGS: scorekeeper_codegen, scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain, scorekeeper_flutter; `dartanalyzer --fatal-infos .`"
+      name: "PKGS: scorekeeper_codegen, scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain; `dartanalyzer --fatal-infos .`"
       dart: dev
       os: linux
-      env: PKGS="scorekeeper_codegen scorekeeper_core scorekeeper_domain scorekeeper_example_domain scorekeeper_flutter"
+      env: PKGS="scorekeeper_codegen scorekeeper_core scorekeeper_domain scorekeeper_example_domain"
       script: tool/ci.sh dartanalyzer
     - stage: unit_test
-      name: "PKGS: scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain, scorekeeper_flutter; `pub run test`"
+      name: "PKGS: scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain; `pub run test`"
       dart: dev
       os: linux
-      env: PKGS="scorekeeper_core scorekeeper_domain scorekeeper_example_domain scorekeeper_flutter"
+      env: PKGS="scorekeeper_core scorekeeper_domain scorekeeper_example_domain"
       script: tool/ci.sh test_0
     - stage: ensure_build
-      name: "PKGS: scorekeeper_example_domain, scorekeeper_flutter; `pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart`"
+      name: "PKG: scorekeeper_example_domain; `pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart`"
       dart: dev
       os: linux
-      env: PKGS="scorekeeper_example_domain scorekeeper_flutter"
+      env: PKGS="scorekeeper_example_domain"
       script: tool/ci.sh test_1
 
 stages:
@@ -45,4 +46,3 @@ cache:
     - scorekeeper_core/.dart_tool/build
     - scorekeeper_domain/.dart_tool/build
     - scorekeeper_example_domain/.dart_tool/build
-    - scorekeeper_flutter/.dart_tool/build

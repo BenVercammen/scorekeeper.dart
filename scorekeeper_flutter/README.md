@@ -128,7 +128,7 @@ While developing your integration tests, you'll typically want the load time in 
 In order to cut down on the time to load and run integration tests, it is possible to by-pass `flutter driver` altogether.
 See https://medium.com/flutter-community/hot-reload-for-flutter-integration-tests-e0478b63bd54 for more information on this.
 
-#### IntelliJ IDEA setup
+#### IntelliJ IDEA setup (still not fully working...)
  1. Create a new "Flutter" run configuration 
     - Dart entrypoint: `C:\Workspace\dart\scorekeeper\scorekeeper_flutter\lib\main.dart`
     - Additional run args: `--observatory-port 8888 --disable-service-auth-codes`

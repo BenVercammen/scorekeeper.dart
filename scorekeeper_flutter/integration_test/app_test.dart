@@ -19,7 +19,7 @@ void main() {
   // The scorekeeper service to be used within the test
   ScorekeeperService scorekeeperService;
 
-  // Ensure the binding is initialized before continuing
+  // Open the app on the device
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
@@ -38,7 +38,7 @@ void main() {
     expect(find.widgetWithText(ElevatedButton, 'Sign in'), findsOneWidget);
     expect(find.text('E-mailaddress'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-
-    // TODO: fill in username, password, ...  =>  https://youtu.be/9YnZai1nqUg?t=237
+    // Fill in username and password
+    // Submit
   });
 }

@@ -11,6 +11,7 @@ travis:
   branches:
     - master
     - develop
+    - firebase-auth
   # Example:
   after_failure:
     - tool/report_failure.sh
