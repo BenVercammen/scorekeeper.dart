@@ -6,7 +6,7 @@ import 'package:scorekeeper_example_domain/example.dart';
 import 'src/app.dart';
 import 'src/services/service.dart';
 
-void main() async {
+Future<void> main() async {
   // Create an instance
   final scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())
     // Register the command and event handlers for the relevant domain

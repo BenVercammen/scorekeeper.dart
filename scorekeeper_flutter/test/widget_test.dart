@@ -5,28 +5,48 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:scorekeeper_core/scorekeeper.dart';
-import 'package:scorekeeper_flutter/src/screens/scorable_overview.dart';
-import 'package:scorekeeper_flutter/src/services/service.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_test/flutter_test.dart';
+// import 'package:scorekeeper_core/scorekeeper.dart';
+// import 'package:scorekeeper_flutter/src/screens/scorable_overview.dart';
+// import 'package:scorekeeper_flutter/src/services/service.dart';
 
+/// Test the widgets without running the entire app
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    final scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl());
-    await tester.pumpWidget(ScorableOverviewPage(title: 'Test', scorekeeperService: ScorekeeperService(scorekeeper)));
+  // testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  //   // Build our app and trigger a frame.
+  //   final scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl());
+  //   await tester.pumpWidget(ScorableOverviewPage(title: 'Test', scorekeeperService: ScorekeeperService(scorekeeper)));
+  //
+  //   // Verify that our counter starts at 0.
+  //   expect(find.text('0'), findsOneWidget);
+  //   expect(find.text('1'), findsNothing);
+  //
+  //   // Tap the '+' icon and trigger a frame.
+  //   await tester.tap(find.byIcon(Icons.add));
+  //   await tester.pump();
+  //
+  //   // Verify that our counter has incremented.
+  //   expect(find.text('0'), findsNothing);
+  //   expect(find.text('1'), findsOneWidget);
+  // });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  /// What to test?
+  ///
+  /// - first we need to log in (Given "not authenticated")
+  /// - Choose authentication method (When user chooses email authentication)
+  /// - Check username/password login (Then fields with label and of type "email" and "password" should show)
+  ///   And email should be type "email"
+  ///   And password should be type "password"
+  ///   And submit button should show up
+  ///   And Signup button should show up
+  ///
+  ///
+  /// TODO:
+  ///   https://www.youtube.com/watch?v=9YnZai1nqUg
+  ///   https://medium.com/flutter-community/testing-flutter-ui-with-flutter-driver-c1583681e337
+  ///   https://medium.com/flutter-community/automated-testing-using-atdd-in-flutter-21d4d0cf5df6
+  ///   https://shop.fairphone.com/nl/fairphone-3-plus
+  ///
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
-  });
 }

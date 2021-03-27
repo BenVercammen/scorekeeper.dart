@@ -1,4 +1,3 @@
-
 import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
@@ -12,7 +11,6 @@ import 'package:uuid/uuid.dart';
 ///     => gewoon aan de service vragen of die knop/action toegestaan is of niet he...
 ///   Is weer een extra tussenlaag....
 class ScorekeeperService {
-
   // The actual Scorekeeper application (write model)
   final Scorekeeper _scorekeeper;
 
@@ -39,8 +37,7 @@ class ScorekeeperService {
 
   /// Add a new Round to the Scorable
   void addRoundToScorable(AggregateId aggregateId) {
-    final command = AddRound()
-      ..aggregateId = aggregateId.id;
+    final command = AddRound()..aggregateId = aggregateId.id;
     _scorekeeper.handleCommand(command);
   }
 
@@ -50,11 +47,11 @@ class ScorekeeperService {
       return dto2.lastModified.millisecondsSinceEpoch - dto1.lastModified.millisecondsSinceEpoch;
     })
       ..addAll(_scorekeeper.registeredAggregateIds.map(_scorekeeper.getCachedAggregateDtoById));
-    var resultDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
+    final resultDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
       return dto2.lastModified.millisecondsSinceEpoch - dto1.lastModified.millisecondsSinceEpoch;
     });
     for (var i = 0; i < allDtos.length; i++) {
-      if (i >= (page * pageSize) && i < ((page + 1) * pageSize )) {
+      if (i >= (page * pageSize) && i < ((page + 1) * pageSize)) {
         resultDtos.add(allDtos.elementAt(i));
       }
     }
@@ -67,5 +64,4 @@ class ScorekeeperService {
   void sendCommand(command) {
     _scorekeeper.handleCommand(command);
   }
-
 }

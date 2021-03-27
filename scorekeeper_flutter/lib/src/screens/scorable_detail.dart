@@ -74,36 +74,34 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
 
   /// create a list of table rows used
   List<TableRow> scorableParticipantList(MuurkeKlopNDownDto scorable) {
-    final rowList = List<TableRow>.empty(growable: true);
-
-    var headerCells =
-
-        // Header row
-        rowList.add(TableRow(
-            children: [TableCell(child: _ParticipantTableContainer(const Text('Player')))]
-              ..addAll(roundHeadTableCells())
-              ..add(TableCell(child: _ParticipantTableContainer(const Text('Total'))))));
+    final rowList = List<TableRow>.empty(growable: true)
+      // Header row
+      ..add(TableRow(children: [
+        TableCell(child: _ParticipantTableContainer(const Text('Player'))),
+        ...roundHeadTableCells(),
+        TableCell(child: _ParticipantTableContainer(const Text('Total')))
+      ]));
     // Body row
-    for (Participant participant in scorable.participants) {
-      rowList.add(TableRow(
-          children: [TableCell(child: _ParticipantTableContainer(Text(participant.name)))]
-            ..addAll(participantRoundBody(participant))
-            ..add(TableCell(child: _ParticipantTableContainer(const Text('Total'))))));
+    for (final participant in scorable.participants) {
+      rowList.add(TableRow(children: [
+        TableCell(child: _ParticipantTableContainer(Text(participant.name))),
+        ...participantRoundBody(participant),
+        TableCell(child: _ParticipantTableContainer(const Text('Total')))
+      ]));
     }
     // Footer row
-    rowList.add(TableRow(
-        children: [
+    rowList.add(TableRow(children: [
       TableCell(
-          child: _ParticipantTableContainer(FlatButton(
+          child: _ParticipantTableContainer(TextButton(
         onPressed: () => _showAddParticipantDialog(context),
         // tooltip: 'Add new Participant',
         child: const Icon(Icons.add),
-      )))
-    ]
-          ..addAll(_roundsFooter())
-          ..add(TableCell(child: _ParticipantTableContainer(
-              // TODO: button van maken gebaseerd op allowance "FinishScorable" / "Restart Scorable"
-              const Text('Spel afronden'))))));
+      ))),
+      ..._roundsFooter(),
+      TableCell(child: _ParticipantTableContainer(
+          // TODO: button van maken gebaseerd op allowance "FinishScorable" / "Restart Scorable"
+          const Text('Spel afronden')))
+    ]));
 
     return rowList;
   }
@@ -133,7 +131,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     if (scorable.rounds.isEmpty) {
       return List.of([
         TableCell(
-            child: _ParticipantTableContainer(FlatButton(
+            child: _ParticipantTableContainer(TextButton(
           onPressed: _addRound,
           // tooltip: 'Add new Round',
           child: const Icon(Icons.add),
@@ -141,11 +139,11 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
       ]);
     }
     return scorable.rounds.values
-        .map((round) => _roundAllowanceOptions(round as MuurkeKlopNDownRound))
+        .map(_roundAllowanceOptions)
         .toList(growable: true)
           // Add a column to add an additional round
           ..add(TableCell(
-              child: _ParticipantTableContainer(FlatButton(
+              child: _ParticipantTableContainer(TextButton(
             onPressed: _addRound,
             // tooltip: 'Add new Round',
             child: const Icon(Icons.add),
@@ -166,8 +164,8 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     // Then check whether or not they're allowed
 
     // Finally display the allowed commands
-    var icons = Wrap(children: [
-      ...commands.map((command) => FlatButton(
+    final icons = Wrap(children: [
+      ...commands.map((command) => TextButton(
           onPressed: () => _sendCommand(command),
           // TODO: Icon moet nog dynamisch bepaald worden!
           child: Icon(Icons.play_arrow, semanticLabel: command.runtimeType.toString())))
@@ -183,6 +181,7 @@ class _AddParticipantDialog extends StatelessWidget {
 
   _AddParticipantDialog(this.callback);
 
+  @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Add new Player'),
@@ -273,8 +272,8 @@ class _ParticipantTableContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(10),
       child: content,
-      padding: EdgeInsets.all(10),
     );
   }
 }

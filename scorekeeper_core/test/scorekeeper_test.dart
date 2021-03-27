@@ -338,12 +338,6 @@ void main() {
       expect(matches, isEmpty);
     }
 
-    /// Check the last thrown exception
-    void thenAssertException(Function(Exception exception) assertionCallback) {
-      expect(_lastThrownWhenException, isNotNull);
-      assertionCallback(_lastThrownWhenException);
-    }
-
     /// Then the given Exception should have been thrown
     void thenExceptionShouldBeThrown(Exception expected) {
       expect(_lastThrownWhenException, isNotNull);

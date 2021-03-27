@@ -32,13 +32,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('Login please')),
+        appBar: AppBar(title: const Text('Login please')),
         body: Column(children: [
           Padding(
               padding: const EdgeInsets.all(5.0),
               child: TextField(
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(hintText: 'E-mailaddress'),
+                decoration: const InputDecoration(hintText: 'E-mailaddress'),
                 onChanged: (value) {
                   _email = value.trim();
                 },
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: TextField(
                 keyboardType: TextInputType.visiblePassword,
                 obscureText: true,
-                decoration: InputDecoration(hintText: 'Password'),
+                decoration: const InputDecoration(hintText: 'Password'),
                 onChanged: (value) {
                   _password = value.trim();
                 },
@@ -57,10 +57,10 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               ElevatedButton(
-                  onPressed: () => _signInWithEmailAndPassword(),
+                  onPressed: _signInWithEmailAndPassword,
                   child: const Padding(padding: EdgeInsets.all(5.0), child: Text('Sign in'))),
               ElevatedButton(
-                  onPressed: () => _createUserWithEmailAndPassword(),
+                  onPressed: _createUserWithEmailAndPassword,
                   child: const Padding(padding: EdgeInsets.all(5.0), child: Text('Sign up'))),
             ],
           )
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<UserCredential> _createUserWithEmailAndPassword() async {
     final userCredential = await auth.createUserWithEmailAndPassword(email: _email, password: _password);
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
+    await Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (context) => ScorableOverviewPage(title: 'Scorekeeper', scorekeeperService: scorekeeperService)));
     return userCredential;
   }
@@ -79,12 +79,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final userCredential = await auth.signInWithEmailAndPassword(email: _email, password: _password);
       log(userCredential.toString());
       // log(userCredential.user.displayName);
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
+      await Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => ScorableOverviewPage(title: 'Scorekeeper', scorekeeperService: scorekeeperService)));
+      return userCredential;
     } on Exception catch (e) {
       // TODO: show error message!
       log(e.toString());
     }
-
+    // TODO: throw error?
+    return null;
   }
 }

@@ -76,7 +76,7 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
       // If it's a parameterized type, make sure that gets included as well
       if (field.type is ParameterizedType) {
         final pType = field.type as ParameterizedType;
-        if (!pType.typeArguments.isEmpty) {
+        if (pType.typeArguments.isNotEmpty) {
           final typeNames = pType.typeArguments.map((t) => t.element.name);
           returnType += '<${typeNames.join(', ')}>';
         }

@@ -35,11 +35,11 @@ void main() {
         _scorekeeper.handleCommand(CreateScorable()
           ..aggregateId = aggregateId.id
           ..name = 'Aggregate $i');
-        sleep(Duration(milliseconds: 1));
+        sleep(const Duration(milliseconds: 1));
         registeredAggregateIds.add(aggregateId);
       }
       // When we want to load a limited list of aggregateIds..
-      var registeredScorablesPage = scorekeeperService.loadScorables(0, 5);
+      final registeredScorablesPage = scorekeeperService.loadScorables(0, 5);
       // Then we should get the 5 latest aggregateIds because they were modified last
       expect(registeredScorablesPage.length, equals(5));
       final pagedItems = List.of(registeredScorablesPage);

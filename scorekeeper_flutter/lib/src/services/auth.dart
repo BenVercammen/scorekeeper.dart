@@ -15,7 +15,7 @@ class AuthService {
   /// Sign in anonymously
   Future<User> signInAnonymously() async {
     try {
-      UserCredential credential = await _auth.signInAnonymously();
+      final credential = await _auth.signInAnonymously();
       return credential.user;
     } on Exception catch (e) {
       print(e.toString());
@@ -26,11 +26,13 @@ class AuthService {
   /// sign in with google
   Future<User> signInWithGoogle() async {
     // TODO!!
+    return null;
   }
 
   /// sign in with facebook
   Future<User> signInWithFacebook() async {
     // TODO!!!
+    return null;
   }
 
   /// sign in with email & password
