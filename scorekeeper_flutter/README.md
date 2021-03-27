@@ -95,3 +95,50 @@ This will require a Google Firebase project
         - Permission denied (missing INTERNET permission?)
             - https://stackoverflow.com/questions/17360924/securityexception-permission-denied-missing-internet-permission
             - remove maxSdkVersion...
+
+
+
+# Testing
+https://medium.com/flutter-community/automated-testing-using-atdd-in-flutter-21d4d0cf5df6
+
+## Unit tests
+Verifies the behavior of a method or class.
+
+## Widget tests
+Verifies the behavior of Flutter widgets without running the app itself.
+
+## Integration tests
+https://flutter.dev/docs/testing/integration-tests
+Also called end-to-end testing or GUI testing, runs the full app.
+Used for automated testing of the actual UI.
+Makes use of the `flutter drive` command in order to run on physical devices, emulators or in the Firebase Test Lab.
+
+### Running integration tests
+Using the commands below, you can run the integration tests on an emulator.
+
+ - `flutter devices` (check device id)
+ - `flutter drive --driver integration_test/driver.dart --target integration_test/app_test.dart`
+ - `flutter drive --driver=integration_test/driver.dart --target=integration_test/app_test.dart -d "emulator-5554"`
+
+
+### Developing integration tests with 'tooling'
+While developing your integration tests, you'll typically want the load time in between tests to be as low as possible.
+`flutter driver` is mainly used to connect the integration test process with the flutter app running on the (emulated) device.
+
+In order to cut down on the time to load and run integration tests, it is possible to by-pass `flutter driver` altogether.
+See https://medium.com/flutter-community/hot-reload-for-flutter-integration-tests-e0478b63bd54 for more information on this.
+
+#### IntelliJ IDEA setup
+ 1. Create a new "Flutter" run configuration 
+    - Dart entrypoint: `C:\Workspace\dart\scorekeeper\scorekeeper_flutter\lib\main.dart`
+    - Additional run args: `--observatory-port 8888 --disable-service-auth-codes`
+ 2. Configure the integration test run configuration to listen on the same shared port
+    - Dart file: `C:\Workspace\dart\scorekeeper\scorekeeper_flutter\integration_test\app_test.dart`
+    - Enable asserts: true
+    - Working directory: `C:\Workspace\dart\scorekeeper\scorekeeper_flutter`
+    - Environment variables: `VM_SERVICE_URL=http://127.0.0.1:8888/`
+ 3. Start the "Flutter" app configured in step 1. in run or debug mode
+ 4. Run the integration test configured in step 2. in run or debug mode
+
+Werkt toch nog niet, nog eens kijken naar:
+https://pvba04.medium.com/flutter-integration-tests-in-intellij-idea-16736df35bc7

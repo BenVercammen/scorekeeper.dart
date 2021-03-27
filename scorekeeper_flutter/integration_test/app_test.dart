@@ -5,34 +5,40 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter_driver/driver_extension.dart';
-import 'package:flutter_driver/flutter_driver.dart';
-import 'package:scorekeeper_flutter/main.dart' as app;
-import 'package:test/test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:scorekeeper_core/scorekeeper.dart';
+import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_flutter/src/app.dart';
+import 'package:scorekeeper_flutter/src/services/service.dart';
+
 
 void main() {
-  enableFlutterDriverExtension();
-  app.main();
-}
 
-void _testMain() {
+  // The scorekeeper service to be used within the test
+  ScorekeeperService scorekeeperService;
 
-  FlutterDriver driver;
+  // Ensure the binding is initialized before continuing
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  // Connect to the Flutter driver before running any tests.
-  setUpAll(() async {
-    driver = await FlutterDriver.connect();
+  setUp(() {
+    // Setup the application
+    final _scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())
+    ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
+    ..registerEventHandler(MuurkeKlopNDownEventHandler());
+    scorekeeperService = ScorekeeperService(_scorekeeper);
   });
 
-  // Close the connection to the driver after the tests have completed.
-  tearDownAll(() async {
-    if (driver != null) {
-      driver.close();
-    }
-  });
+  testWidgets('Login screen for unauthenticated user', (WidgetTester tester) async {
 
-  test('Show add scorable button', () async {
-    expect(await driver.getWidgetDiagnostics(find.byValueKey('Add')), 'Add scorable');
+    // Build app and trigger a frame
+    await tester.pumpWidget(ScorableApp(scorekeeperService));
+    // Verify that the login screen shows up
+    expect(find.widgetWithText(ElevatedButton, 'Sign in'), findsOneWidget);
+    expect(find.text('E-mailaddress'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
 
+    // TODO: fill in username, password, ...  =>  https://youtu.be/9YnZai1nqUg?t=237
   });
 }
