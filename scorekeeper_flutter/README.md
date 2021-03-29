@@ -142,3 +142,8 @@ See https://medium.com/flutter-community/hot-reload-for-flutter-integration-test
 
 Werkt toch nog niet, nog eens kijken naar:
 https://pvba04.medium.com/flutter-integration-tests-in-intellij-idea-16736df35bc7
+
+
+# Troubleshooting
+ - Because every version of flutter_driver from sdk depends on crypto 2.1.5 and uuid >=3.0.0 depends on crypto ^3.0.0, flutter_driver from sdk is incompatible with uuid >=3.0.0.
+    - upgrade flutter sdk on machine, see README file in `scorekeeper_core`

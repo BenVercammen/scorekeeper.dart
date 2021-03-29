@@ -36,7 +36,7 @@ From time to time, the flutte SDK (installed on the development machine) should 
 To do so, follow these steps in CLI:
  - `cd %FLUTTER_HOME%`
  - `git reset --hard`
- - `flutter upgrade`
+ - `flutter upgrade --force`
 
 Also re-activate all packages
  - `pub global activate mono_repo`

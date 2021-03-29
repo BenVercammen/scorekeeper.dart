@@ -36,7 +36,7 @@ dependencies:
     path: ../scorekeeper_domain
   scorekeeper_example_domain:
     path: ../scorekeeper_example_domain
-  uuid: ^2.2.2
+  uuid: ^3.0.3
 
 dev_dependencies:
   flutter_driver:
