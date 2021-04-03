@@ -12,16 +12,15 @@ import 'common.dart';
 /// Supports `package:build_runner` creation and configuration of the AggregateDtoFactory.
 ///
 /// Not meant to be invoked by hand-authored code.
-Builder aggregateDtoFactoryGenerator(BuilderOptions options) {
+Builder aggregateDtoGenerator(BuilderOptions options) {
   return src.LibraryBuilder(
-      AggregateDtoFactoryGenerator(),
-      generatedExtension: '.f.dart'
+      AggregateDtoGenerator(),
+      generatedExtension: '.d.dart'
   );
 }
 
-/// Generate the AggregateDto, which follows the inheritance structure of the actual Aggregate.
-///
-class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateAnnotation> {
+/// Generate the AggregateDto, following the inheritance structure of the actual Aggregate.
+class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotation> {
 
   @override
   String generateForAnnotatedElement(Element element, src.ConstantReader annotation, BuildStep buildStep) {
@@ -36,11 +35,6 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
 
     final aggregate = element as ClassElement;
 
-    // AggregateDtoFactory
-    final factoryBuilder = ClassBuilder()
-      ..name = 'AggregateDtoFactory'
-      ..methods.add(_factoryCreateMethod([aggregate]))
-    ;
 
     // AggregateDto
     final parentDtoClass = getSuperClass(aggregate);
@@ -48,7 +42,7 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = '${aggregateName}Dto'
       ..extend = refer('${parentDtoClass.name}Dto');
     // The only field this DTO will have, is a final, protected reference to the actual aggregate
-    final aggregateFieldName = '_${_camelName(aggregateName)}';
+    final aggregateFieldName = '_${camelName(aggregateName)}';
     final fieldBuilder = FieldBuilder()
       ..name = aggregateFieldName
       ..type = Reference(aggregateName)
@@ -98,39 +92,14 @@ class AggregateDtoFactoryGenerator extends src.GeneratorForAnnotation<AggregateA
       ..addAll(getRelevantImports([aggregate, ...fields]));
     // In case we are inheriting from another generated parent AggregateDto class, we'll have to jump some hoops to add the import
     if ('Aggregate' != parentDtoClass.name) {
-      importedLibraries = {...importedLibraries, parentDtoClass.library.identifier.replaceAll('dart', 'f.dart')};
+      importedLibraries = {...importedLibraries, parentDtoClass.library.identifier.replaceAll('dart', 'd.dart')};
     }
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
+
     // Put everything together!
     final emitter = DartEmitter();
-    final aggregateDtoFactory = factoryBuilder.build().accept(emitter);
     final aggregateDto = aggregateDtoBuilder.build().accept(emitter);
-    return DartFormatter().format('$imports\n\n$aggregateDtoFactory\n\n$aggregateDto');
-  }
-
-  String _camelName(String name) => '${name[0].toLowerCase()}${name.substring(1)}';
-
-  Method _factoryCreateMethod(Iterable<ClassElement> aggregates) {
-    final aggregateParam = ParameterBuilder()
-      ..name = 'aggregate'
-      ..type = const Reference('Aggregate');
-    final code = StringBuffer()
-      ..write('switch (aggregate.runtimeType) {');
-
-    for (final aggregate in aggregates) {
-      final varName = _camelName(aggregate.name);
-      final varType = aggregate.name;
-      code.write('\ncase $varType:\n\tfinal $varName = aggregate as $varType;\n\treturn ${varType}Dto($varName) as R;');
-    }
-    code.write("\ndefault:\n\tthrow Exception('Cannot create \$R for \${aggregate.runtimeType}');\n}");
-    final builder = MethodBuilder()
-      ..name = 'create'
-      ..returns = const Reference('R')
-      ..static = true
-      ..types.add(const Reference('R extends AggregateDto'))
-      ..requiredParameters.add(aggregateParam.build())
-      ..body = Code(code.toString());
-    return builder.build();
+    return DartFormatter().format('$imports\n\n$aggregateDto');
   }
 
 }

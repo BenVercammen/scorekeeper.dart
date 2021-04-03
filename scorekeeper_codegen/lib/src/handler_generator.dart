@@ -19,7 +19,6 @@ Builder handlerGenerator(BuilderOptions options) {
   );
 }
 
-
 class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateAnnotation> {
 
   @override

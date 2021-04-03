@@ -7,6 +7,9 @@ targets:
       handler_generator:
         generate_for:
           - lib/src/scorable.dart
+      aggregate_dto_generator:
+        generate_for:
+          - lib/src/scorable.dart
       aggregate_dto_factory_generator:
         generate_for:
           - lib/src/scorable.dart
@@ -16,6 +19,12 @@ builders:
     import: "package:scorekeeper_codegen/generator.dart"
     builder_factories: ["handlerGenerator"]
     build_extensions: {".dart": [".h.dart"]}
+    auto_apply: dependents
+    build_to: source
+  aggregate_dto_generator:
+    import: "package:scorekeeper_codegen/generator.dart"
+    builder_factories: [ "aggregateDtoGenerator" ]
+    build_extensions: { ".dart": [ ".d.dart" ] }
     auto_apply: dependents
     build_to: source
   aggregate_dto_factory_generator:
