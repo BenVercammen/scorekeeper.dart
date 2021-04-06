@@ -94,33 +94,33 @@ class MuurkeKlopNDown extends Scorable {
 
   @eventHandler
   void roundStarted(RoundStarted event) {
-    rounds[event.roundIndex].start();
+    rounds[event.roundIndex]!.start();
   }
 
   @eventHandler
   void roundPaused(RoundPaused event) {
-    rounds[event.roundIndex].pause();
+    rounds[event.roundIndex]!.pause();
   }
 
   @eventHandler
   void roundResumed(RoundResumed event) {
-    rounds[event.roundIndex].resume();
+    rounds[event.roundIndex]!.resume();
   }
 
   @eventHandler
   void roundFinished(RoundFinished event) {
-    rounds[event.roundIndex].finish();
+    rounds[event.roundIndex]!.finish();
   }
 
   @eventHandler
   void participantStruckOut(ParticipantStruckOut event) {
-    final round = rounds[event.roundIndex];
+    final round = rounds[event.roundIndex]!;
     round.strikeOutParticipant(event.participant);
   }
 
   @eventHandler
   void participantStrikeOutUndone(ParticipantStrikeOutUndone event) {
-    final round = rounds[event.roundIndex];
+    final round = rounds[event.roundIndex]!;
     round.undoStrikeOutParticipant(event.participant);
   }
 
@@ -135,7 +135,7 @@ class MuurkeKlopNDown extends Scorable {
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
-        final round = rounds[command.roundIndex];
+        final round = rounds[command.roundIndex]!;
         if (round.state != RoundState.STARTED) {
           return CommandAllowance(command, false, "Round is not in progress");
         }
@@ -150,7 +150,7 @@ class MuurkeKlopNDown extends Scorable {
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
-        final round = rounds[command.roundIndex];
+        final round = rounds[command.roundIndex]!;
         if (round.state != RoundState.STARTED) {
           return CommandAllowance(command, false, "Round is not in progress");
         }
@@ -162,7 +162,7 @@ class MuurkeKlopNDown extends Scorable {
         if (participants.isEmpty) {
           return CommandAllowance(command, false, "Round cannot start without any players");
         }
-        final roundState = rounds[command.roundIndex].state;
+        final roundState = rounds[command.roundIndex]!.state;
         if (roundState == RoundState.STARTED) {
           return CommandAllowance(command, false, "Round already started");
         }
@@ -177,14 +177,14 @@ class MuurkeKlopNDown extends Scorable {
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
-        final roundState = rounds[command.roundIndex].state;
+        final roundState = rounds[command.roundIndex]!.state;
         if (roundState == RoundState.PAUSED) {
           return CommandAllowance(command, false, "Round has already been paused");
         }
         if (roundState == RoundState.FINISHED) {
           return CommandAllowance(command, false, "Round has already been finished");
         }
-        if (roundState == null || roundState == RoundState.NONE) {
+        if (roundState == RoundState.NONE) {
           return CommandAllowance(command, false, "Round has not yet been started");
         }
         return CommandAllowance(command, true, "Pause round");
@@ -192,7 +192,7 @@ class MuurkeKlopNDown extends Scorable {
         if (!rounds.containsKey(command.roundIndex)) {
           return CommandAllowance(command, false, "Round with index ${command.roundIndex} does not exist");
         }
-        final roundState = rounds[command.roundIndex].state;
+        final roundState = rounds[command.roundIndex]!.state;
         if (roundState != RoundState.PAUSED) {
           return CommandAllowance(command, false, "Round is not paused");
         }
@@ -226,50 +226,50 @@ class MuurkeKlopNDown extends Scorable {
 /// When a participant strikes out, he/she will receive a fixed number of points depending
 /// on the order in which he was struck out.
 class StrikeOutParticipant {
-  String aggregateId;
-  Participant participant;
-  int roundIndex;
+  late String aggregateId;
+  late Participant participant;
+  late int roundIndex;
 }
 
 class UndoParticipantStrikeOut {
-  String aggregateId;
-  Participant participant;
-  int roundIndex;
+  late String aggregateId;
+  late Participant participant;
+  late int roundIndex;
 }
 
 /// Add an extra Round to the Scorable
 class AddRound {
-  String aggregateId;
+  late String aggregateId;
 }
 
 /// Remove an existing Round from the Scorable
 class RemoveRound {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 /// Start a given Round of the Scorable
 class StartRound {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 /// Finish a given Round of the Scorable
 class FinishRound {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 /// Pause a given Round of the Scorable
 class PauseRound {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 /// Resume a given Round of the Scorable
 class ResumeRound {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -277,45 +277,45 @@ class ResumeRound {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ParticipantStruckOut {
-  String aggregateId;
-  Participant participant;
-  int roundIndex;
+  late String aggregateId;
+  late Participant participant;
+  late int roundIndex;
 }
 
 class ParticipantStrikeOutUndone {
-  String aggregateId;
-  Participant participant;
-  int roundIndex;
+  late String aggregateId;
+  late Participant participant;
+  late int roundIndex;
 }
 
 class RoundAdded {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 class RoundRemoved {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 class RoundStarted {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 class RoundFinished {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 class RoundPaused {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 class RoundResumed {
-  String aggregateId;
-  int roundIndex;
+  late String aggregateId;
+  late int roundIndex;
 }
 
 
@@ -337,7 +337,7 @@ class Round {
 class MuurkeKlopNDownRound extends Round {
   final Map<int, Participant> strikeOutOrder = Map();
 
-  RoundState _state;
+  RoundState _state = RoundState.NONE;
 
   MuurkeKlopNDownRound(int roundIndex) : super(roundIndex);
 
@@ -383,8 +383,14 @@ class MuurkeKlopNDownRound extends Round {
 
 /// The state of a round.
 enum RoundState {
+  /// The round has no predefined state
   NONE,
+  /// The round is ready to start
+  // TODO: READY_TO_START,
+  /// The round is already started
   STARTED,
+  /// The round is paused
   PAUSED,
+  /// The round is finished
   FINISHED
 }

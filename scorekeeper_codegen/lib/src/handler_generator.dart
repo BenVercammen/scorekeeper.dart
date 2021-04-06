@@ -1,6 +1,7 @@
 
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:scorekeeper_domain/core.dart';
@@ -31,7 +32,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       );
     }
     // Collect input for the handler methods
-    final aggregate = element as ClassElement;
+    final aggregate = element;
     final constructor = _getCommandHandlerConstructor(aggregate);
     final commandHandlerMethods = _getHandlerMethods('commandHandler', aggregate);
     final eventHandlerMethods = _getHandlerMethods('eventHandler', aggregate);
@@ -94,7 +95,10 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..write('switch (command.runtimeType) {');
     for (final handlerMethod in commandHandlerMethods) {
       final commandType = handlerMethod.parameters[0].type;
-      code.write('\ncase ${commandType.element.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${commandType.element.name});\nreturn;');
+      final element = commandType.element;
+      if (null != element) {
+        code.write('\ncase ${element.name}:\n\t${param1.name}.${handlerMethod.name}(command as ${element.name});\nreturn;');
+      }
     }
     code.write("\ndefault:\n\tthrow Exception('Unsupported command \${command.runtimeType}.');\n}");
     builder.body = Code(code.toString());
@@ -111,18 +115,19 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'command'
       ..type = const Reference('dynamic');
     builder.requiredParameters.add(param1.build());
-    final code = StringBuffer()
-      ..write('switch (command.runtimeType) {')
-      ..write('\ncase ${constructor.parameters[0].type.element.name}:');
-    for (var handlerMethod in commandHandlerMethods) {
-      final commandType = handlerMethod.parameters[0].type;
-      code.write('\ncase ${commandType.element.name}:');
+    final parameterType = constructor.parameters[0].type.element?.name;
+    if (null != parameterType) {
+      final code = StringBuffer()
+        ..write('switch (command.runtimeType) {')..write('\ncase $parameterType:');
+      for (var handlerMethod in commandHandlerMethods) {
+        final commandTypeName = handlerMethod.parameters[0].type.element?.name;
+        if (null != commandTypeName) {
+          code.write('\ncase $commandTypeName:');
+        }
+      }
+      code..write('\nreturn true;')..write('\ndefault:\n\treturn false;')..write('}');
+      builder.body = Code(code.toString());
     }
-    code
-      ..write('\nreturn true;')
-      ..write('\ndefault:\n\treturn false;')
-      ..write('}');
-    builder.body = Code(code.toString());
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }
@@ -136,7 +141,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'command'
       ..type = const Reference('dynamic');
     builder.requiredParameters.add(param1.build());
-    final commandType = commandConstructor.parameters[0].type.element.name;
+    final commandType = commandConstructor.parameters[0].type.element!.name;
     builder.body = Code('return ${aggregate.name}.${commandConstructor.name}(command as $commandType);');
     builder.annotations.add(const Reference('override'));
     return builder.build();
@@ -212,7 +217,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..write('switch (event.payload.runtimeType) {');
     for (var handlerMethod in commandHandlerMethods) {
       final eventType = handlerMethod.parameters[0].type;
-      code.write('\ncase ${eventType.element.name}:');
+      code.write('\ncase ${eventType.element!.name}:');
     }
     code..write('\nreturn true;')
       ..write('\ndefault:\n\treturn false;')
@@ -238,10 +243,10 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     final code = StringBuffer()
       ..write('switch (event.payload.runtimeType) {');
     for (var handlerMethod in eventHandlerMethods) {
-      final eventType = handlerMethod.parameters[0].type;
-      code
-        ..write('\ncase ${eventType.element.name}:\n\t${param1.name}.${handlerMethod.name}(event.payload as ${eventType.element.name});')
-        ..write('\nreturn;');
+      final eventTypeName = handlerMethod.parameters[0].type.element?.name;
+      if (null != eventTypeName) {
+        code..write('\ncase $eventTypeName:\n\t${param1.name}.${handlerMethod.name}(event.payload as $eventTypeName);')..write('\nreturn;');
+      }
     }
     code
       ..write("\ndefault:\n\tthrow Exception('Unsupported event \${event.payload.runtimeType}.');")
@@ -268,7 +273,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
   List<MethodElement> _getHandlerMethods(String annotationName, ClassElement aggregate) {
     return getFilteredMethods(aggregate, (method) {
       return method.metadata.where((meta) {
-        return meta.element.name == annotationName;
+        return meta.element?.name == annotationName;
       }).isNotEmpty;
     }).toList(growable: true);
   }

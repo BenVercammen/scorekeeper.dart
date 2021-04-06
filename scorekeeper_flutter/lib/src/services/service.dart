@@ -28,7 +28,7 @@ class ScorekeeperService {
 
   /// Add a newly created Participant to the Scorable
   void addParticipantToScorable(AggregateId aggregateId, String participantName) {
-    final participant = Participant(Uuid().v4(), participantName);
+    final participant = Participant(const Uuid().v4(), participantName);
     final command = AddParticipant()
       ..participant = participant
       ..aggregateId = aggregateId.id;

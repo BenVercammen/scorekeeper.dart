@@ -6,18 +6,18 @@ import 'aggregate.dart';
 /// A composite ID that contains sequence, UUID and timestamp values.
 class DomainEventId {
 
-  String _uuid;
+  late final String _uuid;
 
-  final int _sequence;
+  late final int _sequence;
 
-  DateTime _timestamp;
+  late final DateTime _timestamp;
 
   DomainEventId.of(this._uuid, this._sequence, this._timestamp);
 
   /// Constructor to be used when creating a locally generated event.
   /// The local and origin values should be equal.
   DomainEventId.local(this._sequence) {
-    _uuid = Uuid().v4();
+    _uuid = const Uuid().v4();
     _timestamp = DateTime.now();
   }
 
@@ -48,14 +48,14 @@ class DomainEventId {
 /// ID used for system events.
 class SystemEventId {
 
-  String _uuid;
+  late final String _uuid;
 
-  DateTime _timestamp;
+  late final DateTime _timestamp;
 
   /// Constructor to be used when creating a locally generated event.
   /// The localId and originId values should be equal.
   SystemEventId.local() {
-    _uuid = Uuid().v4();
+    _uuid = const Uuid().v4();
     _timestamp = DateTime.now();
   }
 
@@ -154,24 +154,24 @@ class EventNotHandled extends SystemEvent {
 /// TODO: is nog "toekomstmuziek"... mogelijks DomainEvent hier al zo hard mogelijk op enten?
 abstract class CloudEvent {
 
-  String specversion;
+  String? specversion;
 
-  String type;
+  String? type;
 
-  String source;
+  String? source;
 
-  String subject;
+  String? subject;
 
-  String id;
+  String? id;
 
-  DateTime time;
+  DateTime? time;
 
-  String datacontenttype;
+  String? datacontenttype;
 
 
   /// This one is the actual payload...
   /// moet ik per se protobuf gebruiken?
   /// TODO: POC: protobuf value omzetten naar non-generated class??
-  Object data;
+  Object? data;
 
 }

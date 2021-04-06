@@ -61,7 +61,9 @@ class InvalidCommandException implements Exception {
 
   final dynamic command;
 
-  InvalidCommandException(this.command);
+  final String reason;
+
+  InvalidCommandException(this.command, this.reason);
 
 }
 

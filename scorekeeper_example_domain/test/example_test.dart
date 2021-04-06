@@ -7,7 +7,7 @@ import '_test_fixture.dart';
 
 void main() {
   group('Command handling', () {
-    TestFixture<Scorable> fixture;
+    late TestFixture<Scorable> fixture;
 
     setUp(() {
       fixture = TestFixture<Scorable>(ScorableCommandHandler(), ScorableEventHandler());
@@ -33,7 +33,7 @@ void main() {
           ..aggregateId = _aggregateId)
         ..when(AddParticipant()
           ..aggregateId = _aggregateId
-          ..participant = Participant(null, null))
+          ..participant = Participant('', ''))
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
@@ -58,7 +58,7 @@ void main() {
   });
 
   group('Event handling', () {
-    TestFixture<Scorable> fixture;
+    late TestFixture<Scorable> fixture;
 
     setUp(() {
       fixture = TestFixture<Scorable>(ScorableCommandHandler(), ScorableEventHandler());
@@ -85,7 +85,7 @@ void main() {
           ..aggregateId = _aggregateId)
         ..given(ParticipantAdded()
           ..aggregateId = _aggregateId
-          ..participant = Participant(null, null))
+          ..participant = Participant('', ''))
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
@@ -99,7 +99,7 @@ void main() {
           ..aggregateId = _aggregateId)
         ..given(ParticipantRemoved()
           ..aggregateId = _aggregateId
-          ..participant = Participant(null, null))
+          ..participant = Participant('', ''))
         ..then((scorable) {
           expect(scorable.participants.length, equals(0));
         });

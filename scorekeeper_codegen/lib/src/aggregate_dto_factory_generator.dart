@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:build/build.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
-import 'package:scorekeeper_codegen/src/common.dart';
+
+import 'common.dart';
 
 /// Supports `package:build_runner` creation and configuration of the AggregateDtoFactory.
 ///
@@ -76,11 +78,11 @@ class AggregateDtoFactoryGenerator implements Builder {
     final aggregateDtoFactory = classBuilder.build().accept(emitter);
 
     // global import
-    var importedLibraries = {'package:scorekeeper_domain/core.dart'};
+    final importedLibraries = {'package:scorekeeper_domain/core.dart'};
     await for (final file in buildStep.findAssets(Glob('lib/*.dart'))) {
       final fileContents = File(file.path).readAsStringSync();
       if (fileContents.contains('library ')) {
-        var import = 'package:${file.package}/${file.pathSegments.last}';
+        final import = 'package:${file.package}/${file.pathSegments.last}';
         importedLibraries.add(import);
       }
     }

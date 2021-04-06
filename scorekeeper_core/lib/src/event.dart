@@ -53,7 +53,7 @@ class InvalidEventException implements Exception {
 ///
 class EventStoreInMemoryImpl implements EventStore {
 
-  Logger _logger;
+  Logger _logger = Logger();
 
   /// Important to use a LinkedHashSet in order to preserve the insertion order!
   final Map<AggregateId, LinkedHashSet<DomainEvent>> _domainEventStore = HashMap();
@@ -62,8 +62,10 @@ class EventStoreInMemoryImpl implements EventStore {
 
   final Set<AggregateId> _registeredAggregateIds = <AggregateId>{};
 
-  EventStoreInMemoryImpl([this._logger]) {
-    _logger ??= Logger();
+  EventStoreInMemoryImpl([logger]) {
+    if (null != logger) {
+      _logger = logger;
+    }
   }
 
   @override
@@ -81,7 +83,7 @@ class EventStoreInMemoryImpl implements EventStore {
     if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
       throw InvalidEventException(event, 'Sequence invalid');
     }
-    _domainEventStore[event.aggregateId].add(event);
+    _domainEventStore[event.aggregateId]!.add(event);
     return true;
   }
 
@@ -95,7 +97,11 @@ class EventStoreInMemoryImpl implements EventStore {
   bool _domainEventSequenceInvalid(AggregateId aggregateId, int sequence) {
     // TODO: because of "memory limitations", we'll not be able to actually loop over ALL the events... probably...
     // We'll need to work with snapshots etc...
-    return _domainEventStore[aggregateId].where((event) {
+    var storedAggregateEvents = _domainEventStore[aggregateId];
+    if (null == storedAggregateEvents) {
+      return true;
+    }
+    return storedAggregateEvents.where((event) {
       return event.id.sequence == sequence;
     }).isNotEmpty;
   }
@@ -104,7 +110,11 @@ class EventStoreInMemoryImpl implements EventStore {
   /// We ignore the actual payload, as soon as EventId and AggregateId match,
   /// we presume the entire DomainEvent matches.
   bool _domainEventExists(DomainEvent domainEvent) {
-    return _domainEventStore[domainEvent.aggregateId].where((event) {
+    var storedAggregateEvents = _domainEventStore[domainEvent.aggregateId];
+    if (null == storedAggregateEvents) {
+      return false;
+    }
+    return storedAggregateEvents.where((event) {
       return event.id == domainEvent.id && event.aggregateId == event.aggregateId;
     }).isNotEmpty;
   }
@@ -120,7 +130,8 @@ class EventStoreInMemoryImpl implements EventStore {
   Set<DomainEvent> getAllDomainEvents() {
     final result = <DomainEvent>{};
     for (final aggregateId in _domainEventStore.keys) {
-      result.addAll(_domainEventStore[aggregateId]);
+      var storedAggregateEvents = _domainEventStore[aggregateId];
+      result.addAll(storedAggregateEvents!);
     }
     return result;
   }
@@ -128,7 +139,7 @@ class EventStoreInMemoryImpl implements EventStore {
   @override
   int countEventsForAggregate(AggregateId aggregateId) {
     if (_domainEventStore.containsKey(aggregateId)) {
-      return _domainEventStore[aggregateId].length;
+      return _domainEventStore[aggregateId]!.length;
     }
     return 0;
   }

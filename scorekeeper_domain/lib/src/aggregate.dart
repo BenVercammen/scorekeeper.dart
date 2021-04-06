@@ -10,9 +10,9 @@ abstract class Aggregate {
 
   /// The time at which the last event was applied.
   /// TODO: this does NOT correspond to the actual DomainEvent's timestamp! is that okay?
-  DateTime _lastModified;
+  DateTime? _lastModified;
 
-  DateTime get lastModified => _lastModified;
+  DateTime? get lastModified => _lastModified;
 
   /// We always require an aggregateId
   Aggregate(this._aggregateId);
@@ -64,7 +64,7 @@ abstract class AggregateDto<T extends Aggregate> {
 
   AggregateId get aggregateId => _aggregate.aggregateId;
 
-  DateTime get lastModified => _aggregate.lastModified;
+  DateTime? get lastModified => _aggregate.lastModified;
 
 }
 
@@ -80,7 +80,7 @@ class AggregateId {
   }
 
   static AggregateId random() {
-    return AggregateId._(Uuid().v4());
+    return AggregateId._(const Uuid().v4());
   }
 
   @override

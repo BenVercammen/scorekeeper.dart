@@ -2,6 +2,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:scorekeeper_domain/core.dart';
@@ -25,7 +26,7 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
   @override
   String generateForAnnotatedElement(Element element, src.ConstantReader annotation, BuildStep buildStep) {
     final aggregateName = element.name;
-
+    // Only for ClassElement
     if (element is! ClassElement) {
       throw src.InvalidGenerationSourceError(
         '`@aggregate` can only be used on classes.',
@@ -33,16 +34,15 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
       );
     }
 
-    final aggregate = element as ClassElement;
-
+    final aggregate = element;
 
     // AggregateDto
     final parentDtoClass = getSuperClass(aggregate);
     final aggregateDtoBuilder = ClassBuilder()
       ..name = '${aggregateName}Dto'
-      ..extend = refer('${parentDtoClass.name}Dto');
+      ..extend = refer('${parentDtoClass!.name}Dto');
     // The only field this DTO will have, is a final, protected reference to the actual aggregate
-    final aggregateFieldName = '_${camelName(aggregateName)}';
+    final aggregateFieldName = '_${camelName(aggregateName!)}';
     final fieldBuilder = FieldBuilder()
       ..name = aggregateFieldName
       ..type = Reference(aggregateName)
@@ -63,17 +63,21 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
     for (var field in fields) {
       var body = Code('return $aggregateFieldName.${field.name};');
       // TODO: TEST!!! lists should become immutable copy...
-      var returnType = field.type.element.name;
+      var returnType = field.type.element?.name;
       if (returnType == 'List') {
         body = Code('return $returnType.of($aggregateFieldName.${field.name}, growable: false);');
       }
       // If it's a parameterized type, make sure that gets included as well
-      if (field.type is ParameterizedType) {
-        final pType = field.type as ParameterizedType;
-        if (pType.typeArguments.isNotEmpty) {
-          final typeNames = pType.typeArguments.map((t) => t.element.name);
-          returnType += '<${typeNames.join(', ')}>';
+      if (null != returnType) {
+        if (field.type is ParameterizedType) {
+          final pType = field.type as ParameterizedType;
+          if (pType.typeArguments.isNotEmpty) {
+            final typeNames = pType.typeArguments.map((t) => t.element?.name);
+            returnType += '<${typeNames.join(', ')}>';
+          }
         }
+      } else {
+        returnType = 'Void';
       }
       final builder = MethodBuilder()
         ..name = field.name

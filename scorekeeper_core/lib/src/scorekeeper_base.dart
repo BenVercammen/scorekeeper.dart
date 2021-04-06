@@ -1,4 +1,3 @@
-
 import 'dart:collection';
 
 import 'package:logger/logger.dart';
@@ -11,11 +10,10 @@ import 'event.dart';
 /// The Scorekeeper class adds event sourcing capabilities to the actual domain.
 /// All commands and events will have to go through this class in order to be handled.
 class Scorekeeper {
-
-  Logger _logger;
+  Logger _logger = Logger();
 
   /// The EventStore for storing DomainEvents of the local Scorekeeper instance
-  EventStore _eventStore;
+  late EventStore _eventStore;
 
   /// Map of aggregates this Scorekeeper needs to follow up on.
   /// In order to receive events from external source,
@@ -23,7 +21,7 @@ class Scorekeeper {
   final Map<AggregateId, Type> _registeredAggregates = HashMap();
 
   /// The cache in which to store the hydrated aggregate
-  AggregateCache _aggregateCache;
+  late AggregateCache _aggregateCache;
 
   /// The (generated) handler that maps commands to aggregate handler methods
   final _commandHandlers = <CommandHandler>{};
@@ -32,23 +30,22 @@ class Scorekeeper {
   final _eventHandlers = <EventHandler>{};
 
   /// The publisher for emitting DomainEvents to a remote (Scorekeeper) instance
-  RemoteEventPublisher _remoteEventPublisher;
+  RemoteEventPublisher? _remoteEventPublisher;
 
   /// The listener for receiving DomainEvents from a remote (Scorekeeper) instance
-  RemoteEventListener _remoteEventListener;
+  RemoteEventListener? _remoteEventListener;
 
   /// Create a Scorekeeper instance
   /// EventStore and AggregateCache are required.
   /// RemoteEventPublisher and RemoteEventListener are optional
-  Scorekeeper({EventStore eventStore, AggregateCache aggregateCache, RemoteEventPublisher remoteEventPublisher, RemoteEventListener remoteEventListener, Logger logger}) {
+  Scorekeeper(
+      {required EventStore eventStore,
+      required AggregateCache aggregateCache,
+      RemoteEventPublisher? remoteEventPublisher,
+      RemoteEventListener? remoteEventListener,
+      Logger? logger}) {
     _logger = logger ?? Logger();
-    if (null == eventStore) {
-      throw Exception('Local EventStore instance is required');
-    }
     _eventStore = eventStore;
-    if (null == aggregateCache) {
-      throw Exception('AggregateCache instance is required');
-    }
     _aggregateCache = aggregateCache;
     if (null == remoteEventPublisher) {
       _logger.i('No remote event publisher was passed along, so all events will remain on the local machine');
@@ -62,7 +59,7 @@ class Scorekeeper {
     _eventStore.registerAggregateIds(_registeredAggregates.keys);
 
     // Listen to the RemoteEventListener's event stream
-    _remoteEventListener?.domainEventStream?.listen((DomainEvent event) {
+    _remoteEventListener?.domainEventStream.listen((DomainEvent event) {
       _logger.d('Received remote event');
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
       if (_registeredAggregates.containsKey(event.aggregateId)) {
@@ -185,7 +182,7 @@ class Scorekeeper {
       try {
         _eventStore.storeDomainEvent(domainEvent);
         _remoteEventPublisher?.publishDomainEvent(domainEvent);
-      } on Exception catch(exception) {
+      } on Exception catch (exception) {
         // TODO: testen + afhandelen!
         _logger.e(exception);
       }
@@ -228,9 +225,6 @@ class Scorekeeper {
   /// Make sure the aggregate is properly cached and registered.
   /// We do this because aggregates for which we're handling commands are pretty likely to be "commanded" again.
   void _cacheAndRegisterAggregate(Aggregate aggregate) {
-    if (null == aggregate) {
-      throw Exception('Aggregate not loaded, but this should never happen... (here be nullpointers)');
-    }
     _aggregateCache.store(aggregate);
     registerAggregate(aggregate.aggregateId, aggregate.runtimeType);
     loadAndAddAggregateToCache(aggregate.aggregateId, aggregate.runtimeType);
@@ -244,10 +238,10 @@ class Scorekeeper {
       command.aggregateId;
       // ignore: avoid_catching_errors
     } on NoSuchMethodError {
-      throw InvalidCommandException(command);
+      throw InvalidCommandException(command, 'aggregateId is required');
     }
-    if (command.aggregateId == null) {
-      throw InvalidCommandException(command);
+    if (command.aggregateId == null || command.aggregateId.toString().isEmpty) {
+      throw InvalidCommandException(command, 'aggregateId is required');
     }
   }
 
@@ -319,5 +313,4 @@ class Scorekeeper {
   EventHandler _getDomainEventHandlerFor(Type runtimeType) {
     return _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType)).first;
   }
-
 }

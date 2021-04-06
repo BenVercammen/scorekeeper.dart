@@ -11,7 +11,7 @@ void main() {
 
   final player2 = Participant(Uuid().v4(), 'Player 2');
 
-  TestFixture<MuurkeKlopNDown> fixture;
+  late TestFixture<MuurkeKlopNDown> fixture;
 
   setUp(() {
     fixture = TestFixture<MuurkeKlopNDown>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
@@ -31,8 +31,8 @@ void main() {
           ..when(AddRound()..aggregateId = _aggregateId)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(1));
-            expect(scorable.rounds[0].roundIndex, equals(0));
-            expect(scorable.rounds[0].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.roundIndex, equals(0));
+            expect(scorable.rounds[0]!.strikeOutOrder, isEmpty);
           });
       });
 
@@ -72,7 +72,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(scorable.rounds[0].state, equals(RoundState.STARTED));
+            expect(scorable.rounds[0]!.state, equals(RoundState.STARTED));
           });
       });
 
@@ -189,7 +189,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(scorable.rounds[0].state, equals(RoundState.PAUSED));
+            expect(scorable.rounds[0]!.state, equals(RoundState.PAUSED));
           });
       });
 
@@ -264,7 +264,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(scorable.rounds[0].state, equals(RoundState.PAUSED));
+            expect(scorable.rounds[0]!.state, equals(RoundState.PAUSED));
           });
       });
 
@@ -316,7 +316,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(scorable.rounds[0].state, equals(RoundState.STARTED));
+            expect(scorable.rounds[0]!.state, equals(RoundState.STARTED));
           });
       });
 
@@ -359,7 +359,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(scorable.rounds[0].state, equals(RoundState.FINISHED));
+            expect(scorable.rounds[0]!.state, equals(RoundState.FINISHED));
           });
       });
 
@@ -382,7 +382,7 @@ void main() {
             ..aggregateId = _aggregateId
             ..roundIndex = 0)
           ..then((scorable) {
-            expect(scorable.rounds[0].state, equals(RoundState.FINISHED));
+            expect(scorable.rounds[0]!.state, equals(RoundState.FINISHED));
           });
       });
     });
@@ -411,8 +411,8 @@ void main() {
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(2));
-            expect(scorable.rounds[0].strikeOutOrder, isEmpty);
-            expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.strikeOutOrder, isEmpty);
+            expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           })
           ..when(StrikeOutParticipant()
             ..aggregateId = _aggregateId
@@ -420,9 +420,9 @@ void main() {
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(2));
-            expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
-            expect(scorable.rounds[0].strikeOutOrder[0], equals(player1));
-            expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.strikeOutOrder.length, equals(1));
+            expect(scorable.rounds[0]!.strikeOutOrder[0], equals(player1));
+            expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           });
       });
 
@@ -453,8 +453,8 @@ void main() {
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(2));
-            expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
-            expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.strikeOutOrder.length, equals(1));
+            expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           })
           ..when(StrikeOutParticipant()
             ..aggregateId = _aggregateId
@@ -463,9 +463,9 @@ void main() {
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Player 1 was already struck out in round 1'));
             expect(scorable.rounds.length, equals(2));
-            expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
-            expect(scorable.rounds[0].strikeOutOrder[0], equals(player1));
-            expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.strikeOutOrder.length, equals(1));
+            expect(scorable.rounds[0]!.strikeOutOrder[0], equals(player1));
+            expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           });
       });
 
@@ -496,8 +496,8 @@ void main() {
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(2));
-            expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
-            expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.strikeOutOrder.length, equals(1));
+            expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           })
           ..when(UndoParticipantStrikeOut()
             ..aggregateId = _aggregateId
@@ -506,8 +506,8 @@ void main() {
           ..then((scorable) {
             expect(fixture.lastThrownException, isNull);
             expect(scorable.rounds.length, equals(2));
-            expect(scorable.rounds[0].strikeOutOrder, isEmpty);
-            expect(scorable.rounds[1].strikeOutOrder, isEmpty);
+            expect(scorable.rounds[0]!.strikeOutOrder, isEmpty);
+            expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           });
       });
 
@@ -541,9 +541,9 @@ void main() {
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException, isNull);
-            expect(scorable.rounds[0].strikeOutOrder.length, equals(1));
-            expect(scorable.rounds[0].strikeOutOrder[0], equals(player1));
-            expect(scorable.rounds[0].strikeOutOrder[0], equals(player1b));
+            expect(scorable.rounds[0]!.strikeOutOrder.length, equals(1));
+            expect(scorable.rounds[0]!.strikeOutOrder[0], equals(player1));
+            expect(scorable.rounds[0]!.strikeOutOrder[0], equals(player1b));
           });
       });
 

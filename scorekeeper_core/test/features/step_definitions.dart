@@ -37,13 +37,13 @@ class MockRemoteEventPublisher extends RemoteEventPublisher {
 
 class StepDefinitions {
 
-  TracingLogger _logger;
+  late TracingLogger _logger;
 
-  EventStore _localEventManager;
+  late EventStore _localEventManager;
 
-  MockRemoteEventPublisher _remoteEventPublisher;
+  late MockRemoteEventPublisher _remoteEventPublisher;
 
-  MockRemoteEventListener _remoteEventListener;
+  late MockRemoteEventListener _remoteEventListener;
 
   @Before()
   void setUp() {
@@ -58,7 +58,7 @@ class StepDefinitions {
 
 
   @Given(r'the following DomainEvents have already been stored locally')
-  Future<void> givenLocalEventManagerHasDomainEvents({GherkinTable table}) async {
+  Future<void> givenLocalEventManagerHasDomainEvents({required GherkinTable table}) async {
     final givenDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in givenDomainEvents) {
       _localEventManager
@@ -68,7 +68,7 @@ class StepDefinitions {
   }
 
   @When(r'the following DomainEvents are to be stored locally')
-  Future<void> eventManagerReceivesRemoteDomainEvents({GherkinTable table}) async {
+  Future<void> eventManagerReceivesRemoteDomainEvents({required GherkinTable table}) async {
     final receivedDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in receivedDomainEvents) {
       _localEventManager.storeDomainEvent(domainEvent);
@@ -76,7 +76,7 @@ class StepDefinitions {
   }
 
   @When(r'the following DomainEvents are received remotely')
-  Future<void> eventManagerReceivesLocalDomainEvents({GherkinTable table}) async {
+  Future<void> eventManagerReceivesLocalDomainEvents({required GherkinTable table}) async {
     final receivedDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in receivedDomainEvents) {
       _remoteEventListener.emitEvent(domainEvent);
@@ -84,14 +84,14 @@ class StepDefinitions {
   }
 
   @Then(r'the following DomainEvents should be stored locally')
-  Future<void> localEventManagerShouldHaveTheFollowingDomainEvents({GherkinTable table}) async {
+  Future<void> localEventManagerShouldHaveTheFollowingDomainEvents({required GherkinTable table}) async {
     final expectedDomainEvents = List.from(_parseDomainEvents(table));
     final actualDomainEvents = List.from(_localEventManager.getAllDomainEvents());
     _collectionShouldContainExactlyInAnyOrder(expectedDomainEvents, actualDomainEvents);
   }
 
   @Then(r'the following DomainEvents should be published remotely')
-  Future<void> domainEventsShouldBePublishedRemotely({GherkinTable table}) async {
+  Future<void> domainEventsShouldBePublishedRemotely({required GherkinTable table}) async {
     final expectedDomainEvents = List.from(_parseDomainEvents(table));
     final actualDomainEvents = List.from(_remoteEventPublisher.publishedDomainEvents);
     _collectionShouldContainExactlyInAnyOrder(expectedDomainEvents, actualDomainEvents);
@@ -101,8 +101,8 @@ class StepDefinitions {
   Future<void> thenMessageShouldBeLogged(String levelName, String expectedMessage) async {
     final level = Level.values.where((element) => element.toString().toLowerCase() == levelName.toLowerCase()).first;
     _logger.loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
-    final matches = _logger.loggedMessages[level].where((loggedMessage) => loggedMessage.contains(expectedMessage));
-    assert(matches.isNotEmpty);
+    final matches = _logger.loggedMessages[level]?.where((loggedMessage) => loggedMessage.contains(expectedMessage));
+    assert(matches!.isNotEmpty);
   }
 
   /// Assert that actual collection contains exactly all elements of the expected collection, in any order.
@@ -119,17 +119,17 @@ class StepDefinitions {
     final keys = <String>{'eventUuid', 'eventSequence', 'eventTimestamp', 'aggregateId', 'payload.type', 'payload.property1'};
     final parsedRows = _parseTableAsListMap(table, keys);
     for (final row in parsedRows) {
-      final eventId = DomainEventId.of(row['eventUuid'], int.parse(row['eventSequence']), DateTime.parse(row['eventTimestamp']));
-      final payload = _eventPayloadFor(row['payload.type'], row['payload.property1']);
-      final event = DomainEvent.of(eventId, AggregateId.of(row['aggregateId']), payload);
+      final eventId = DomainEventId.of(row['eventUuid']!, int.parse(row['eventSequence']!), DateTime.parse(row['eventTimestamp']!));
+      final payload = _eventPayloadFor(row['payload.type']!, row['payload.property1']!);
+      final event = DomainEvent.of(eventId, AggregateId.of(row['aggregateId']!), payload);
       domainEvents.add(event);
     }
     return domainEvents;
   }
 
   /// Get the value out of a table row based on the index of the given key
-  String _getTableValue(Map<String, int> headerIndexes, List<String> split, String key) {
-    return headerIndexes.containsKey(key) && headerIndexes[key] >= 0 ? split[headerIndexes[key]].trim() : null;
+  String? _getTableValue(Map<String, int> headerIndexes, List<String> split, String key) {
+    return headerIndexes.containsKey(key) && headerIndexes[key]! >= 0 ? split[headerIndexes[key]!].trim() : null;
   }
 
   /// Get a map of table header keys and their respective indexes
@@ -144,12 +144,12 @@ class StepDefinitions {
   }
 
   /// Turn a GherkinTable into a List of Map values, extracting the given keys as key => value pairs from the table rows.
-  List<Map<String, String>> _parseTableAsListMap(GherkinTable table, Set<String> keys) {
+  List<Map<String, String?>> _parseTableAsListMap(GherkinTable table, Set<String> keys) {
     final headerIndexes = _getHeaderIndexMap(table);
-    final parsedValues = List<Map<String, String>>.empty(growable: true);
+    final parsedValues = List<Map<String, String?>>.empty(growable: true);
     table.gherkinRows().getRange(1, table.gherkinRows().length).map((element) {
       final split = element.trim().split('|');
-      final entryMap = HashMap<String, String>();
+      final entryMap = HashMap<String, String?>();
       for (final key in keys) {
         final value = _getTableValue(headerIndexes, split, key);
         entryMap.putIfAbsent(key, () => value);

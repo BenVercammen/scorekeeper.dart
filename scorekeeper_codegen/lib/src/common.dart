@@ -37,11 +37,11 @@ Iterable<FieldElement> getFilteredFields(ClassElement element, bool Function(Fie
 }
 
 /// Get the first superclass (if any)
-ClassElement getSuperClass(ClassElement aggregate) {
+ClassElement? getSuperClass(ClassElement aggregate) {
   try {
     return aggregate.allSupertypes
-        ?.firstWhere((element) => element.element is ClassElement)
-        ?.element;
+        .firstWhere((element) => element.element is ClassElement)
+        .element;
     // ignore: avoid_catching_errors
   } on Error catch (_) {
     return null;
@@ -53,7 +53,7 @@ Set<String> getRelevantImports(List<Element> list) {
   final fullImports = <String>{};
   for (final element in list) {
     // element.library.imports.map((importElement) => importElement.)
-    final fullLibraryIdentifier = element.library.identifier;
+    final fullLibraryIdentifier = element.library!.identifier;
     fullImports.add(fullLibraryIdentifier);
   }
   return fullImports;

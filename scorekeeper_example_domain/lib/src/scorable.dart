@@ -9,7 +9,7 @@ import 'package:scorekeeper_domain/core.dart';
 @aggregate
 class Scorable extends Aggregate {
 
-  String name;
+  late String name;
 
   final List<Participant> participants = List.empty(growable: true);
 
@@ -17,9 +17,6 @@ class Scorable extends Aggregate {
 
   @commandHandler
   Scorable.command(CreateScorable command) : super(AggregateId.of(command.aggregateId)) {
-    if (null == command.name) {
-      throw Exception('Invalid name');
-    }
     final event = ScorableCreated()
       ..aggregateId = command.aggregateId
       ..name = command.name;
@@ -100,7 +97,7 @@ class Scorable extends Aggregate {
   CommandAllowance isAllowed(dynamic command) {
     switch (command.runtimeType) {
       default:
-        return CommandAllowance(command, true, null);
+        return CommandAllowance(command, true, 'Allowed by default');
     }
   }
 
@@ -146,33 +143,33 @@ class Scorable extends Aggregate {
 
 /// Command to create a new Scorable
 class CreateScorable {
-  String aggregateId;
-  String name;
+  late String aggregateId;
+  late String name;
 }
 
 /// Command to add a Participant to a Scorable
 /// TODO: moet ik in die commands en events ook niet meegeven voor welk type aggregate die gelden?
 /// alleszins expliciet maken dat het aan een Scorable toegevoegd wordt? desnoods in naamgeving?
 class AddParticipant {
-  String aggregateId;
-  Participant participant;
+  late String aggregateId;
+  late Participant participant;
 }
 
 class RemoveParticipant {
-  String aggregateId;
+  late String aggregateId;
   /// Note that we use a full participant object, and not just the ID.
   /// This way we might get some extra details about the user's state
   /// at the time of removal. This could be used in the command handler to
   /// determine whether or not the participant is actually allowed to be removed.
-  Participant participant;
+  late Participant participant;
 }
 
 class StartScorable {
-  String aggregateId;
+  late String aggregateId;
 }
 
 class FinishScorable {
-  String aggregateId;
+  late String aggregateId;
 }
 
 
@@ -182,20 +179,20 @@ class FinishScorable {
 
 /// Event for a newly created Scorable
 class ScorableCreated {
-  String aggregateId;
-  String name;
+  late String aggregateId;
+  late String name;
 }
 
 /// Event for a newly added Participant
 class ParticipantAdded {
-  String aggregateId;
-  Participant participant;
+  late String aggregateId;
+  late Participant participant;
 }
 
 /// Event for a removed Participant
 class ParticipantRemoved {
-  String aggregateId;
-  Participant participant;
+  late String aggregateId;
+  late Participant participant;
 }
 
 
@@ -261,7 +258,7 @@ class CommandAllowance {
     if (isAllowed) {
       return '${command.runtimeType} allowed';
     }
-    if (null != reason) {
+    if (reason.isNotEmpty) {
       return '${command.runtimeType} not allowed because $reason';
     }
     return '${command.runtimeType} not allowed';

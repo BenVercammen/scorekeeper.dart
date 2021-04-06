@@ -9,7 +9,7 @@ void main() {
 
   group('AggregateCache', () {
 
-    AggregateCache aggregateCache;
+    late AggregateCache aggregateCache;
 
     setUp(() {
       aggregateCache = AggregateCacheInMemoryImpl();

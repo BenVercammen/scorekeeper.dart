@@ -10,15 +10,15 @@ import 'package:scorekeeper_domain/core.dart';
 ///       that would require some sort of "DynamicReflectionEventHandlerForAggregate" typed instance
 ///       let's see if we can dig up our old reflection code somewhere...
 class TestFixture<T extends Aggregate> {
-  final CommandHandler<T> commandHandler;
+  late final CommandHandler<T> commandHandler;
 
-  final EventHandler<T> eventHandler;
+  late final EventHandler<T> eventHandler;
 
-  final Map<Aggregate, int> eventSequenceMap = HashMap();
+  late final Map<Aggregate, int> eventSequenceMap = HashMap();
 
-  T aggregate;
+  T? aggregate;
 
-  Exception lastThrownException;
+  Exception? lastThrownException;
 
   TestFixture(this.commandHandler, this.eventHandler);
 
@@ -27,14 +27,14 @@ class TestFixture<T extends Aggregate> {
         throw Exception('AggregateId was not set on event ${event.runtimeType}');
     }
     // Ignore events for different aggregateId's...
-    if (aggregate != null && event.aggregateId != aggregate.aggregateId.id) {
+    if (aggregate != null && event.aggregateId != aggregate?.aggregateId.id) {
       return this;
     }
     final aggregateId = AggregateId.of(event.aggregateId.toString());
     aggregate ??= eventHandler.newInstance(aggregateId);
     var sequence = eventSequenceMap[aggregate] ?? 0;
-    eventSequenceMap[aggregate] = sequence++;
-    eventHandler.handle(aggregate, DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event));
+    eventSequenceMap[aggregate!] = sequence++;
+    eventHandler.handle(aggregate!, DomainEvent.of(DomainEventId.local(sequence), aggregate!.aggregateId, event));
     return this;
   }
 
@@ -43,12 +43,12 @@ class TestFixture<T extends Aggregate> {
       if (commandHandler.isConstructorCommand(command)) {
         aggregate = commandHandler.handleConstructorCommand(command);
       } else {
-        commandHandler.handle(aggregate, command);
+        commandHandler.handle(aggregate!, command);
       }
-      for (var event in aggregate.appliedEvents) {
+      for (var event in aggregate!.appliedEvents) {
         var sequence = eventSequenceMap[aggregate] ?? 0;
-        eventSequenceMap[aggregate] = sequence++;
-        eventHandler.handle(aggregate, DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event));
+        eventSequenceMap[aggregate!] = sequence++;
+        eventHandler.handle(aggregate!, DomainEvent.of(DomainEventId.local(sequence), aggregate!.aggregateId, event));
       }
       lastThrownException = null;
     } on Exception catch (exception) {
@@ -58,7 +58,7 @@ class TestFixture<T extends Aggregate> {
   }
 
   TestFixture then(Function(T aggregate) callback) {
-    callback(aggregate);
+    callback(aggregate!);
     return this;
   }
 }

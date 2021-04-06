@@ -18,7 +18,7 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
 
   final Map<AggregateId, Set<DomainEvent>> _handledEvents = HashMap();
 
-  Function(Aggregate aggregate, DomainEvent domainEvent) _handlerInterceptor = null;
+  Function(Aggregate aggregate, DomainEvent domainEvent)? _handlerInterceptor;
 
   _EventHandlerCountWrapper(this._eventHandler);
 
@@ -28,9 +28,9 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
     if (null == _handlerInterceptor) {
       _eventHandler.handle(aggregate, event);
     } else {
-      _handlerInterceptor(aggregate, event);
+      _handlerInterceptor!(aggregate, event);
     }
-    _handledEvents[aggregate.aggregateId].add(event);
+    _handledEvents[aggregate.aggregateId]!.add(event);
   }
 
   @override
@@ -52,7 +52,7 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
     if (!_handledEvents.containsKey(aggregateId)) {
       return 0;
     }
-    return _handledEvents[aggregateId].where((event) => event.payload.runtimeType == eventType).toSet().length;
+    return _handledEvents[aggregateId]!.where((event) => event.payload.runtimeType == eventType).toSet().length;
   }
 
   void addHandlerInterceptor(Function(Aggregate aggregate, DomainEvent event) interceptor) {
@@ -65,18 +65,18 @@ class _CommandHandlerWrapper<T extends CommandHandler> implements CommandHandler
 
   final T _commandHandler;
 
-  Function(String beforeAfter, Aggregate aggregate, dynamic command) _handlerInterceptor = null;
+  Function(String beforeAfter, Aggregate aggregate, dynamic command)? _handlerInterceptor;
 
   _CommandHandlerWrapper(this._commandHandler);
 
   @override
   void handle(Aggregate aggregate, command) {
     if (null != _handlerInterceptor) {
-      _handlerInterceptor("BEFORE", aggregate, command);
+      _handlerInterceptor!("BEFORE", aggregate, command);
     }
     _commandHandler.handle(aggregate, command);
     if (null != _handlerInterceptor) {
-      _handlerInterceptor("AFTER", aggregate, command);
+      _handlerInterceptor!("AFTER", aggregate, command);
     }
   }
 
@@ -112,13 +112,13 @@ class _CommandHandlerWrapper<T extends CommandHandler> implements CommandHandler
 
 class TracingLogger extends Logger {
 
-  Map<Level, List<String>> loggedMessages = HashMap();
+  final Map<Level, List<String>> loggedMessages = HashMap();
 
   @override
-  void log(Level level, message, [error, StackTrace stackTrace]) {
+  void log(Level level, message, [error, StackTrace? stackTrace]) {
     super.log(level, message, error, stackTrace);
     loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
-    loggedMessages[level].add(message.toString());
+    loggedMessages[level]?.add(message.toString());
   }
 
 }
@@ -126,27 +126,27 @@ class TracingLogger extends Logger {
 void main() {
 
   /// The last thrown exception in a "when" statement
-  Exception _lastThrownWhenException;
+  late Exception? _lastThrownWhenException;
 
-  TracingLogger _logger;
+  late TracingLogger _logger;
 
   const scorableId = 'SCORABLE_ID';
 
   group('Scorekeeper', () {
 
-    Scorekeeper scorekeeper;
+    late Scorekeeper scorekeeper;
 
-    AggregateCache aggregateCache;
+    late AggregateCache aggregateCache;
 
-    EventStore eventStore;
+    late EventStore eventStore;
 
-    MockRemoteEventPublisher remoteEventPublisher;
+    late MockRemoteEventPublisher remoteEventPublisher;
 
-    MockRemoteEventListener remoteEventListener;
+    late MockRemoteEventListener remoteEventListener;
 
-    _CommandHandlerWrapper<ScorableCommandHandler> commandHandler;
+    late _CommandHandlerWrapper<ScorableCommandHandler> commandHandler;
 
-    _EventHandlerCountWrapper<ScorableEventHandler> eventHandler;
+    late _EventHandlerCountWrapper<ScorableEventHandler> eventHandler;
 
     setUp(() {
       _logger = TracingLogger();
@@ -194,7 +194,7 @@ void main() {
     }
 
     /// Given the ScorableCreatedEvent with parameters
-    void givenScorableCreatedEvent(String aggregateIdValue, String name, [DomainEventId eventId]) {
+    void givenScorableCreatedEvent(String aggregateIdValue, String name, [DomainEventId? eventId]) {
       final scorableCreated = ScorableCreated()
         ..aggregateId = aggregateIdValue
         ..name = name;
@@ -205,7 +205,7 @@ void main() {
     }
 
     /// Given the ParticipantAdded event
-    void givenParticipantAddedEvent(String aggregateIdValue, String participantId, String participantName, [DomainEventId eventId]) {
+    void givenParticipantAddedEvent(String aggregateIdValue, String participantId, String participantName, [DomainEventId? eventId]) {
       final participantAdded = ParticipantAdded()
         ..aggregateId = aggregateIdValue;
       final participant = Participant(participantId, participantName);
@@ -352,7 +352,7 @@ void main() {
     /// Then the given message should be logged number of times
     void thenMessageShouldBeLoggedNumberOfTimes(Level level, String expectedMessage, int times) {
       _logger.loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
-      expect(_logger.loggedMessages[level].where((loggedMessage) => loggedMessage.contains(expectedMessage)).length, equals(times));
+      expect(_logger.loggedMessages[level]!.where((loggedMessage) => loggedMessage.contains(expectedMessage)).length, equals(times));
     }
 
     /// Then the given message should not be logged
@@ -381,28 +381,9 @@ void main() {
 
     group('Test creation and initial usage of the Scorekeeper instance', () {
 
-      test('Constructor requires local EventStore', () {
-        try {
-          Scorekeeper(aggregateCache: AggregateCacheInMemoryImpl());
-          fail('Instantiating without local EventStore instance should fail');
-        } on Exception catch (exception) {
-          expect(exception.toString(), contains('Local EventStore instance is required'));
-        }
-      });
-
-      test('Constructor requires an AggregateCache', () {
-        try {
-          Scorekeeper(eventStore: EventStoreInMemoryImpl(_logger));
-          fail('Instantiating without AggregateCache instance should fail');
-        } on Exception catch (exception) {
-          expect(exception.toString(), contains('AggregateCache instance is required'));
-        }
-      });
-
-
       group('Scorekeeper without handlers', () {
 
-        Scorekeeper scorekeeper;
+        late Scorekeeper scorekeeper;
 
         setUp(() {
           scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(_logger), aggregateCache: AggregateCacheInMemoryImpl());
@@ -649,19 +630,19 @@ void main() {
       /// In case events are added out-of-sync, we should raise a SystemEvent...
       group('Receiving remote events out of sync', () {
 
-        DomainEvent event1;
+        late DomainEvent event1;
 
-        DomainEvent event2;
+        late DomainEvent event2;
 
-        DomainEvent event2b;
+        late DomainEvent event2b;
 
-        DomainEvent event2c;
+        late DomainEvent event2c;
 
-        DomainEvent event3;
+        late DomainEvent event3;
 
-        DomainEvent event4;
+        late DomainEvent event4;
 
-        AggregateId aggregateId;
+        late AggregateId aggregateId;
 
         setUp(() {
           aggregateId = AggregateId.random();
@@ -672,15 +653,15 @@ void main() {
           event1 = DomainEvent.of(DomainEventId.local(0), aggregateId, payload1);
           final payload2 = ParticipantAdded()
             ..aggregateId = aggregateId.id
-            ..participant = Participant(null, null);
+            ..participant = Participant('', '');
           event2 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
           final payload3 = ParticipantAdded()
             ..aggregateId = aggregateId.id
-            ..participant = Participant(null, null);
+            ..participant = Participant('', '');
           event3 = DomainEvent.of(DomainEventId.local(2), aggregateId, payload3);
           final payload4 = ParticipantAdded()
             ..aggregateId = aggregateId.id
-            ..participant = Participant(null, null);
+            ..participant = Participant('', '');
           event4 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload4);
           // Same aggregate, same sequence, same payload, different UUID, so different origin
           event2b = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
@@ -866,15 +847,15 @@ void main() {
           givenAggregateIdCached(scorableId);
           givenScorableCreatedEvent(scorableId, 'Test Scorable');
           final invalidCommand = AddParticipant()
-            ..aggregateId = null;
+            ..aggregateId = '';
           when(() => command(invalidCommand));
-          thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand));
+          thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand, 'aggregateId is required'));
         });
 
         test('Command should always have an aggregateId property', () {
           final invalidCommand = Object();
           when(() => command(invalidCommand));
-          thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand));
+          thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand, 'aggregateId is required'));
         });
 
         test('No command handler found', () {
@@ -1048,7 +1029,7 @@ void main() {
         // because ALL previously applied events should be undone as well.
         commandHandler.addHandlerInterceptor((beforeAfter, aggregate, command) {
           if ('BEFORE' == beforeAfter && command is AddParticipant) {
-            final participant = Participant(null, 'Player Two');
+            final participant = Participant('', 'Player Two');
             aggregate.apply(ParticipantAdded()..participant = participant);
           }
         });

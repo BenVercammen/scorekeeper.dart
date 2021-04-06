@@ -13,7 +13,7 @@ void main() {
 
   group('Aggregate', () {
 
-    Aggregate aggregate;
+    late Aggregate aggregate;
 
     setUp(() {
       aggregate = _AggregateImpl(AggregateId.random());
