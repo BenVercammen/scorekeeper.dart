@@ -5,6 +5,7 @@
 // **************************************************************************
 
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_domain/src/aggregate.dart';
 import 'package:scorekeeper_example_domain/src/scorable.dart';
 
 class ScorableCommandHandler implements CommandHandler<Scorable> {

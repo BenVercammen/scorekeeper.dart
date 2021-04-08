@@ -5,8 +5,8 @@
 // **************************************************************************
 
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_example_domain/src/muurkeklop.dart';
 import 'package:scorekeeper_example_domain/src/scorable.dart';
+import 'package:scorekeeper_example_domain/src/muurkeklop.dart';
 
 class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
   @override

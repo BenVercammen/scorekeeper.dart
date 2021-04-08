@@ -48,11 +48,20 @@ ClassElement? getSuperClass(ClassElement aggregate) {
   }
 }
 
-/// Get the import statement that refers to the
+/// Get the import statement that the (Class)Elements in the list refer to
 Set<String> getRelevantImports(List<Element> list) {
   final fullImports = <String>{};
   for (final element in list) {
-    // element.library.imports.map((importElement) => importElement.)
+    // element.library?.imports.map((importElement) {
+    //    return importElement.importedLibrary;
+    // });
+    // TODO: In case of inheritance, we'll also need to make sure to get the import for the parent class
+    if (element is ClassElement) {
+      final superclass = getSuperClass(element);
+      if (null != superclass) {
+        fullImports.add(superclass.library.identifier);
+      }
+    }
     final fullLibraryIdentifier = element.library!.identifier;
     fullImports.add(fullLibraryIdentifier);
   }

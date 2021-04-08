@@ -12,7 +12,8 @@ class MuurkeKlopNDown extends Scorable {
 
   @commandHandler
   MuurkeKlopNDown.command(CreateScorable command) : super.command(command) {
-    // TODO: By default a Muurke Klop game starts with 1 round
+    // By default a Muurke Klop game starts with 1 round
+    rounds.putIfAbsent(0, () => MuurkeKlopNDownRound(0));
   }
 
   @commandHandler

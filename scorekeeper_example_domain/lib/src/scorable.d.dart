@@ -4,8 +4,8 @@
 // AggregateDtoGenerator
 // **************************************************************************
 
-import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/src/scorable.dart';
+import 'package:scorekeeper_domain/core.dart';
 
 class ScorableDto extends AggregateDto {
   ScorableDto(this._scorable) : super(_scorable);

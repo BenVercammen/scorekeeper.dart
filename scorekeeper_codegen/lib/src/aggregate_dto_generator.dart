@@ -91,12 +91,13 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
       aggregateDtoBuilder.methods.add(builder.build());
     }
 
-    // Import the current aggregate package + scorekeeper_domain...
-    var importedLibraries = {'package:scorekeeper_domain/core.dart'}
-      ..addAll(getRelevantImports([aggregate, ...fields]));
+    // Import the current aggregate package + scorekeeper_domain if necessary...
+    var importedLibraries = getRelevantImports([...fields]);
     // In case we are inheriting from another generated parent AggregateDto class, we'll have to jump some hoops to add the import
     if ('Aggregate' != parentDtoClass.name) {
       importedLibraries = {...importedLibraries, parentDtoClass.library.identifier.replaceAll('dart', 'd.dart')};
+    } else {
+      importedLibraries = {...importedLibraries, 'package:scorekeeper_domain/core.dart'};
     }
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
 

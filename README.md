@@ -53,3 +53,14 @@ FLUTTER BUILD STEPS
 
   java -jar C:\Tools\bundletool-all-1.4.0.jar install-apks --apks=build\app\outputs\apks\scorekeeper_flutter.apks
 
+
+
+# Trouble shooting
+ - The command "tool/ci.sh test_1" exited with 1
+   - This is caused by the "ensure_build" test that fails, probably because the newest generated code was not commited
+   - To check this locally:
+     
+        `cd scorekeeper_example_domain`
+     
+        `pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart`
+    - To solve this, try re-building the code and check again

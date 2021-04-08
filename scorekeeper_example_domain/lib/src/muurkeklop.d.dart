@@ -1,5 +1,9 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
+// **************************************************************************
+// AggregateDtoGenerator
+// **************************************************************************
+
 import 'package:scorekeeper_example_domain/src/muurkeklop.dart';
 import 'package:scorekeeper_example_domain/src/scorable.d.dart';
 
