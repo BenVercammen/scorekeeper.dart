@@ -13,7 +13,7 @@ class ScorableOverviewPage extends StatefulWidget {
 
   final ScorekeeperService scorekeeperService;
 
-  ScorableOverviewPage({Key key, this.title, this.scorekeeperService}) : super(key: key);
+  ScorableOverviewPage({Key? key, required this.title, required this.scorekeeperService}) : super(key: key);
 
   @override
   _ScorableOverviewPageState createState() => _ScorableOverviewPageState(scorekeeperService);

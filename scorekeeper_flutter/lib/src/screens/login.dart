@@ -10,7 +10,7 @@ import 'scorable_overview.dart';
 class LoginScreen extends StatefulWidget {
   final ScorekeeperService scorekeeperService;
 
-  const LoginScreen({Key key, this.scorekeeperService}) : super(key: key);
+  const LoginScreen({Key? key, required this.scorekeeperService}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -19,9 +19,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  String _email;
+  String? _email;
 
-  String _password;
+  String? _password;
 
   final auth = FirebaseAuth.instance;
 
@@ -68,15 +68,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<UserCredential> _createUserWithEmailAndPassword() async {
-    final userCredential = await auth.createUserWithEmailAndPassword(email: _email, password: _password);
+    if (null == _email) {
+      throw Exception('TODO: validation exception: email required!');
+    }
+    if (null == _password) {
+      throw Exception('TODO: validation exception: email required!');
+    }
+    final userCredential = await auth.createUserWithEmailAndPassword(email: _email!, password: _password!);
     await Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (context) => ScorableOverviewPage(title: 'Scorekeeper', scorekeeperService: scorekeeperService)));
     return userCredential;
   }
 
   Future<UserCredential> _signInWithEmailAndPassword() async {
+    if (null == _email) {
+      throw Exception('TODO: validation exception: email required!');
+    }
+    if (null == _password) {
+      throw Exception('TODO: validation exception: email required!');
+    }
     try {
-      final userCredential = await auth.signInWithEmailAndPassword(email: _email, password: _password);
+      final userCredential = await auth.signInWithEmailAndPassword(email: _email!, password: _password!);
       log(userCredential.toString());
       // log(userCredential.user.displayName);
       await Navigator.of(context).pushReplacement(MaterialPageRoute(
@@ -87,6 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
       log(e.toString());
     }
     // TODO: throw error?
-    return null;
+    throw Exception('TODO: something went wrong while signing in!');
   }
 }

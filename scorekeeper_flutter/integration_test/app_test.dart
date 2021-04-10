@@ -17,7 +17,7 @@ import 'package:scorekeeper_flutter/src/services/service.dart';
 void main() {
 
   // The scorekeeper service to be used within the test
-  ScorekeeperService scorekeeperService;
+  late ScorekeeperService scorekeeperService;
 
   // Open the app on the device
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

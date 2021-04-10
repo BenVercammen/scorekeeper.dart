@@ -11,10 +11,10 @@ import 'package:scorekeeper_flutter/src/services/service.dart';
 void main() {
   group('ScorekeeperService', () {
     // The unit under test
-    ScorekeeperService scorekeeperService;
+    late ScorekeeperService scorekeeperService;
 
     // The Scorekeeper instance to be injected in the ScorekeeperService
-    Scorekeeper _scorekeeper;
+    late Scorekeeper _scorekeeper;
 
     setUp(() {
       _scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())

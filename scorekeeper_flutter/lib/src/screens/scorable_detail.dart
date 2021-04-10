@@ -225,7 +225,7 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState.validate()) {
+    if (null != _formKey.currentState && _formKey.currentState!.validate()) {
       callback(nameController.text);
       Navigator.pop(context);
     }
@@ -245,7 +245,7 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
                 hintText: 'The name of the player',
               ),
               validator: (value) {
-                if (value.isEmpty) {
+                if (null != value && value.isEmpty) {
                   return 'Please enter a name';
                 }
                 return null;

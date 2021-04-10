@@ -28,7 +28,8 @@ dependencies:
   firebase_core: ^1.0.1
   flutter:
     sdk: flutter
-  ordered_set: ^2.0.2
+  mono_repo: ^3.4.7
+  ordered_set: ^3.0.0
   scorekeeper_core:
     path: ../scorekeeper_core
   # TODO: why doesn't the scorekeeper_example_domain bring this transitive dependency along?

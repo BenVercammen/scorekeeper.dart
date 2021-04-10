@@ -44,11 +44,20 @@ class ScorekeeperService {
   /// Load Scorables ordered descending by last modified date
   OrderedSet<MuurkeKlopNDownDto> loadScorables(int page, int pageSize) {
     final allDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
-      return dto2.lastModified.millisecondsSinceEpoch - dto1.lastModified.millisecondsSinceEpoch;
+      if (null == dto2.lastModified && null == dto1.lastModified) {
+        return 0;
+      }
+      if (null == dto2.lastModified) {
+        return -1;
+      }
+      if (null == dto1.lastModified) {
+        return 1;
+      }
+      return dto2.lastModified!.millisecondsSinceEpoch - dto1.lastModified!.millisecondsSinceEpoch;
     })
       ..addAll(_scorekeeper.registeredAggregateIds.map(_scorekeeper.getCachedAggregateDtoById));
     final resultDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
-      return dto2.lastModified.millisecondsSinceEpoch - dto1.lastModified.millisecondsSinceEpoch;
+      return dto2.lastModified!.millisecondsSinceEpoch - dto1.lastModified!.millisecondsSinceEpoch;
     });
     for (var i = 0; i < allDtos.length; i++) {
       if (i >= (page * pageSize) && i < ((page + 1) * pageSize)) {

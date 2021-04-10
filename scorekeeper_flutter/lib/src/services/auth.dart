@@ -13,7 +13,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Sign in anonymously
-  Future<User> signInAnonymously() async {
+  Future<User?> signInAnonymously() async {
     try {
       final credential = await _auth.signInAnonymously();
       return credential.user;
@@ -24,13 +24,13 @@ class AuthService {
   }
 
   /// sign in with google
-  Future<User> signInWithGoogle() async {
+  Future<User?> signInWithGoogle() async {
     // TODO!!
     return null;
   }
 
   /// sign in with facebook
-  Future<User> signInWithFacebook() async {
+  Future<User?> signInWithFacebook() async {
     // TODO!!!
     return null;
   }
