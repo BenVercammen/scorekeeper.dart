@@ -46,3 +46,18 @@ Also re-activate all packages
 When it's time to upgrade dependencies, this can be done for all packages simultaneously using mono_repo
  - `mono_repo pub upgrade`
  - `mono_repo pub get`
+
+
+# Upgrading PUB DEV dependencies
+We chose to use PUB instead of NPM for managing packages.
+First we need to check which packages have been installed:
+
+``pub global list``
+
+This should list `devtools` and `mono_repo` on our local machine.
+
+To update, we can run:
+
+``pub global run upgrade``
+
+To install or uninstall, we can use the `activate` or `deactivate` subcommands.
