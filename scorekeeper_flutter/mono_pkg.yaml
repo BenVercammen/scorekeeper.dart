@@ -1,16 +1,20 @@
 ---
 # See https://github.com/google/mono_repo.dart for details on this file
 dart:
-- dev
+  - dev
 
 stages:
-- analyzer_and_format:
-  - group:
-    # - dartfmt
-    - dartanalyzer: --fatal-infos .
-- unit_test:
-  - test:
+  - analyzer_and_format:
+      - group:
+          # - dartfmt
+          # - dartanalyzer: --fatal-infos .
+  - unit_test:
+      - test:
+  # TODO: - integration_test ???
+  # TODO: https://stackoverflow.com/questions/60493958/flutter-integration-tests-with-travis-ci
+#  - before_script:
+#      -
 
 cache:
   directories:
-  - .dart_tool/build
+    - .dart_tool/build

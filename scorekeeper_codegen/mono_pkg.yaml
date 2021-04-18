@@ -1,14 +1,14 @@
 ---
 # See https://github.com/google/mono_repo.dart for details on this file
 dart:
-- dev
+  - dev
 
 stages:
-- analyzer_and_format:
-  - group:
-    # - dartfmt
-    - dartanalyzer: --fatal-infos .
+  - analyzer_and_format:
+      - group:
+          # - dartfmt
+          - dartanalyzer: --fatal-infos .
 
 cache:
   directories:
-  - .dart_tool/build
+    - .dart_tool/build

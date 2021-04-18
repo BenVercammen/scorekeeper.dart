@@ -17,6 +17,6 @@ travis:
     - tool/report_failure.sh
 
 merge_stages:
-- analyzer_and_format
-- ensure_build
-- unit_test
+  - analyzer_and_format
+  - ensure_build
+  - unit_test
