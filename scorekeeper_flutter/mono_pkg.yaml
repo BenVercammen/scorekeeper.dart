@@ -4,10 +4,10 @@ dart:
   - dev
 
 stages:
-  - analyzer_and_format:
-      - group:
-          # - dartfmt
-          # - dartanalyzer: --fatal-infos .
+#  - analyzer_and_format:
+#      - group:
+#          # - dartfmt
+#          # - dartanalyzer: --fatal-infos .
   - unit_test:
       - test:
   # TODO: - integration_test ???
