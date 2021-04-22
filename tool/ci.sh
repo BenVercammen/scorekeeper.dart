@@ -47,7 +47,11 @@ for PKG in ${PKGS}; do
     exit 64
   fi
 
-  pub upgrade --no-precompile || EXIT_CODE=$?
+  if [[ ${PKG} == *"flutter"* ]]; then
+    flutter pub upgrade --no-precompile || EXIT_CODE=$?
+  else
+    pub upgrade --no-precompile || EXIT_CODE=$?
+  fi
 
   if [[ ${EXIT_CODE} -ne 0 ]]; then
     echo -e "\033[31mPKG: ${PKG}; 'pub upgrade' - FAILED  (${EXIT_CODE})\033[0m"
