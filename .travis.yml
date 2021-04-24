@@ -10,8 +10,11 @@ after_failure:
   - tool/report_failure.sh
 
 before_script:
-  - git clone https://github.com/flutter/flutter.git -b master
-  - ./flutter/bin/flutter doctor
+  - git clone https://github.com/flutter/flutter.git ${TRAVIS_HOME}/flutter-sdk -b master
+  - export FLUTTER_SDK="${TRAVIS_HOME}/flutter-sdk"
+  - export PATH="$FLUTTER_SDK/bin:$PATH"
+  - export NO_PROXY=localhost,127.0.0.1
+  - flutter doctor
 
 jobs:
   include:

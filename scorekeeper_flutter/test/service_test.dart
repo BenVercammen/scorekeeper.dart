@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_core/src/scorekeeper_base.dart';
 import 'package:scorekeeper_domain/core.dart';

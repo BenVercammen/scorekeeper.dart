@@ -57,8 +57,10 @@ for PKG in ${PKGS}; do
   fi
 
   if [[ ${PKG} == *"flutter"* ]]; then
+    echo -e "\033[31mPKG: ${PKG}; 'flutter upgrade'\033[0m"
     flutter upgrade --no-precompile || EXIT_CODE=$?
   else
+    echo -e "\033[31mPKG: ${PKG}; 'pub upgrade'\033[0m"
     pub upgrade --no-precompile || EXIT_CODE=$?
   fi
 
