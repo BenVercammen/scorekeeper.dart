@@ -47,6 +47,9 @@ When it's time to upgrade dependencies, this can be done for all packages simult
  - `mono_repo pub upgrade`
  - `mono_repo pub get`
 
+In order to generate the `tool/ci.sh` and the `.travis.yml` files again, use `mono_repo generate`.
+This might be useful after upgrading the local mono_repo install (`pub global activate mono_repo`),
+because these files need to be committed and they are validated on Travis CI.
 
 # Upgrading PUB DEV dependencies
 We chose to use PUB instead of NPM for managing packages.

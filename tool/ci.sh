@@ -3,19 +3,10 @@
 
 # Support built in commands on windows out of the box.
 function pub() {
-  echo -e '\033[31m========= WITHOUT FLUTTER =========== \033[0m'
   if [[ $TRAVIS_OS_NAME == "windows" ]]; then
     command pub.bat "$@"
   else
     command pub "$@"
-  fi
-}
-function flutter() {
-  echo -e '\033[31m========= WITH FLUTTER =========== \033[0m'
-  if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-    command flutter.bat pub "$@"
-  else
-    command flutter pub "$@"
   fi
 }
 function dartfmt() {
@@ -56,13 +47,7 @@ for PKG in ${PKGS}; do
     exit 64
   fi
 
-  if [[ ${PKG} == *"flutter"* ]]; then
-    echo -e "\033[31mPKG: ${PKG}; 'flutter upgrade'\033[0m"
-    flutter upgrade --no-precompile || EXIT_CODE=$?
-  else
-    echo -e "\033[31mPKG: ${PKG}; 'pub upgrade'\033[0m"
-    pub upgrade --no-precompile || EXIT_CODE=$?
-  fi
+  pub upgrade --no-precompile || EXIT_CODE=$?
 
   if [[ ${EXIT_CODE} -ne 0 ]]; then
     echo -e "\033[31mPKG: ${PKG}; 'pub upgrade' - FAILED  (${EXIT_CODE})\033[0m"
@@ -79,24 +64,11 @@ for PKG in ${PKGS}; do
         ;;
       test_0)
         echo 'pub run test'
-
-
-        if [[ ${PKG} == *"flutter"* ]]; then
-          flutter run test || EXIT_CODE=$?
-        else
-          pub run test || EXIT_CODE=$?
-        fi
-
+        pub run test || EXIT_CODE=$?
         ;;
       test_1)
         echo 'pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart'
-
-        if [[ ${PKG} == *"flutter"* ]]; then
-          flutter run test --run-skipped -t presubmit-only test/ensure_build_test.dart || EXIT_CODE=$?
-        else
-          pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart || EXIT_CODE=$?
-        fi
-
+        pub run test --run-skipped -t presubmit-only test/ensure_build_test.dart || EXIT_CODE=$?
         ;;
       *)
         echo -e "\033[31mUnknown TASK '${TASK}' - TERMINATING JOB\033[0m"
