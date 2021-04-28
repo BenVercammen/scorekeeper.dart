@@ -147,3 +147,42 @@ https://pvba04.medium.com/flutter-integration-tests-in-intellij-idea-16736df35bc
 # Troubleshooting
  - Because every version of flutter_driver from sdk depends on crypto 2.1.5 and uuid >=3.0.0 depends on crypto ^3.0.0, flutter_driver from sdk is incompatible with uuid >=3.0.0.
     - upgrade flutter sdk on machine, see README file in `scorekeeper_core`
+
+ - Travis build fails for flutter package
+```
+    PKG: scorekeeper_flutter
+    Resolving dependencies...
+    Because scorekeeper_flutter depends on integration_test any from sdk which
+    doesn't exist (the Flutter SDK is not available), version solving failed.
+    Flutter users should run `flutter pub get` instead of `pub get`.
+    PKG: scorekeeper_flutter; 'pub upgrade' - FAILED  (69)
+    SUCCESS COUNT: 4
+    FAILURES: 1
+    scorekeeper_flutter; 'pub upgrade'
+    The command "tool/ci.sh dartanalyzer" exited with 1.
+    cache.2
+    store build cache
+``` 
+
+TODO:
+    - https://dev.to/ameysunu/travis-ci-for-flutter-apps-1ngj
+    - TODO: nog verder uitvissen!
+
+DOEL == flutter builden op travis
+    - flutter tests: DONE
+    -  integration, deploy, APK build ergens zetten?
+        => beter naar codemagic overstappen... 
+
+https://docs.travis-ci.com/user/build-stages/
+https://stackoverflow.com/questions/60493958/flutter-integration-tests-with-travis-ci
+https://medium.com/@yegorj/building-flutter-apks-and-ipas-on-travis-98d84d8e9b4
+https://samjakob.medium.com/automatically-build-your-flutter-apps-with-travis-ci-4c1e47a5ae69
+
+
+
+
+https://www.thewindowsclub.com/how-to-run-sh-or-shell-script-file-in-windows-10
+
+TODO: 24/04/21:
+https://blog.codemagic.io/how-to-migrate-from-any-ci-and-why-flutter-needs-dedicated-ci/
+https://flutter.dev/docs/deployment/cd
