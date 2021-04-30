@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,8 +21,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
 
-  final _formKey = GlobalKey<FormState>();
-
   final _emailController = TextEditingController();
 
   final _passwordController = TextEditingController();
@@ -45,15 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 key: const ValueKey('email'),
                 autocorrect: false,
                 enableSuggestions: false,
-                // validator: (value) {
-                //   if (null == value || value.isEmpty) {
-                //     return 'Email address is required.';
-                //   }
-                //   if (!value.contains('@')) {
-                //     return 'Please enter a valid email address.';
-                //   }
-                //   return null;
-                // },
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(hintText: 'E-mailaddress'),
                 autofocus: true,
@@ -68,12 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 key: const ValueKey('password'),
                 autocorrect: false,
                 enableSuggestions: false,
-                // validator: (value) {
-                //   if (null == value || value.isEmpty) {
-                //     return 'Password is required';
-                //   }
-                //   return null;
-                // },
                 keyboardType: TextInputType.visiblePassword,
                 obscureText: true,
                 decoration: const InputDecoration(hintText: 'Password'),
@@ -101,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
       validateInput();
       await auth.createUserWithEmailAndPassword(email: _emailController.text, password: _passwordController.text);
       await Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (context) => ScorableOverviewPage(title: 'Scorekeeper', scorekeeperService: scorekeeperService)));
+          builder: (context) => ScorableOverviewPage(scorekeeperService: scorekeeperService)));
     } on Exception catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -127,21 +109,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithEmailAndPassword() async {
     try {
       validateInput();
-      try {
-        final userCredential = await auth.signInWithEmailAndPassword(
-            email: _emailController.text, password: _passwordController.text);
-        log(userCredential.toString());
-        // log(userCredential.user.displayName);
-        await Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) =>
-                ScorableOverviewPage(title: 'Scorekeeper',
-                    scorekeeperService: scorekeeperService)));
-      } on PlatformException catch (e) {
-        throw e;
-      } on Exception catch (e) {
-        throw e;
-      }
-      throw Exception('TODO: something went wrong while signing in!');
+      final userCredential = await auth.signInWithEmailAndPassword(
+          email: _emailController.text, password: _passwordController.text);
+      log(userCredential.toString());
+      // log(userCredential.user.displayName);
+      await Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) =>
+              ScorableOverviewPage(scorekeeperService: scorekeeperService)));
     } on Exception catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

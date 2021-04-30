@@ -21,7 +21,7 @@ class ScorekeeperService {
     final aggregateId = AggregateId.random();
     final command = CreateScorable()
       ..aggregateId = aggregateId.id
-      ..name = 'New Scorable';
+      ..name = scorableName;
     _scorekeeper.handleCommand(command);
     return _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
   }

@@ -4,16 +4,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_flutter/src/screens/scorable_create.dart';
 
 import '../services/service.dart';
 import 'scorable_detail.dart';
 
 class ScorableOverviewPage extends StatefulWidget {
-  final String title;
+  final String title = 'Scorekeeper';
 
   final ScorekeeperService scorekeeperService;
 
-  ScorableOverviewPage({Key? key, required this.title, required this.scorekeeperService}) : super(key: key);
+  ScorableOverviewPage({Key? key, required this.scorekeeperService}) : super(key: key);
 
   @override
   _ScorableOverviewPageState createState() => _ScorableOverviewPageState(scorekeeperService);
@@ -24,16 +25,30 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
 
   final Map<AggregateId, MuurkeKlopNDownDto> scorables = HashMap();
 
+  int page = 0;
+
+  int pageSize = 10;
+
   _ScorableOverviewPageState(this._scorekeeperService) {
     // Load the 10 most recent scorables from the ScorableProjection
-    scorables.addAll({for (var e in _scorekeeperService.loadScorables(0, 10)) e.aggregateId: e});
+    _loadScorables();
   }
 
-  void _createNewScorable() {
-    final scorable = _scorekeeperService.createNewScorable('New Scorable Name');
+  /// Load the scorables given the current page/pageSize values.
+  void _loadScorables() {
+    scorables.addAll({for (var e in _scorekeeperService.loadScorables(page, pageSize)) e.aggregateId: e});
+  }
+
+  void reloadState() {
+    _loadScorables();
     setState(() {
-      scorables.putIfAbsent(scorable.aggregateId, () => scorable);
     });
+  }
+
+  void _createNewScorableForm() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => ScorableCreatePage(_scorekeeperService)))
+        .whenComplete(reloadState);
   }
 
   @override
@@ -44,7 +59,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
       ),
       body: ListView.builder(itemCount: scorables.values.length, itemBuilder: scorableItemBuilder),
       floatingActionButton: FloatingActionButton(
-        onPressed: _createNewScorable,
+        onPressed: _createNewScorableForm,
         tooltip: 'Create new Scorable',
         child: const Icon(Icons.add),
       ),
@@ -55,7 +70,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
   Widget scorableItemBuilder(BuildContext context, int index) {
     final scorable = scorables.values.elementAt(index);
     return ListTile(
-      title: Text('Scorable $index ($scorable)'),
+      title: Text(scorable.name),
       onTap: () {
         Navigator.push(context,
             MaterialPageRoute(builder: (BuildContext context) => ScorableDetailPage(_scorekeeperService, scorable)));
