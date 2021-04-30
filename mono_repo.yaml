@@ -12,6 +12,7 @@ travis:
     - master
     - develop
     - firebase-auth
+    - travis-ci-flutter-support
   # Example:
   after_failure:
     - tool/report_failure.sh
