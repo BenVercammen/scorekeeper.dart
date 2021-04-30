@@ -165,24 +165,28 @@ https://pvba04.medium.com/flutter-integration-tests-in-intellij-idea-16736df35bc
 ``` 
 
 TODO:
-    - https://dev.to/ameysunu/travis-ci-for-flutter-apps-1ngj
-    - TODO: nog verder uitvissen!
+ - https://dev.to/ameysunu/travis-ci-for-flutter-apps-1ngj
+ - TODO: nog verder uitvissen!
 
 DOEL == flutter builden op travis
-    - flutter tests: DONE
-    -  integration, deploy, APK build ergens zetten?
+ 
+ - flutter tests: DONE
+ -  integration, deploy, APK build ergens zetten?
         => beter naar codemagic overstappen... 
 
-https://docs.travis-ci.com/user/build-stages/
-https://stackoverflow.com/questions/60493958/flutter-integration-tests-with-travis-ci
-https://medium.com/@yegorj/building-flutter-apks-and-ipas-on-travis-98d84d8e9b4
-https://samjakob.medium.com/automatically-build-your-flutter-apps-with-travis-ci-4c1e47a5ae69
-
-
+ - https://docs.travis-ci.com/user/build-stages/
+ - https://stackoverflow.com/questions/60493958/flutter-integration-tests-with-travis-ci
+ - https://medium.com/@yegorj/building-flutter-apks-and-ipas-on-travis-98d84d8e9b4
+ - https://samjakob.medium.com/automatically-build-your-flutter-apps-with-travis-ci-4c1e47a5ae69
 
 
 https://www.thewindowsclub.com/how-to-run-sh-or-shell-script-file-in-windows-10
 
 TODO: 24/04/21:
-https://blog.codemagic.io/how-to-migrate-from-any-ci-and-why-flutter-needs-dedicated-ci/
-https://flutter.dev/docs/deployment/cd
+ - https://blog.codemagic.io/how-to-migrate-from-any-ci-and-why-flutter-needs-dedicated-ci/
+ - https://flutter.dev/docs/deployment/cd
+
+Update: 30/04/21: 
+ - https://github.com/google/mono_repo.dart/pull/318
+ - for now, we'll just be content with regular tests
+    - for "integration testing" and "deploying" etc, we'll try to set up a separate codemagic build...
