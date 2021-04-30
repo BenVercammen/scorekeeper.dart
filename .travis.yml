@@ -6,18 +6,30 @@ branches:
   - master
   - develop
   - firebase-auth
+  - travis-ci-flutter-support
 after_failure:
   - tool/report_failure.sh
 
-before_script:
-  - git clone https://github.com/flutter/flutter.git ${TRAVIS_HOME}/flutter-sdk -b master
-  - export FLUTTER_SDK="${TRAVIS_HOME}/flutter-sdk"
-  - export PATH="$FLUTTER_SDK/bin:$PATH"
-  - export NO_PROXY=localhost,127.0.0.1
-  - flutter doctor
+env:
+  global:
+    - DARTSDK=./flutter/bin/cache/dart-sdk/bin
+    - DARTFMT=$DARTSDK/dartfmt
+    - FLUTTER=./flutter/bin/flutter
+    - FLUTTER_UP=../flutter/bin/flutter
+    - FLUTTER_GITHUB=https://github.com/flutter/flutter.git
+    - CODECOV=https://codecov.io/bash
+    - PACKAGES=packages
+    - APP=app
+    - ANDROID_API=28
+
+install:
+  - git clone $FLUTTER_GITHUB -b stable --depth 1
+  - $FLUTTER doctor
+  - $FLUTTER pub get
 
 jobs:
   include:
+# TODO: nog terugzetten als mono_repo up-to-date is, nu gaat deze falen omdat ik met een lokaal gebuilde 4.0.0 zit...
 #    - stage: analyzer_and_format
 #      name: mono_repo self validate
 #      os: linux
