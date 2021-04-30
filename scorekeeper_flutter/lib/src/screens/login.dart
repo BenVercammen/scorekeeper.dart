@@ -1,8 +1,10 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/service.dart';
 import 'scorable_overview.dart';
@@ -19,9 +21,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  String? _email;
 
-  String? _password;
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+
+  final _passwordController = TextEditingController();
 
   final auth = FirebaseAuth.instance;
 
@@ -36,21 +41,45 @@ class _LoginScreenState extends State<LoginScreen> {
         body: Column(children: [
           Padding(
               padding: const EdgeInsets.all(5.0),
-              child: TextField(
+              child: TextFormField(
+                key: const ValueKey('email'),
+                autocorrect: false,
+                enableSuggestions: false,
+                // validator: (value) {
+                //   if (null == value || value.isEmpty) {
+                //     return 'Email address is required.';
+                //   }
+                //   if (!value.contains('@')) {
+                //     return 'Please enter a valid email address.';
+                //   }
+                //   return null;
+                // },
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(hintText: 'E-mailaddress'),
+                autofocus: true,
+                controller: _emailController..text = 'test@example.com',
                 onChanged: (value) {
-                  _email = value.trim();
+                  _emailController.text.trim();
                 },
               )),
           Padding(
               padding: const EdgeInsets.all(5.0),
-              child: TextField(
+              child: TextFormField(
+                key: const ValueKey('password'),
+                autocorrect: false,
+                enableSuggestions: false,
+                // validator: (value) {
+                //   if (null == value || value.isEmpty) {
+                //     return 'Password is required';
+                //   }
+                //   return null;
+                // },
                 keyboardType: TextInputType.visiblePassword,
                 obscureText: true,
                 decoration: const InputDecoration(hintText: 'Password'),
+                controller: _passwordController..text = 'test123',
                 onChanged: (value) {
-                  _password = value.trim();
+                  _passwordController.text.trim();
                 },
               )),
           Row(
@@ -67,38 +96,59 @@ class _LoginScreenState extends State<LoginScreen> {
         ]));
   }
 
-  Future<UserCredential> _createUserWithEmailAndPassword() async {
-    if (null == _email) {
-      throw Exception('TODO: validation exception: email required!');
-    }
-    if (null == _password) {
-      throw Exception('TODO: validation exception: email required!');
-    }
-    final userCredential = await auth.createUserWithEmailAndPassword(email: _email!, password: _password!);
-    await Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (context) => ScorableOverviewPage(title: 'Scorekeeper', scorekeeperService: scorekeeperService)));
-    return userCredential;
-  }
-
-  Future<UserCredential> _signInWithEmailAndPassword() async {
-    if (null == _email) {
-      throw Exception('TODO: validation exception: email required!');
-    }
-    if (null == _password) {
-      throw Exception('TODO: validation exception: email required!');
-    }
+  Future<void> _createUserWithEmailAndPassword() async {
     try {
-      final userCredential = await auth.signInWithEmailAndPassword(email: _email!, password: _password!);
-      log(userCredential.toString());
-      // log(userCredential.user.displayName);
+      validateInput();
+      await auth.createUserWithEmailAndPassword(email: _emailController.text, password: _passwordController.text);
       await Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => ScorableOverviewPage(title: 'Scorekeeper', scorekeeperService: scorekeeperService)));
-      return userCredential;
     } on Exception catch (e) {
-      // TODO: show error message!
-      log(e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Theme.of(context).errorColor,
+          )
+      );
     }
-    // TODO: throw error?
-    throw Exception('TODO: something went wrong while signing in!');
+  }
+
+  void validateInput() {
+    if (_emailController.text.isEmpty) {
+      throw Exception('Email address is required.');
+    }
+    if (!_emailController.text.contains('@')) {
+      throw Exception('Please enter a valid email address.');
+    }
+    if (_passwordController.text.isEmpty) {
+      throw Exception('Password is required.');
+    }
+  }
+
+  Future<void> _signInWithEmailAndPassword() async {
+    try {
+      validateInput();
+      try {
+        final userCredential = await auth.signInWithEmailAndPassword(
+            email: _emailController.text, password: _passwordController.text);
+        log(userCredential.toString());
+        // log(userCredential.user.displayName);
+        await Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (context) =>
+                ScorableOverviewPage(title: 'Scorekeeper',
+                    scorekeeperService: scorekeeperService)));
+      } on PlatformException catch (e) {
+        throw e;
+      } on Exception catch (e) {
+        throw e;
+      }
+      throw Exception('TODO: something went wrong while signing in!');
+    } on Exception catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Theme.of(context).errorColor,
+        )
+      );
+    }
   }
 }
