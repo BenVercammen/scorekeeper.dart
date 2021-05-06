@@ -5,6 +5,7 @@ language: dart
 branches:
   - master
   - develop
+  - dev
   - firebase-auth
   - travis-ci-flutter-support
 before_script:
