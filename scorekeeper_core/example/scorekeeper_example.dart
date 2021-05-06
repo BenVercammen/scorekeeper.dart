@@ -8,7 +8,8 @@ void main() {
   // Create an instance
   final scorekeeper = Scorekeeper(
       eventStore: EventStoreInMemoryImpl(),
-      aggregateCache: AggregateCacheInMemoryImpl())
+      aggregateCache: AggregateCacheInMemoryImpl(),
+    domainEventFactory: DomainEventFactory<Scorable>(producerId: 'example', applicationVersion: 'v1'))
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(ScorableCommandHandler())
     ..registerEventHandler(ScorableEventHandler());

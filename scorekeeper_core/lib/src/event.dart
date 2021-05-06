@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
+import 'package:uuid/uuid.dart';
 
 /// The EventStore is responsible for persisting DomainEvents.
 abstract class EventStore {
@@ -80,7 +81,7 @@ class EventStoreInMemoryImpl implements EventStore {
       return false;
     }
     // Also check if the sequence is unique
-    if (_domainEventSequenceInvalid(event.aggregateId, event.id.sequence)) {
+    if (_domainEventSequenceInvalid(event.aggregateId, event.sequence)) {
       throw InvalidEventException(event, 'Sequence invalid');
     }
     _domainEventStore[event.aggregateId]!.add(event);
@@ -102,7 +103,7 @@ class EventStoreInMemoryImpl implements EventStore {
       return true;
     }
     return storedAggregateEvents.where((event) {
-      return event.id.sequence == sequence;
+      return event.sequence == sequence;
     }).isNotEmpty;
   }
 
@@ -115,7 +116,7 @@ class EventStoreInMemoryImpl implements EventStore {
       return false;
     }
     return storedAggregateEvents.where((event) {
-      return event.id == domainEvent.id && event.aggregateId == event.aggregateId;
+      return event.eventId == domainEvent.eventId && event.aggregateId == event.aggregateId;
     }).isNotEmpty;
   }
 
@@ -186,5 +187,55 @@ abstract class RemoteEventListener {
 
   /// The Stream containing DomainEvents received from remote publishers
   Stream<DomainEvent> get domainEventStream;
+
+}
+
+/// Factory for creating DomainEvents.
+/// Takes care of a lot of metadata prefilling.
+/// TODO: This factory should probably be overidden by generated factory per domain aggregate?
+/// so we can auto-fill domainId and version??
+class DomainEventFactory<T extends Aggregate> {
+
+  final String producerId;
+
+  final String applicationVersion;
+
+  final String domainId = 'TODO: domainId';
+  final String domainVersion = 'TODO: domainVersion';
+
+  const DomainEventFactory({
+    required this.producerId,
+    required this.applicationVersion,
+  });
+
+  DomainEvent<T> local(AggregateId aggregateId, int sequence, dynamic payload) {
+    return _event(Uuid().v4(), DateTime.now(), aggregateId, payload, sequence);
+  }
+
+  DomainEvent<T> remote(String eventId, AggregateId aggregateId, int sequence, DateTime timestamp, payload) {
+    return _event(eventId, timestamp, aggregateId, payload, sequence);
+  }
+
+  DomainEvent<T> _event(String eventId, DateTime timestamp, AggregateId aggregateId, payload, int sequence) {
+    return new DomainEvent(
+        eventId: eventId,
+        timestamp: timestamp,
+
+        // TODO: producerId en application version wiren??
+        producerId: 'TODO: producerId',
+        applicationVersion: 'TODO: applicationVersion',
+
+        // TODO: deze wsl ook maar genereren samen met het domain...
+        // dan kan ik alvast domainId en domainVersion invullen.
+        domainId: domainId,
+        domainVersion: domainVersion,
+        aggregateId: aggregateId,
+        payload: payload,
+        sequence: sequence);
+  }
+
+  EventNotHandled<T> eventNotHandled(DomainEvent<T> notHandledEvent, String reason) {
+    return EventNotHandled(notHandledEvent, reason, eventId: Uuid().v4(), timestamp: DateTime.now(), producerId: producerId, applicationVersion: applicationVersion, domainId: domainId, domainVersion: domainVersion);
+  }
 
 }

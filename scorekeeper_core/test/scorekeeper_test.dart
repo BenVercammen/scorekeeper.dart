@@ -61,6 +61,7 @@ class _EventHandlerCountWrapper<T extends EventHandler> implements EventHandler 
 
 }
 
+/// Wrapper class that allows us to keep track of which commands have been sent/received/handled
 class _CommandHandlerWrapper<T extends CommandHandler> implements CommandHandler {
 
   final T _commandHandler;
@@ -136,6 +137,8 @@ void main() {
 
     late Scorekeeper scorekeeper;
 
+    late DomainEventFactory domainEventFactory;
+
     late AggregateCache aggregateCache;
 
     late EventStore eventStore;
@@ -151,6 +154,7 @@ void main() {
     setUp(() {
       _logger = TracingLogger();
       eventStore = EventStoreInMemoryImpl(_logger);
+      domainEventFactory = DomainEventFactory(producerId: 'localtestmachine', applicationVersion: 'TODO-appversion');
       remoteEventPublisher = MockRemoteEventPublisher();
       remoteEventListener = MockRemoteEventListener();
       aggregateCache = AggregateCacheInMemoryImpl();
@@ -159,6 +163,7 @@ void main() {
       scorekeeper = Scorekeeper(
           eventStore: eventStore,
           aggregateCache: aggregateCache,
+          domainEventFactory: domainEventFactory,
           remoteEventPublisher: remoteEventPublisher,
           remoteEventListener: remoteEventListener,
           logger: _logger)
@@ -194,18 +199,20 @@ void main() {
     }
 
     /// Given the ScorableCreatedEvent with parameters
-    void givenScorableCreatedEvent(String aggregateIdValue, String name, [DomainEventId? eventId]) {
+    void givenScorableCreatedEvent(String aggregateIdValue, String name, [int? sequence, String? eventId]) {
       final scorableCreated = ScorableCreated()
         ..aggregateId = aggregateIdValue
         ..name = name;
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
-      final sequence = eventStore.countEventsForAggregate(aggregateId) + 1;
-      eventStore.storeDomainEvent(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, scorableCreated));
+      eventId ??= Uuid().v4().toString();
+      sequence ??= eventStore.countEventsForAggregate(aggregateId) + 1;
+      final event = domainEventFactory.remote(eventId, aggregateId, sequence, DateTime.now(), scorableCreated);
+      eventStore.storeDomainEvent(event);
     }
 
     /// Given the ParticipantAdded event
-    void givenParticipantAddedEvent(String aggregateIdValue, String participantId, String participantName, [DomainEventId? eventId]) {
+    void givenParticipantAddedEvent(String aggregateIdValue, String participantId, String participantName, [String? eventId]) {
       final participantAdded = ParticipantAdded()
         ..aggregateId = aggregateIdValue;
       final participant = Participant(participantId, participantName);
@@ -213,7 +220,8 @@ void main() {
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
       final sequence = eventStore.countEventsForAggregate(aggregateId) + 1;
-      eventStore.storeDomainEvent(DomainEvent.of(eventId??DomainEventId.local(sequence), aggregateId, participantAdded));
+      final event = domainEventFactory.local(aggregateId, sequence, participantAdded);
+      eventStore.storeDomainEvent(event);
     }
 
     /// Given no aggregate with given Id is known in Scorekeeper
@@ -367,7 +375,7 @@ void main() {
           return false;
         }
         if (actualEvent is EventNotHandled && expectedEvent is EventNotHandled) {
-          return actualEvent.notHandledEvent.id == expectedEvent.notHandledEvent.id &&
+          return actualEvent.notHandledEvent.eventId == expectedEvent.notHandledEvent.eventId &&
               actualEvent.reason.contains(expectedEvent.reason);
         }
         return false;
@@ -386,7 +394,9 @@ void main() {
         late Scorekeeper scorekeeper;
 
         setUp(() {
-          scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(_logger), aggregateCache: AggregateCacheInMemoryImpl());
+          scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(_logger),
+              domainEventFactory: domainEventFactory,
+              aggregateCache: AggregateCacheInMemoryImpl());
         });
 
         /// Commands that can't be handled, should raise an exception
@@ -460,14 +470,11 @@ void main() {
         /// TODO: we'll have to device a way to receive events from related aggregates, and then register and pull events "manually"
         test('Handle constructor event for registered, non-cached aggregateId', () async {
           givenAggregateIdRegistered(scorableId);
+          final payload = ScorableCreated()
+            ..aggregateId = scorableId
+            ..name = 'Test';
           await when(() => receivedRemoteEvent(
-              DomainEvent.of(
-                DomainEventId.local(0),
-                AggregateId.of(scorableId),
-                ScorableCreated()
-                  ..aggregateId = scorableId
-                  ..name = 'Test'))
-          );
+            domainEventFactory.local(AggregateId.of(scorableId), 0, payload)));
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldNotBeCached(scorableId);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
@@ -481,14 +488,13 @@ void main() {
         /// even though we'll never make use of them
         test('Handle constructor event for unregistered aggregateId', () async {
           givenAggregateIdNotRegistered(scorableId);
-          await when(() => receivedRemoteEvent(
-              DomainEvent.of(
-                  DomainEventId.local(0),
-                  AggregateId.of(scorableId),
-                  ScorableCreated()
-                    ..aggregateId = scorableId
-                    ..name = 'Test'))
-          );
+          await when(() {
+            final payload = ScorableCreated()
+              ..aggregateId = scorableId
+              ..name = 'Test';
+            return receivedRemoteEvent(domainEventFactory.local(
+                AggregateId.of(scorableId), 0, payload));
+          });
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
           thenAggregateShouldNotBeCached(scorableId);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
@@ -498,9 +504,7 @@ void main() {
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
           await when(() => receivedRemoteEvent(
-              DomainEvent.of(
-                  DomainEventId.local(0),
-                  AggregateId.of(scorableId),
+              domainEventFactory.local(AggregateId.of(scorableId), 0,
                   ScorableCreated()
                     ..aggregateId = scorableId
                     ..name = 'Test'))
@@ -514,40 +518,40 @@ void main() {
         /// an exception will be thrown
         /// TODO: move to EventStore tests
         test('Storing constructor event for already existing registered, cached aggregateId', () async {
-          final eventId1 = DomainEventId.local(0);
-          final eventId2 = DomainEventId.local(0);
+          final eventId1 = 'eventId1';
+          final eventId2 = 'eventId2';
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
-          givenScorableCreatedEvent(scorableId, 'TEST 1', eventId1);
+          givenScorableCreatedEvent(scorableId, 'TEST 1', 0, eventId1);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           try {
-            givenScorableCreatedEvent(scorableId, 'TEST 1', eventId2);
+            givenScorableCreatedEvent(scorableId, 'TEST 1', 0, eventId2);
             fail('InvalidEventException expected');
           } on InvalidEventException catch (exception) {
-            expect(exception.event.id, equals(eventId2));
+            expect(exception.event.eventId, equals(eventId2));
+            expect(exception.event.sequence, equals(0));
           }
         });
 
         /// When a new constructor event tries to create an aggregate for an already existing aggregateId,
         /// an exception should be thrown
         test('Handle constructor event for already existing registered, cached aggregateId', () async {
-          final eventId1 = DomainEventId.local(0);
-          final eventId2 = DomainEventId.local(0);
+          final eventId1 = 'eventId1';
           givenAggregateIdRegistered(scorableId);
           givenAggregateIdCached(scorableId);
-          givenScorableCreatedEvent(scorableId, 'TEST 1', eventId1);
+          givenScorableCreatedEvent(scorableId, 'TEST 1', 0, eventId1);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
-          final conflictingEvent = DomainEvent.of(
-              eventId2,
+          final conflictingEvent = domainEventFactory.local(
               AggregateId.of(scorableId),
+              0,
               ScorableCreated()
                 ..aggregateId = scorableId
                 ..name = 'TEST 1');
           await when(() => receivedRemoteEvent(conflictingEvent));
           thenNoExceptionShouldBeThrown();
-          thenSystemEventShouldBePublished(EventNotHandled(conflictingEvent, 'Sequence invalid'));
+          thenSystemEventShouldBePublished(domainEventFactory.eventNotHandled(conflictingEvent, 'Sequence invalid'));
         });
 
         // TODO: only not-yet-handled events should get handled... (so look at EventId!)
@@ -650,23 +654,23 @@ void main() {
           final payload1 = ScorableCreated()
             ..aggregateId = aggregateId.id
             ..name = 'Test';
-          event1 = DomainEvent.of(DomainEventId.local(0), aggregateId, payload1);
+          event1 = domainEventFactory.local(aggregateId, 0, payload1);
           final payload2 = ParticipantAdded()
             ..aggregateId = aggregateId.id
             ..participant = Participant('', '');
-          event2 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
+          event2 = domainEventFactory.local(aggregateId, 1, payload2);
           final payload3 = ParticipantAdded()
             ..aggregateId = aggregateId.id
             ..participant = Participant('', '');
-          event3 = DomainEvent.of(DomainEventId.local(2), aggregateId, payload3);
+          event3 = domainEventFactory.local(aggregateId, 2, payload3);
           final payload4 = ParticipantAdded()
             ..aggregateId = aggregateId.id
             ..participant = Participant('', '');
-          event4 = DomainEvent.of(DomainEventId.local(1), aggregateId, payload4);
+          event4 = domainEventFactory.local(aggregateId, 1, payload4);
           // Same aggregate, same sequence, same payload, different UUID, so different origin
-          event2b = DomainEvent.of(DomainEventId.local(1), aggregateId, payload2);
+          event2b = domainEventFactory.local(aggregateId, 1, payload2);
           // Same aggregate, same sequence, different payload
-          event2c = DomainEvent.of(DomainEventId.local(1), aggregateId, payload3);
+          event2c = domainEventFactory.local(aggregateId, 1, payload3);
         });
 
         /// Missing event 3... eventManager should wait and possibly check the remote for event 3
@@ -677,7 +681,7 @@ void main() {
           await when(() => receivedRemoteEvent(event4));
           thenNoExceptionShouldBeThrown();
           // TODO: mss op aparte queue houden? of verwijderen en remote terug aanroepen?
-          thenSystemEventShouldBePublished(EventNotHandled(event4, 'Sequence invalid'));
+          thenSystemEventShouldBePublished(domainEventFactory.eventNotHandled(event4, 'Sequence invalid'));
         });
 
         /// Missing event 3 received after event 4
@@ -688,7 +692,7 @@ void main() {
           await when(() => receivedRemoteEvent(event4));
           await when(() => receivedRemoteEvent(event3));
           thenNoExceptionShouldBeThrown();
-          thenSystemEventShouldBePublished(EventNotHandled(event4, 'Sequence invalid'));
+          thenSystemEventShouldBePublished(domainEventFactory.eventNotHandled(event4, 'Sequence invalid'));
           // TODO: then 3 and 4 should be emitted / applied to aggregate !?
           // TODO: what with the LinkedHashSet ordering???
         });
@@ -713,7 +717,7 @@ void main() {
           thenNoExceptionShouldBeThrown();
           await when(() => receivedRemoteEvent(event2b));
           thenNoExceptionShouldBeThrown();
-          thenSystemEventShouldBePublished(EventNotHandled(event2b, 'Sequence invalid'));
+          thenSystemEventShouldBePublished(domainEventFactory.eventNotHandled(event2b, 'Sequence invalid'));
         });
 
         /// Receiving the same event sequence twice, all other values alike, the duplicate event should just be ignored
@@ -725,7 +729,7 @@ void main() {
           thenNoExceptionShouldBeThrown();
           await when(() => receivedRemoteEvent(event2c));
           thenNoExceptionShouldBeThrown();
-          thenSystemEventShouldBePublished(EventNotHandled(event2c, 'Sequence invalid'));
+          thenSystemEventShouldBePublished(domainEventFactory.eventNotHandled(event2c, 'Sequence invalid'));
         });
 
       });
@@ -976,9 +980,9 @@ void main() {
         });
         // Set up the (conflicting) remote event
         final participant = Participant(Uuid().v4(), 'Player Two');
-        final remoteDomainEvent = DomainEvent.of(
-            DomainEventId.local(2),
+        final remoteDomainEvent = domainEventFactory.local(
             AggregateId.of(scorableId),
+            2,
             ParticipantAdded()
               ..aggregateId = scorableId
               ..participant = participant
@@ -996,7 +1000,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 1000));
         await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
         await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 1));
-        await eventually(() => thenSystemEventShouldBePublished(EventNotHandled(remoteDomainEvent, 'Sequence invalid')));
+        await eventually(() => thenSystemEventShouldBePublished(domainEventFactory.eventNotHandled(remoteDomainEvent, 'Sequence invalid')));
         thenAggregateShouldBeCached(scorableId);
         // Check if Participant is actually added
         thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {

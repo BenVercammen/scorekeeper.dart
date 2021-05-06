@@ -4,9 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
-import 'package:scorekeeper_flutter/src/screens/scorable_create.dart';
 
 import '../services/service.dart';
+import 'scorable_create.dart';
 import 'scorable_detail.dart';
 
 class ScorableOverviewPage extends StatefulWidget {
@@ -71,6 +71,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
     final scorable = scorables.values.elementAt(index);
     return ListTile(
       title: Text(scorable.name),
+      subtitle: Text(scorable.lastModified!.toLocal().toIso8601String()),
       onTap: () {
         Navigator.push(context,
             MaterialPageRoute(builder: (BuildContext context) => ScorableDetailPage(_scorekeeperService, scorable)));

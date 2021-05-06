@@ -23,6 +23,11 @@ class Scorekeeper {
   /// The cache in which to store the hydrated aggregate
   late AggregateCache _aggregateCache;
 
+  /// The DomainEventFactory.
+  /// Needs to be created/injected as it is responsible for setting metadata
+  /// that we can only retrieve at runtime.
+  late final DomainEventFactory _domainEventFactory;
+
   /// The (generated) handler that maps commands to aggregate handler methods
   final _commandHandlers = <CommandHandler>{};
 
@@ -38,15 +43,16 @@ class Scorekeeper {
   /// Create a Scorekeeper instance
   /// EventStore and AggregateCache are required.
   /// RemoteEventPublisher and RemoteEventListener are optional
-  Scorekeeper(
-      {required EventStore eventStore,
-      required AggregateCache aggregateCache,
-      RemoteEventPublisher? remoteEventPublisher,
-      RemoteEventListener? remoteEventListener,
-      Logger? logger}) {
+  Scorekeeper({required EventStore eventStore,
+    required AggregateCache aggregateCache,
+    required DomainEventFactory domainEventFactory,
+    RemoteEventPublisher? remoteEventPublisher,
+    RemoteEventListener? remoteEventListener,
+    Logger? logger}) {
     _logger = logger ?? Logger();
     _eventStore = eventStore;
     _aggregateCache = aggregateCache;
+    _domainEventFactory = domainEventFactory;
     if (null == remoteEventPublisher) {
       _logger.i('No remote event publisher was passed along, so all events will remain on the local machine');
     }
@@ -74,7 +80,7 @@ class Scorekeeper {
           }
         } on Exception catch (exception) {
           _logger.w(exception);
-          _eventStore.storeSystemEvent(EventNotHandled(event, exception.toString()));
+          _eventStore.storeSystemEvent(_domainEventFactory.eventNotHandled(event, exception.toString()));
         }
       }
     });
@@ -162,7 +168,7 @@ class Scorekeeper {
     final appliedDomainEvents = <DomainEvent>{};
     for (var event in aggregate.appliedEvents) {
       final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
-      final domainEvent = DomainEvent.of(DomainEventId.local(sequence), aggregate.aggregateId, event);
+      final domainEvent = _domainEventFactory.local(aggregate.aggregateId, sequence, event);
       _logger.d('Handling event triggered by command: $domainEvent');
       try {
         eventHandler.handle(aggregate, domainEvent);

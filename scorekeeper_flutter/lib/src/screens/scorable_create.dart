@@ -1,8 +1,9 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:scorekeeper_flutter/src/screens/scorable_detail.dart';
-import 'package:scorekeeper_flutter/src/services/service.dart';
+
+import '../services/service.dart';
+import './scorable_detail.dart';
 
 class ScorableCreatePage extends StatefulWidget {
 

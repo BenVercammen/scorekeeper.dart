@@ -17,7 +17,11 @@ void main() {
     late Scorekeeper _scorekeeper;
 
     setUp(() {
-      _scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())
+      _scorekeeper = Scorekeeper(
+          eventStore: EventStoreInMemoryImpl(),
+          aggregateCache: AggregateCacheInMemoryImpl(),
+          domainEventFactory: const DomainEventFactory<Scorable>(
+              producerId: 'service_test', applicationVersion: 'v1'))
         // Register the command and event handlers for the relevant domain
         ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
         ..registerEventHandler(MuurkeKlopNDownEventHandler());

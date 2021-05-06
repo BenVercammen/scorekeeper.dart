@@ -240,13 +240,15 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
           child: Column(children: [
             TextFormField(
               autofocus: true,
+              keyboardType: TextInputType.name,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 labelText: 'Name *',
                 hintText: 'The name of the player',
               ),
               validator: (value) {
                 if (null != value && value.isEmpty) {
-                  return 'Please enter a name';
+                  return 'Please enter a name for the player';
                 }
                 return null;
               },

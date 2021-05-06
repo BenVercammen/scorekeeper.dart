@@ -2,6 +2,7 @@
 import 'dart:collection';
 
 import 'package:scorekeeper_domain/core.dart';
+import 'package:uuid/uuid.dart';
 
 /// Class that will run the tests in a minimal setup so that commands and events are applied to a single Aggregate instance
 ///
@@ -15,6 +16,8 @@ class TestFixture<T extends Aggregate> {
   late final EventHandler<T> eventHandler;
 
   late final Map<Aggregate, int> eventSequenceMap = HashMap();
+
+  late final domainEventFactory = DomainEventFactory<T>();
 
   T? aggregate;
 
@@ -34,7 +37,7 @@ class TestFixture<T extends Aggregate> {
     aggregate ??= eventHandler.newInstance(aggregateId);
     var sequence = eventSequenceMap[aggregate] ?? 0;
     eventSequenceMap[aggregate!] = sequence++;
-    eventHandler.handle(aggregate!, DomainEvent.of(DomainEventId.local(sequence), aggregate!.aggregateId, event));
+    eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId, sequence, event));
     return this;
   }
 
@@ -48,7 +51,7 @@ class TestFixture<T extends Aggregate> {
       for (var event in aggregate!.appliedEvents) {
         var sequence = eventSequenceMap[aggregate] ?? 0;
         eventSequenceMap[aggregate!] = sequence++;
-        eventHandler.handle(aggregate!, DomainEvent.of(DomainEventId.local(sequence), aggregate!.aggregateId, event));
+        eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId, sequence, event));
       }
       lastThrownException = null;
     } on Exception catch (exception) {
@@ -60,5 +63,29 @@ class TestFixture<T extends Aggregate> {
   TestFixture then(Function(T aggregate) callback) {
     callback(aggregate!);
     return this;
+  }
+}
+
+/// Simple DomainEventFactory implementation for our test fixture...
+class DomainEventFactory<T extends Aggregate> {
+  DomainEvent<T> local(AggregateId aggregateId, int sequence, dynamic payload) {
+    return _event(Uuid().v4(), DateTime.now(), aggregateId, payload, sequence);
+  }
+
+  DomainEvent<T> remote(String eventId, AggregateId aggregateId, int sequence, DateTime timestamp, payload) {
+    return _event(eventId, timestamp, aggregateId, payload, sequence);
+  }
+
+  DomainEvent<T> _event(String eventId, DateTime timestamp, AggregateId aggregateId, payload, int sequence) {
+    return new DomainEvent(
+        eventId: eventId,
+        timestamp: timestamp,
+        producerId: 'testFixture',
+        applicationVersion: 'applicationVersion',
+        domainId: 'testDomain',
+        domainVersion: 'domainVersion',
+        aggregateId: aggregateId,
+        payload: payload,
+        sequence: sequence);
   }
 }

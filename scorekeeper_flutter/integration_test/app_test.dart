@@ -13,9 +13,7 @@ import 'package:scorekeeper_example_domain/example.dart';
 import 'package:scorekeeper_flutter/src/app.dart';
 import 'package:scorekeeper_flutter/src/services/service.dart';
 
-
 void main() {
-
   // The scorekeeper service to be used within the test
   late ScorekeeperService scorekeeperService;
 
@@ -24,14 +22,18 @@ void main() {
 
   setUp(() {
     // Setup the application
-    final _scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())
-    ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
-    ..registerEventHandler(MuurkeKlopNDownEventHandler());
+    final _scorekeeper = Scorekeeper(
+        eventStore: EventStoreInMemoryImpl(),
+        aggregateCache: AggregateCacheInMemoryImpl(),
+        domainEventFactory: const DomainEventFactory<Scorable>(
+            producerId: 'app_test', applicationVersion: 'v1'))
+      ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
+      ..registerEventHandler(MuurkeKlopNDownEventHandler());
     scorekeeperService = ScorekeeperService(_scorekeeper);
   });
 
-  testWidgets('Login screen for unauthenticated user', (WidgetTester tester) async {
-
+  testWidgets('Login screen for unauthenticated user',
+      (WidgetTester tester) async {
     // Build app and trigger a frame
     await tester.pumpWidget(ScorableApp(scorekeeperService));
     // Verify that the login screen shows up

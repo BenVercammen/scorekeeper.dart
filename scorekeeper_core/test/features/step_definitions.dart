@@ -45,12 +45,15 @@ class StepDefinitions {
 
   late MockRemoteEventListener _remoteEventListener;
 
+  late DomainEventFactory _domainEventFactory;
+
   @Before()
   void setUp() {
     _logger = TracingLogger();
     _localEventManager = EventStoreInMemoryImpl(_logger);
     _remoteEventListener = MockRemoteEventListener();
     _remoteEventPublisher = MockRemoteEventPublisher();
+    _domainEventFactory = DomainEventFactory(producerId: 'stepdeftests', applicationVersion: 'TODO-applicationVersion');
   }
 
   // TODO: https://github.com/dart-ogurets/Ogurets (eventueel contribution om duidelijk te maken dat aantal parameters niet klopt (nu onduidelijke growable array error)
@@ -119,9 +122,8 @@ class StepDefinitions {
     final keys = <String>{'eventUuid', 'eventSequence', 'eventTimestamp', 'aggregateId', 'payload.type', 'payload.property1'};
     final parsedRows = _parseTableAsListMap(table, keys);
     for (final row in parsedRows) {
-      final eventId = DomainEventId.of(row['eventUuid']!, int.parse(row['eventSequence']!), DateTime.parse(row['eventTimestamp']!));
       final payload = _eventPayloadFor(row['payload.type']!, row['payload.property1']!);
-      final event = DomainEvent.of(eventId, AggregateId.of(row['aggregateId']!), payload);
+      final event = _domainEventFactory.remote(row['eventUuid']!, AggregateId.of(row['aggregateId']!), int.parse(row['eventSequence']!), DateTime.parse(row['eventTimestamp']!), payload);
       domainEvents.add(event);
     }
     return domainEvents;

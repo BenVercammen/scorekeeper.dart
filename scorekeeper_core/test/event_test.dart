@@ -1,4 +1,5 @@
 
+import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
 import 'package:test/test.dart';
@@ -7,27 +8,35 @@ import 'package:uuid/uuid.dart';
 
 void main() {
 
-  group('DomainEventId', () {
+  final domainEventFactory = DomainEventFactory(producerId: 'test', applicationVersion: 'appVersion');
 
-    test('Test local constructor', () {
-      final eventId = DomainEventId.local( 0);
-      expect(eventId.uuid, isNotNull);
-      expect(eventId.sequence, equals(0));
-      expect(eventId.timestamp, isNotNull);
+  group('DomainEvent', () {
+
+    test('Test local DomainEvent factory method', () {
+      final event = domainEventFactory.local(AggregateId.random(), 0, 'payload');
+      expect(event.eventId, isNotNull);
+      expect(event.sequence, equals(0));
+      expect(event.timestamp, isNotNull);
+      expect(event.aggregateId, isNotNull);
+      expect(event.aggregateType, isNotNull);
+      expect(event.aggregateType, equals(Aggregate));
     });
 
+    /// DomainEvents should equal only if eventId and sequence match.
+    /// We don't care for timestamp, payload or anything else
+    /// TODO: don't we???
     test('Equals method', () {
       final uuid1 = Uuid().v4();
       final uuid2 = Uuid().v4();
       final timestamp1 = DateTime.now();
       final timestamp2 = DateTime.now();
       // Exactly alike
-      expect(DomainEventId.of(uuid1, 0, timestamp1), equals(DomainEventId.of(uuid1, 0, timestamp1)));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload'), equals(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload')));
       // Timestamp is not taken into account
-      expect(DomainEventId.of(uuid1, 0, timestamp2), equals(DomainEventId.of(uuid1, 0, timestamp1)));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp2, 'payload'), equals(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload')));
       // Uuid and sequence are important
-      expect(DomainEventId.of(uuid1, 0, timestamp1), isNot(equals(DomainEventId.of(uuid2, 0, timestamp1))));
-      expect(DomainEventId.of(uuid1, 0, timestamp1), isNot(equals(DomainEventId.of(uuid1, 1, timestamp1))));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid2, AggregateId.of('1'), 0, timestamp1, 'payload'))));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid1, AggregateId.of('1'), 1, timestamp1, 'payload'))));
     });
 
   });
@@ -35,8 +44,8 @@ void main() {
   group('DomainEvent', () {
 
     test('Equals method', () {
-      final eventId1 = DomainEventId.local(0);
-      final eventId2 = DomainEventId.local(1);
+      final eventId1 = '0';
+      final eventId2 = '1';
       final aggregateId1 = AggregateId.random();
       final aggregateId2 = AggregateId.random();
       final aggregateId3 = AggregateId.random();
@@ -58,25 +67,25 @@ void main() {
       final payload3b = ScorableCreatedWithEquals()
         ..name = 'Test'
         ..aggregateId = aggregateId3.id;
-      expect(DomainEvent.of(eventId1, aggregateId1, payload1), equals(DomainEvent.of(eventId1, aggregateId1, payload1)));
-      expect(DomainEvent.of(eventId2, aggregateId1, payload1), equals(DomainEvent.of(eventId2, aggregateId1, payload1)));
-      expect(DomainEvent.of(eventId2, aggregateId2, payload1), equals(DomainEvent.of(eventId2, aggregateId2, payload1)));
-      expect(DomainEvent.of(eventId2, aggregateId2, payload2), equals(DomainEvent.of(eventId2, aggregateId2, payload2)));
-      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload1b))));
-      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload2))));
-      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId2, aggregateId1, payload1))));
-      expect(DomainEvent.of(eventId1, aggregateId1, payload1), isNot(equals(DomainEvent.of(eventId2, aggregateId2, payload1))));
-      expect(DomainEvent.of(eventId1, aggregateId2, payload2), isNot(equals(DomainEvent.of(eventId1, aggregateId2, payload1))));
-      expect(DomainEvent.of(eventId1, aggregateId1, payload2), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload1))));
-      expect(DomainEvent.of(eventId1, aggregateId1, payload2), isNot(equals(DomainEvent.of(eventId1, aggregateId1, payload1b))));
-      expect(DomainEvent.of(eventId1, aggregateId2, payload1), isNot(equals(DomainEvent.of(eventId2, aggregateId2, payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1)));
+      expect(domainEventFactory.remote(eventId2, aggregateId1, 0, DateTime.now(), payload1), equals(domainEventFactory.remote(eventId2, aggregateId1, 0, DateTime.now(), payload1)));
+      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1), equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1)));
+      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2), equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2)));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1b))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload2))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId1, 0, DateTime.now(), payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId2, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId2, 0, DateTime.now(), payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1b))));
+      expect(domainEventFactory.remote(eventId1, aggregateId2, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1))));
 
       // TODO:
       // We don't want to check the identity of the payload, just the content,
       // but we cannot rely on the actual payload class to implement a proper equals method
-      expect(DomainEvent.of(eventId2, aggregateId2, payload2), isNot(equals(DomainEvent.of(eventId2, aggregateId2, payload2b))));
+      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2b))));
       // At the moment, we rely on a proper equals implementation of the DomainEvents payload...
-      expect(DomainEvent.of(eventId2, aggregateId3, payload3), equals(DomainEvent.of(eventId2, aggregateId3, payload3b)));
+      expect(domainEventFactory.remote(eventId2, aggregateId3, 0, DateTime.now(), payload3), equals(domainEventFactory.remote(eventId2, aggregateId3, 0, DateTime.now(), payload3b)));
     });
 
   });

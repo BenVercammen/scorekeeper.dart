@@ -8,7 +8,11 @@ import 'src/services/service.dart';
 
 Future<void> main() async {
   // Create an instance
-  final scorekeeper = Scorekeeper(eventStore: EventStoreInMemoryImpl(), aggregateCache: AggregateCacheInMemoryImpl())
+  final scorekeeper = Scorekeeper(
+      eventStore: EventStoreInMemoryImpl(),
+      aggregateCache: AggregateCacheInMemoryImpl(),
+      domainEventFactory: const DomainEventFactory<Scorable>(
+          producerId: 'ScorekeeperMain', applicationVersion: 'v1'))
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
     ..registerEventHandler(MuurkeKlopNDownEventHandler());
