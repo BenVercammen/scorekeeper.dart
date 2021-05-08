@@ -1,5 +1,4 @@
 
-import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 
@@ -17,13 +16,13 @@ class EventStoreSQLiteImpl implements EventStore {
   }
 
   @override
-  OrderedSet<DomainEvent<Aggregate>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
+  Stream<DomainEvent<Aggregate>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
     // TODO: implement getEventsForAggregate
     throw UnimplementedError();
   }
 
   @override
-  Set<SystemEvent> getSystemEvents() {
+  Stream<SystemEvent> getSystemEvents() {
     // TODO: implement getSystemEvents
     throw UnimplementedError();
   }

@@ -124,7 +124,7 @@ class Scorekeeper {
   }
 
   /// Handle the given command using the wired (generated) CommandHandler
-  void handleCommand(dynamic command) {
+  Future<void> handleCommand(dynamic command) async {
     _validateCommand(command);
     final aggregate = _handleCommand(command);
     // Make sure the aggregate is now registered and cached.
@@ -146,9 +146,9 @@ class Scorekeeper {
   }
 
   /// Enable caching for a given aggregate
-  void loadAndAddAggregateToCache(AggregateId aggregateId, Type aggregateType) {
+  Future<void> loadAndAddAggregateToCache(AggregateId aggregateId, Type aggregateType) async {
     if (!_aggregateCache.contains(aggregateId)) {
-      final aggregate = _loadHydratedAggregate(aggregateType, aggregateId);
+      final aggregate = await _loadHydratedAggregate(aggregateType, aggregateId);
       _aggregateCache.store(aggregate);
     }
   }
@@ -157,15 +157,15 @@ class Scorekeeper {
     return _registeredAggregates.containsKey(aggregateId);
   }
 
-  void refreshCache(Type aggregateType, AggregateId aggregateId) {
-    _aggregateCache.store(_loadHydratedAggregate(aggregateType, aggregateId));
+  Future<void> refreshCache(Type aggregateType, AggregateId aggregateId) async {
+    _aggregateCache.store(await _loadHydratedAggregate(aggregateType, aggregateId));
   }
 
   /// All events that have been applied by the command handler, should be handled and published remotely
-  void _handleEventsAppliedByCommand(Aggregate aggregate) {
+  Future<void> _handleEventsAppliedByCommand(Aggregate aggregate) async {
     final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
     final appliedDomainEvents = <DomainEvent>{};
-    for (var event in aggregate.appliedEvents) {
+    for (var event in aggregate.pendingEvents) {
       final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
       final domainEvent = _domainEventFactory.local(aggregate.aggregateId, sequence, event);
       _logger.d('Handling event triggered by command: $domainEvent');
@@ -178,7 +178,7 @@ class Scorekeeper {
         // We need this because of "atomicity"!
         // We cannot have a command of which only half its applied events are actually handled and stored
         // So we'll just invalidate the cached aggregate, the events are stored after all events have been applied successfully
-        aggregate = _loadHydratedAggregate(aggregate.runtimeType, aggregate.aggregateId);
+        aggregate = await _loadHydratedAggregate(aggregate.runtimeType, aggregate.aggregateId);
         throw exception;
       }
     }
@@ -192,7 +192,7 @@ class Scorekeeper {
         _logger.e(exception);
       }
     }
-    aggregate.appliedEvents.clear();
+    aggregate.pendingEvents.clear();
   }
 
   /// Call the correct command handler for the given command,
@@ -229,10 +229,10 @@ class Scorekeeper {
 
   /// Make sure the aggregate is properly cached and registered.
   /// We do this because aggregates for which we're handling commands are pretty likely to be "commanded" again.
-  void _cacheAndRegisterAggregate(Aggregate aggregate) {
+  Future<void> _cacheAndRegisterAggregate(Aggregate aggregate) async {
     _aggregateCache.store(aggregate);
     registerAggregate(aggregate.aggregateId, aggregate.runtimeType);
-    loadAndAddAggregateToCache(aggregate.aggregateId, aggregate.runtimeType);
+    await loadAndAddAggregateToCache(aggregate.aggregateId, aggregate.runtimeType);
   }
 
   /// Basic command validation
@@ -261,7 +261,7 @@ class Scorekeeper {
 
   /// Handle the given DomainEvent using the wired (generated) EventHandler.
   /// We don't pass the aggregate, each event should contain the "aggregateId" and "aggregateType".
-  void _handleEvent(DomainEvent domainEvent) {
+  Future<void> _handleEvent(DomainEvent domainEvent) async {
     // Kijken of we de aggregate van dit event in't oog houden of niet...
     final aggregateId = domainEvent.aggregateId;
     if (!_registeredAggregates.containsKey(aggregateId)) {
@@ -279,7 +279,7 @@ class Scorekeeper {
       // Load the (hydrated) aggregate and store it in cache.
       // TODO: TO TEST so this means that we'll automatically cache every Aggregate that we've registered!?
       //  NOT according to 'Handle regular event for registered, non-cached aggregateId' ...
-      aggregate = _loadHydratedAggregate(domainEvent.aggregateType, aggregateId);
+      aggregate = await _loadHydratedAggregate(domainEvent.aggregateType, aggregateId);
       _aggregateCache.store(aggregate);
     }
     // Load the matching event handler and apply the event!
@@ -289,11 +289,11 @@ class Scorekeeper {
   }
 
   /// Loads a fully (re)hydrated aggregate based on all currently stored events
-  T _loadHydratedAggregate<T extends Aggregate>(Type runtimeType, AggregateId aggregateId) {
+  Future<T> _loadHydratedAggregate<T extends Aggregate>(Type runtimeType, AggregateId aggregateId) async {
     final eventHandler = _getDomainEventHandlerFor(runtimeType);
-    // Nieuwe instance maken
+    // Create a new instance
     final aggregate = eventHandler.newInstance(aggregateId);
-    // Alle events die we al hebben eerst nog apply'en!
+    // Apply all (pending) events
     _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((DomainEvent domainEvent) {
       _logger.d('Handling event triggered by hydration: $domainEvent');
       eventHandler.handle(aggregate, domainEvent);

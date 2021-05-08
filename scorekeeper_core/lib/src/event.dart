@@ -18,10 +18,10 @@ abstract class EventStore {
   int countEventsForAggregate(AggregateId aggregateId);
 
   /// Get all domain events by the given criteria
-  OrderedSet<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
+  Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
 
   /// Get all system events
-  Set<SystemEvent> getSystemEvents();
+  Stream<SystemEvent> getSystemEvents();
 
   void registerAggregateId(AggregateId aggregateId);
 
@@ -139,8 +139,10 @@ class EventStoreInMemoryImpl extends EventStore {
 
   /// TODO: I want this to be a stream as this could end up being very large,
   /// but the current implementation still loads everything into a single Set...
+  /// Of course, for in memory repository, everything's already in memory,
+  /// but for persistent repositories a stream is useful to have...
   @override
-  OrderedSet<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
+  Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
     var result = <DomainEvent>{};
     if (aggregateId != null) {
       result.addAll(_domainEventStore[aggregateId] ?? <DomainEvent>{});
@@ -153,9 +155,9 @@ class EventStoreInMemoryImpl extends EventStore {
     if (timestamp != null) {
       result = <DomainEvent>{}..addAll(result.where((event) => !event.timestamp.isBefore(timestamp)));
     }
-    return OrderedSet<DomainEvent>((DomainEvent dto1, DomainEvent dto2) {
+    return Stream.fromIterable(OrderedSet<DomainEvent>((DomainEvent dto1, DomainEvent dto2) {
       return dto1.sequence - dto2.sequence;
-    })..addAll(result);
+    })..addAll(result));
   }
 
   @override
@@ -167,8 +169,8 @@ class EventStoreInMemoryImpl extends EventStore {
   }
 
   @override
-  Set<SystemEvent> getSystemEvents() {
-    return Set<SystemEvent>.from(_systemEventStore);
+  Stream<SystemEvent> getSystemEvents() {
+    return Stream.fromIterable(_systemEventStore);
   }
 
   @override

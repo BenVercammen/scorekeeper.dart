@@ -19,7 +19,7 @@ abstract class Aggregate {
 
   /// All domain events that the aggregate applied on itself.
   /// the command handler should take "freshly applied" events off this Set after each (succesful?) handle
-  Set<dynamic> appliedEvents = <dynamic>{};
+  Set<dynamic> pendingEvents = <dynamic>{};
 
   /// Adds a locally created Domain Event to this Aggregate.
   /// The Scorekeeper instance will pick this up while handling the command.
@@ -27,7 +27,7 @@ abstract class Aggregate {
   /// Finally, the event will be stored in the LocalEventManager and possibly published to the RemoteEventManager.
   /// Please note that anything can be used as an eventPayload, as this method will wrap it into a DomainEvent for us.
   void apply(dynamic event) {
-    appliedEvents.add(event);
+    pendingEvents.add(event);
     _lastModified = DateTime.now();
   }
 

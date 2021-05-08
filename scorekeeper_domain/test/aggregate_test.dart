@@ -24,7 +24,7 @@ void main() {
     test('Apply event should add the event to the applied events', () {
       final event = Object();
       aggregate.apply(event);
-      expect(aggregate.appliedEvents, contains(event));
+      expect(aggregate.pendingEvents, contains(event));
     });
 
   });
