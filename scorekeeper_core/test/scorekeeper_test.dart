@@ -594,9 +594,9 @@ void main() {
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
 
-        test('Handle regular event for unregistered, non-cached aggregateId', () {
+        test('Handle regular event for unregistered, non-cached aggregateId', () async {
           givenAggregateIdNotRegistered(scorableId);
-          givenScorableCreatedEvent(scorableId, 'TEST 1');
+          await when(() => receivedRemoteEvent(domainEventFactory.local(AggregateId.of(scorableId), 0, 'TEST 1')));
           thenAggregateShouldNotBeRegistered(scorableId);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
         });
@@ -618,9 +618,9 @@ void main() {
           });
         });
 
-        test('Handle regular event for unregistered aggregateId', () {
+        test('Handle regular event for unregistered aggregateId', () async {
           givenAggregateIdNotRegistered(scorableId);
-          givenScorableCreatedEvent(scorableId, 'Test');
+          await when(() => receivedRemoteEvent(domainEventFactory.local(AggregateId.of(scorableId), 0, 'TEST 1')));
           thenAggregateShouldNotBeCached(scorableId);
           thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
         });
@@ -842,7 +842,7 @@ void main() {
         test('Handle regular command for unregistered, non-cached aggregateId', () async {
           givenAggregateIdNotRegistered(scorableId);
           givenAggregateIdEvictedFromCache(scorableId);
-          givenScorableCreatedEvent(scorableId, 'Test Scorable');
+          await when(() => receivedRemoteEvent(domainEventFactory.local(AggregateId.of(scorableId), 0, 'TEST 1')));
           await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0));
         });
 
