@@ -25,7 +25,7 @@ void main() {
     /// DomainEvents should equal only if eventId and sequence match.
     /// We don't care for timestamp, payload or anything else
     /// TODO: don't we???
-    test('Equals method', () {
+    test('Equals method pt1', () {
       final uuid1 = Uuid().v4();
       final uuid2 = Uuid().v4();
       final timestamp1 = DateTime.now();
@@ -39,11 +39,7 @@ void main() {
       expect(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid1, AggregateId.of('1'), 1, timestamp1, 'payload'))));
     });
 
-  });
-
-  group('DomainEvent', () {
-
-    test('Equals method', () {
+    test('Equals method pt2', () {
       final eventId1 = '0';
       final eventId2 = '1';
       final aggregateId1 = AggregateId.random();

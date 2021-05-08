@@ -1,27 +1,24 @@
 import 'dart:collection';
 
 import 'package:logger/logger.dart';
+import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:uuid/uuid.dart';
 
 /// The EventStore is responsible for persisting DomainEvents.
 abstract class EventStore {
 
-  /// Store the given DomainEvent.
-  /// Returns whether or not the event was stored successfully.
-  bool storeDomainEvent(DomainEvent event);
+  /// Store the given DomainEvent or throw an exception
+  void storeDomainEvent(DomainEvent event);
 
   /// Store the given SystemEvent.
   void storeSystemEvent(SystemEvent event);
 
-  /// Get all events for a single aggregate
-  Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId);
-
   /// Get the number of events for a single aggregate
   int countEventsForAggregate(AggregateId aggregateId);
 
-  /// Get all domain events that are stored within
-  Set<DomainEvent> getAllDomainEvents();
+  /// Get all domain events by the given criteria
+  OrderedSet<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
 
   /// Get all system events
   Set<SystemEvent> getSystemEvents();
@@ -33,6 +30,12 @@ abstract class EventStore {
   void unregisterAggregateId(AggregateId aggregateId);
 
   bool hasEventsForAggregate(AggregateId aggregateId);
+
+  _validateDomainEvent(DomainEvent event) {
+    if (event.sequence < 0) {
+      throw new InvalidEventException(event, "Invalid sequence");
+    }
+  }
 
 }
 
@@ -52,7 +55,7 @@ class InvalidEventException implements Exception {
 
 /// In memory implementation of the EventStore
 ///
-class EventStoreInMemoryImpl implements EventStore {
+class EventStoreInMemoryImpl extends EventStore {
 
   Logger _logger = Logger();
 
@@ -70,27 +73,41 @@ class EventStoreInMemoryImpl implements EventStore {
   }
 
   @override
-  bool storeDomainEvent(DomainEvent event) {
-    // Ignore this event. We only store events for the registered aggregates, the others will need to be pulled from the remote event manager
+  void storeDomainEvent(DomainEvent event) {
+    // If the aggregateId is not yet registered, throw an exception
+    // (yes, Aggregates need to be registered explicitly)
     if (!_registeredAggregateIds.contains(event.aggregateId)) {
-      return false;
+      throw new InvalidEventException(event, 'AggregateId not registered');
     }
+    _validateDomainEvent(event);
     _domainEventStore.putIfAbsent(event.aggregateId, () => LinkedHashSet<DomainEvent>());
+    // In case of duplicate event, ignore siltently
     if (_domainEventExists(event)) {
       _logger.i('Received and ignored duplicate $event');
-      return false;
+      return;
     }
+    // EventId should be unique
+    _checkUniqueEventId(event);
     // Also check if the sequence is unique
     if (_domainEventSequenceInvalid(event.aggregateId, event.sequence)) {
       throw InvalidEventException(event, 'Sequence invalid');
     }
     _domainEventStore[event.aggregateId]!.add(event);
-    return true;
   }
 
   @override
   void storeSystemEvent(SystemEvent event) {
     _systemEventStore.add(event);
+  }
+
+  /// Make sure that there is only one event with the given EventId
+  /// TODO: hmm, this is quite a heavy operation... digging through all aggregates and their events...
+  void _checkUniqueEventId(DomainEvent event) {
+    _domainEventStore.values.forEach((aggregateEvents) {
+      if (aggregateEvents.where((aggregateEvent) => aggregateEvent.eventId == event.eventId).isNotEmpty) {
+        throw new InvalidEventException(event, 'Non-identical event with the same ID already stored in EventStore');
+      }
+    });
   }
 
   /// Check if the DomainEvent sequence is OK.
@@ -108,7 +125,7 @@ class EventStoreInMemoryImpl implements EventStore {
   }
 
   /// Check if the DomainEvent is already persisted
-  /// We ignore the actual payload, as soon as EventId and AggregateId match,
+  /// We ignore the actual payload, as soon as EventId, AggregateId and sequence match,
   /// we presume the entire DomainEvent matches.
   bool _domainEventExists(DomainEvent domainEvent) {
     var storedAggregateEvents = _domainEventStore[domainEvent.aggregateId];
@@ -120,21 +137,25 @@ class EventStoreInMemoryImpl implements EventStore {
     }).isNotEmpty;
   }
 
-  @override
-  Set<DomainEvent> getEventsForAggregate(AggregateId aggregateId) {
-    return _domainEventStore[aggregateId] ?? <DomainEvent>{};
-  }
-
   /// TODO: I want this to be a stream as this could end up being very large,
   /// but the current implementation still loads everything into a single Set...
   @override
-  Set<DomainEvent> getAllDomainEvents() {
-    final result = <DomainEvent>{};
-    for (final aggregateId in _domainEventStore.keys) {
-      var storedAggregateEvents = _domainEventStore[aggregateId];
-      result.addAll(storedAggregateEvents!);
+  OrderedSet<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
+    var result = <DomainEvent>{};
+    if (aggregateId != null) {
+      result.addAll(_domainEventStore[aggregateId] ?? <DomainEvent>{});
+    } else {
+      for (final aggregateId in _domainEventStore.keys) {
+        var storedAggregateEvents = _domainEventStore[aggregateId];
+        result.addAll(storedAggregateEvents!);
+      }
     }
-    return result;
+    if (timestamp != null) {
+      result = <DomainEvent>{}..addAll(result.where((event) => !event.timestamp.isBefore(timestamp)));
+    }
+    return OrderedSet<DomainEvent>((DomainEvent dto1, DomainEvent dto2) {
+      return dto1.sequence - dto2.sequence;
+    })..addAll(result);
   }
 
   @override

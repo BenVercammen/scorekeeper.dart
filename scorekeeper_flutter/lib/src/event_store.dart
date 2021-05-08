@@ -1,4 +1,5 @@
 
+import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 
@@ -6,6 +7,7 @@ import 'package:scorekeeper_domain/core.dart';
 /// TODO: https://pub.dev/packages/shared_preferences
 ///   => beiden key=value stores
 ///   is net te weinig voor wat we zouden moeten doen, niet?
+
 
 class EventStoreSQLiteImpl implements EventStore {
   @override
@@ -15,13 +17,7 @@ class EventStoreSQLiteImpl implements EventStore {
   }
 
   @override
-  Set<DomainEvent<Aggregate>> getAllDomainEvents() {
-    // TODO: implement getAllDomainEvents
-    throw UnimplementedError();
-  }
-
-  @override
-  Set<DomainEvent<Aggregate>> getEventsForAggregate(AggregateId aggregateId) {
+  OrderedSet<DomainEvent<Aggregate>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
     // TODO: implement getEventsForAggregate
     throw UnimplementedError();
   }
@@ -49,7 +45,7 @@ class EventStoreSQLiteImpl implements EventStore {
   }
 
   @override
-  bool storeDomainEvent(DomainEvent<Aggregate> event) {
+  void storeDomainEvent(DomainEvent<Aggregate> event) {
     // TODO: implement storeDomainEvent
     throw UnimplementedError();
   }

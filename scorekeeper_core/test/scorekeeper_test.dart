@@ -319,7 +319,7 @@ void main() {
 
     /// Then the event with payload of given type should be stored exactly [numberOfTimes] times for aggregate with Id
     void thenEventTypeShouldBeStoredNumberOfTimes(String aggregateId, Type eventType, int numberOfTimes) {
-      final eventsForAggregate = eventStore.getEventsForAggregate(AggregateId.of(aggregateId));
+      final eventsForAggregate = eventStore.getDomainEvents(aggregateId: AggregateId.of(aggregateId));
       final equalEventPayloads = Set<DomainEvent>.from(eventsForAggregate)
         ..retainWhere((event) => event.payload.runtimeType == eventType);
       expect(equalEventPayloads.length, equals(numberOfTimes));

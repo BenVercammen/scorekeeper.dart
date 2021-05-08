@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   logger: ^1.0.0
+  ordered_set: ^3.0.0
   scorekeeper_domain:
     path: ../scorekeeper_domain
   scorekeeper_example_domain:

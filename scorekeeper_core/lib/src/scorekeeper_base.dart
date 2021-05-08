@@ -70,18 +70,17 @@ class Scorekeeper {
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
       if (_registeredAggregates.containsKey(event.aggregateId)) {
         try {
-          if (_eventStore.storeDomainEvent(event)) {
-            // If the event relates to a cached aggregate, we'll handle it immediately
-            if (_aggregateCache.contains(event.aggregateId)) {
-              _handleEvent(event);
-            }
-          } else {
-            _logger.w('ignored event because it could not be stored...');
+          _eventStore.storeDomainEvent(event);
+          // If the event relates to a cached aggregate, we'll handle it immediately
+          if (_aggregateCache.contains(event.aggregateId)) {
+            _handleEvent(event);
           }
         } on Exception catch (exception) {
           _logger.w(exception);
           _eventStore.storeSystemEvent(_domainEventFactory.eventNotHandled(event, exception.toString()));
         }
+      } else {
+        _logger.d('ignored event because the aggregateId was not registered');
       }
     });
   }
@@ -219,7 +218,7 @@ class Scorekeeper {
       } else {
         // When not yet stored in cache, request events from local event manager and apply them...
         aggregate = commandHandler.newInstance(aggregateId);
-        _eventStore.getEventsForAggregate(aggregateId).forEach((event) {
+        _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((event) {
           aggregate.apply(event.payload);
         });
       }
@@ -295,7 +294,7 @@ class Scorekeeper {
     // Nieuwe instance maken
     final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
-    _eventStore.getEventsForAggregate(aggregateId).forEach((DomainEvent domainEvent) {
+    _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((DomainEvent domainEvent) {
       _logger.d('Handling event triggered by hydration: $domainEvent');
       eventHandler.handle(aggregate, domainEvent);
     });
