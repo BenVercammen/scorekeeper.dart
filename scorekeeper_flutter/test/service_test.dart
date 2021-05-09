@@ -30,13 +30,13 @@ void main() {
 
     /// We want to be able to pull scorables from the ScoreKeeper (write) or ScorableProjection (read) ...
     /// TODO: still need to decide on which one we'll use, though we'll probably stay with the write model..
-    test('loadScorables', () {
+    test('loadScorables', () async {
       final registeredAggregateIds = List.empty(growable: true);
       // Given 20 Registered AggregateIds
       // (Aggregates the current instance is interested in, in this case because it created them itself)
       for (var i = 1; i <= 20; i++) {
         final aggregateId = AggregateId.random();
-        _scorekeeper.handleCommand(CreateScorable()
+        await _scorekeeper.handleCommand(CreateScorable()
           ..aggregateId = aggregateId.id
           ..name = 'Aggregate $i');
         sleep(const Duration(milliseconds: 1));

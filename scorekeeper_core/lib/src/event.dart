@@ -18,10 +18,10 @@ abstract class EventStore {
   int countEventsForAggregate(AggregateId aggregateId);
 
   /// Get all domain events by the given criteria
-  OrderedSet<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
+  Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
 
   /// Get all system events
-  Set<SystemEvent> getSystemEvents();
+  Stream<SystemEvent> getSystemEvents();
 
   void registerAggregateId(AggregateId aggregateId);
 
@@ -89,9 +89,7 @@ class EventStoreInMemoryImpl extends EventStore {
     // EventId should be unique
     _checkUniqueEventId(event);
     // Also check if the sequence is unique
-    if (_domainEventSequenceInvalid(event.aggregateId, event.sequence)) {
-      throw InvalidEventException(event, 'Sequence invalid');
-    }
+    _domainEventSequenceInvalid(event);
     _domainEventStore[event.aggregateId]!.add(event);
   }
 
@@ -112,16 +110,18 @@ class EventStoreInMemoryImpl extends EventStore {
 
   /// Check if the DomainEvent sequence is OK.
   /// Currently, this means no other event with the given sequence
-  bool _domainEventSequenceInvalid(AggregateId aggregateId, int sequence) {
+  void _domainEventSequenceInvalid(DomainEvent event) {
     // TODO: because of "memory limitations", we'll not be able to actually loop over ALL the events... probably...
     // We'll need to work with snapshots etc...
-    var storedAggregateEvents = _domainEventStore[aggregateId];
+    var storedAggregateEvents = _domainEventStore[event.aggregateId];
     if (null == storedAggregateEvents) {
-      return true;
+      throw InvalidEventException(event, 'Sequence invalid: expected 0 but was ${event.sequence}');
     }
-    return storedAggregateEvents.where((event) {
-      return event.sequence == sequence;
-    }).isNotEmpty;
+    if (storedAggregateEvents.where((storedEvent) {
+      return storedEvent.sequence == event.sequence;
+    }).isNotEmpty) {
+      throw InvalidEventException(event, 'Sequence invalid: expected ${storedAggregateEvents.length + 1} but was ${event.sequence}');
+    }
   }
 
   /// Check if the DomainEvent is already persisted
@@ -140,7 +140,7 @@ class EventStoreInMemoryImpl extends EventStore {
   /// TODO: I want this to be a stream as this could end up being very large,
   /// but the current implementation still loads everything into a single Set...
   @override
-  OrderedSet<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
+  Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) {
     var result = <DomainEvent>{};
     if (aggregateId != null) {
       result.addAll(_domainEventStore[aggregateId] ?? <DomainEvent>{});
@@ -153,9 +153,9 @@ class EventStoreInMemoryImpl extends EventStore {
     if (timestamp != null) {
       result = <DomainEvent>{}..addAll(result.where((event) => !event.timestamp.isBefore(timestamp)));
     }
-    return OrderedSet<DomainEvent>((DomainEvent dto1, DomainEvent dto2) {
+    return Stream.fromIterable(OrderedSet<DomainEvent>((DomainEvent dto1, DomainEvent dto2) {
       return dto1.sequence - dto2.sequence;
-    })..addAll(result);
+    })..addAll(result));
   }
 
   @override
@@ -167,8 +167,8 @@ class EventStoreInMemoryImpl extends EventStore {
   }
 
   @override
-  Set<SystemEvent> getSystemEvents() {
-    return Set<SystemEvent>.from(_systemEventStore);
+  Stream<SystemEvent> getSystemEvents() {
+    return Stream.fromIterable(_systemEventStore);
   }
 
   @override

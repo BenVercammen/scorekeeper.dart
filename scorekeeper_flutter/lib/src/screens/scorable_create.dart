@@ -69,7 +69,7 @@ class _ScorableCreatePageState extends State<ScorableCreatePage> {
     try {
       // TODO: validateInput();
       // TODO: scorekeeperservice create new game
-      final scorable = _scorekeeperService.createNewScorable(_nameController.text);
+      final scorable = await _scorekeeperService.createNewScorable(_nameController.text);
       await Navigator. of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => ScorableDetailPage(_scorekeeperService, scorable)));
     } on Exception catch (e) {

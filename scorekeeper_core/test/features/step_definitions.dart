@@ -89,7 +89,7 @@ class StepDefinitions {
   @Then(r'the following DomainEvents should be stored locally')
   Future<void> localEventManagerShouldHaveTheFollowingDomainEvents({required GherkinTable table}) async {
     final expectedDomainEvents = List.from(_parseDomainEvents(table));
-    final actualDomainEvents = List.from(_localEventManager.getDomainEvents());
+    final actualDomainEvents = await _localEventManager.getDomainEvents().toList();
     _collectionShouldContainExactlyInAnyOrder(expectedDomainEvents, actualDomainEvents);
   }
 

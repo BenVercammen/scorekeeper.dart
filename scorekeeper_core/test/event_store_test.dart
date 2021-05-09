@@ -37,14 +37,14 @@ void main() {
   /// For InMemoryImpl it's simple...
   group('EventStoreInMemoryImpl', () {
     group('READ', () {
-      test('Event should be stored and retrievable', () {
+      test('Event should be stored and retrievable', () async {
         var domainEvent1 = domainEventFactory.remote(
             eventId1, aggregateId1, 0, DateTime.now(), 'payload');
         eventStore.storeDomainEvent(domainEvent1);
-        expect(eventStore.getDomainEvents(), contains(domainEvent1));
+        expect(await eventStore.getDomainEvents().toList(), contains(domainEvent1));
       });
 
-      test('Retrieve all stored events by aggregateId', () {
+      test('Retrieve all stored events by aggregateId', () async {
         // Given...
         eventStore.storeDomainEvent(domainEventFactory.remote(
             'eventId1', aggregateId1, 0, DateTime.now(), 'payload'));
@@ -56,12 +56,12 @@ void main() {
             'eventId4', aggregateId2, 3, DateTime.now(), 'payload'));
         // When
         final domainEvents =
-            eventStore.getDomainEvents(aggregateId: aggregateId1);
+            await eventStore.getDomainEvents(aggregateId: aggregateId1).toSet();
         // Then
         expect(domainEvents.length, equals(2));
       });
 
-      test('Retrieve all events since timestamp', () {
+      test('Retrieve all events since timestamp', () async {
         // Given...
         eventStore.storeDomainEvent(domainEventFactory.remote(
             'eventId1', aggregateId1, 0, ts1, 'payload'));
@@ -72,12 +72,12 @@ void main() {
         eventStore.storeDomainEvent(domainEventFactory.remote(
             'eventId4', aggregateId2, 3, ts4, 'payload'));
         // When
-        final domainEvents = eventStore.getDomainEvents(timestamp: ts2);
+        final domainEvents = await eventStore.getDomainEvents(timestamp: ts2).toSet();
         // Then the 3 events since TS2 should show up
         expect(domainEvents.length, equals(3));
       });
 
-      test('Retrieve all aggregate events since timestamp', () {
+      test('Retrieve all aggregate events since timestamp', () async {
         // Given...
         eventStore.storeDomainEvent(domainEventFactory.remote(
             'eventId1', aggregateId1, 0, ts1, 'payload'));
@@ -88,8 +88,8 @@ void main() {
         eventStore.storeDomainEvent(domainEventFactory.remote(
             'eventId4', aggregateId2, 3, ts4, 'payload'));
         // When
-        final domainEvents = eventStore.getDomainEvents(
-            aggregateId: aggregateId1, timestamp: ts2);
+        final domainEvents = await eventStore.getDomainEvents(
+            aggregateId: aggregateId1, timestamp: ts2).toSet();
         // Then the new event since TS2 should show up
         expect(domainEvents.length, equals(1));
       });
@@ -98,7 +98,7 @@ void main() {
         // TODO: calling getDomainEvents(sequence without aggregateId) ==> error
       });
 
-      test('Retrieve all aggregate events in sequence order', () {
+      test('Retrieve all aggregate events in sequence order', () async {
         // Given...
         eventStore.storeDomainEvent(
             domainEventFactory.remote('id1', aggregateId1, 0, ts2, 'payload'));
@@ -109,7 +109,7 @@ void main() {
         eventStore.storeDomainEvent(
             domainEventFactory.remote('id3', aggregateId1, 2, ts4, 'payload'));
         // When
-        final domainEvents = eventStore.getDomainEvents();
+        final domainEvents = await eventStore.getDomainEvents().toList();
         // Then events should be sorted by sequence
         var eventIds = domainEvents.map((event) => event.sequence);
         expect(eventIds, equals([0, 1, 2, 3]));

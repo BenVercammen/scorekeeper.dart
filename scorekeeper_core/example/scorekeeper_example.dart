@@ -3,7 +3,7 @@ import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
 import 'package:uuid/uuid.dart';
 
-void main() {
+void main() async {
 
   // Create an instance
   final scorekeeper = Scorekeeper(
@@ -20,20 +20,20 @@ void main() {
   final createScorableCommand = CreateScorable()
     ..aggregateId = aggregateId.id
     ..name = 'Test Scorable 1';
-  scorekeeper.handleCommand(createScorableCommand);
+  await scorekeeper.handleCommand(createScorableCommand);
 
   // Handle another command
   final participant = Participant(Uuid().v4(), 'Player One');
   final addParticipantCommand = AddParticipant()
     ..aggregateId = aggregateId.id
     ..participant = participant;
-  scorekeeper.handleCommand(addParticipantCommand);
+  await scorekeeper.handleCommand(addParticipantCommand);
 
   // Retrieve (cached) aggregate
   final scorable = scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
 
   // Query the Scorable aggregate DTO...
-  print(scorable.participants.length);
+  print(scorable.participants);
 
 }
 

@@ -20,17 +20,16 @@ Future<void> main() async {
   final scorekeeperService = ScorekeeperService(scorekeeper);
 
   // Default data for testing purposes
-  final defaultScorable = scorekeeperService.createNewScorable('Default Game');
+  final defaultScorable = await scorekeeperService.createNewScorable('Default Game');
   final aggregateId = defaultScorable.aggregateId;
-  scorekeeperService
-    ..addParticipantToScorable(aggregateId, 'Player 1')
-    ..addParticipantToScorable(aggregateId, 'Player 2')
-    ..addParticipantToScorable(aggregateId, 'Player 3')
-    ..addRoundToScorable(aggregateId)
-    ..addRoundToScorable(aggregateId)
-    ..addRoundToScorable(aggregateId)
-    ..addRoundToScorable(aggregateId)
-    ..addRoundToScorable(aggregateId);
+  await scorekeeperService.addParticipantToScorable(aggregateId, 'Player 1');
+  await scorekeeperService.addParticipantToScorable(aggregateId, 'Player 2');
+  await scorekeeperService.addParticipantToScorable(aggregateId, 'Player 3');
+  await scorekeeperService.addRoundToScorable(aggregateId);
+  await scorekeeperService.addRoundToScorable(aggregateId);
+  await scorekeeperService.addRoundToScorable(aggregateId);
+  await scorekeeperService.addRoundToScorable(aggregateId);
+  await scorekeeperService.addRoundToScorable(aggregateId);
 
   // Make sure FlutterFire is initialized
   // https://firebase.flutter.dev/docs/overview/#initializing-flutterfire

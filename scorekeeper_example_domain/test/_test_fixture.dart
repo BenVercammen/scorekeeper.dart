@@ -48,7 +48,7 @@ class TestFixture<T extends Aggregate> {
       } else {
         commandHandler.handle(aggregate!, command);
       }
-      for (var event in aggregate!.appliedEvents) {
+      for (var event in aggregate!.pendingEvents) {
         var sequence = eventSequenceMap[aggregate] ?? 0;
         eventSequenceMap[aggregate!] = sequence++;
         eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId, sequence, event));

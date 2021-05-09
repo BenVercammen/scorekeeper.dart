@@ -17,28 +17,28 @@ class ScorekeeperService {
   ScorekeeperService(this._scorekeeper);
 
   /// Add a new Scorable
-  MuurkeKlopNDownDto createNewScorable(String scorableName) {
+  Future<MuurkeKlopNDownDto> createNewScorable(String scorableName) async {
     final aggregateId = AggregateId.random();
     final command = CreateScorable()
       ..aggregateId = aggregateId.id
       ..name = scorableName;
-    _scorekeeper.handleCommand(command);
+    await _scorekeeper.handleCommand(command);
     return _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
   }
 
   /// Add a newly created Participant to the Scorable
-  void addParticipantToScorable(AggregateId aggregateId, String participantName) {
+  Future<void> addParticipantToScorable(AggregateId aggregateId, String participantName) async {
     final participant = Participant(const Uuid().v4(), participantName);
     final command = AddParticipant()
       ..participant = participant
       ..aggregateId = aggregateId.id;
-    _scorekeeper.handleCommand(command);
+    await _scorekeeper.handleCommand(command);
   }
 
   /// Add a new Round to the Scorable
-  void addRoundToScorable(AggregateId aggregateId) {
+  Future<void> addRoundToScorable(AggregateId aggregateId) async {
     final command = AddRound()..aggregateId = aggregateId.id;
-    _scorekeeper.handleCommand(command);
+    await _scorekeeper.handleCommand(command);
   }
 
   /// Load Scorables ordered descending by last modified date
@@ -70,7 +70,7 @@ class ScorekeeperService {
   /// Send an arbitrary command to the Scorekeeper instance.
   /// TODO: is this something we actually want to be doing?
   /// Something to think about...
-  void sendCommand(command) {
-    _scorekeeper.handleCommand(command);
+  Future<void> sendCommand(command) async {
+    await _scorekeeper.handleCommand(command);
   }
 }

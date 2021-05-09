@@ -63,25 +63,26 @@ void main() {
       final payload3b = ScorableCreatedWithEquals()
         ..name = 'Test'
         ..aggregateId = aggregateId3.id;
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1)));
-      expect(domainEventFactory.remote(eventId2, aggregateId1, 0, DateTime.now(), payload1), equals(domainEventFactory.remote(eventId2, aggregateId1, 0, DateTime.now(), payload1)));
-      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1), equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1)));
-      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2), equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2)));
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1b))));
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload2))));
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId1, 0, DateTime.now(), payload1))));
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1))));
-      expect(domainEventFactory.remote(eventId1, aggregateId2, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId2, 0, DateTime.now(), payload1))));
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1))));
-      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, DateTime.now(), payload1b))));
-      expect(domainEventFactory.remote(eventId1, aggregateId2, 0, DateTime.now(), payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload1))));
+      final now = DateTime.now();
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1), equals(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1)));
+      expect(domainEventFactory.remote(eventId2, aggregateId1, 0, now, payload1), equals(domainEventFactory.remote(eventId2, aggregateId1, 0, now, payload1)));
+      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload1), equals(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload1)));
+      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload2), equals(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload2)));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1b))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload2))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId1, 0, now, payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId2, 0, now, payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId2, 0, now, payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1))));
+      expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload2), isNot(equals(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1b))));
+      expect(domainEventFactory.remote(eventId1, aggregateId2, 0, now, payload1), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload1))));
 
       // TODO:
       // We don't want to check the identity of the payload, just the content,
       // but we cannot rely on the actual payload class to implement a proper equals method
-      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, DateTime.now(), payload2b))));
+      expect(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload2), isNot(equals(domainEventFactory.remote(eventId2, aggregateId2, 0, now, payload2b))));
       // At the moment, we rely on a proper equals implementation of the DomainEvents payload...
-      expect(domainEventFactory.remote(eventId2, aggregateId3, 0, DateTime.now(), payload3), equals(domainEventFactory.remote(eventId2, aggregateId3, 0, DateTime.now(), payload3b)));
+      expect(domainEventFactory.remote(eventId2, aggregateId3, 0, now, payload3), equals(domainEventFactory.remote(eventId2, aggregateId3, 0, now, payload3b)));
     });
 
   });
