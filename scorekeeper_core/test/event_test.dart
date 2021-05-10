@@ -28,7 +28,7 @@ void main() {
     test('Equals method pt1', () {
       final uuid1 = Uuid().v4();
       final uuid2 = Uuid().v4();
-      final timestamp1 = DateTime.now();
+      final timestamp1 = DateTime.now().subtract(Duration(microseconds: 5));
       final timestamp2 = DateTime.now();
       // Exactly alike
       expect(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload'), equals(domainEventFactory.remote(uuid1, AggregateId.of('1'), 0, timestamp1, 'payload')));

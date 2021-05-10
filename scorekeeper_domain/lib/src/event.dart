@@ -145,27 +145,28 @@ class DomainEvent<T extends Aggregate> extends Event {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      super == other &&
+      // super == other &&
           other is DomainEvent &&
+          eventId == other.eventId &&
           runtimeType == other.runtimeType &&
-          _sequence == other._sequence &&
-          _aggregateId == other._aggregateId &&
+          sequence == other.sequence &&
+          aggregateId == other.aggregateId &&
           // TODO: mja.... ik wil hier niet op instance checken, maar op inhoud...
-          _payload == other._payload;
+          payload == other.payload;
 
   @override
   int get hashCode =>
-      super.hashCode ^
-      _sequence.hashCode ^
-      _aggregateId.hashCode ^
-      _payload.hashCode;
+      eventId.hashCode ^
+      sequence.hashCode ^
+      aggregateId.hashCode ^
+      payload.hashCode;
 
   // TODO: deze had ik liever niet in DomainEvent gestoken, maar ergens maakt het wel sense dat we weten door welk type aggregate dit event ge-emit werd...
   Type get aggregateType => T;
 
   @override
   String toString() {
-    return 'Event $_eventId ($_sequence) for aggregate $_aggregateId with payload type ${_payload.runtimeType}';
+    return 'Event $_eventId ($_sequence) for aggregate $_aggregateId with payload type ${_payload.runtimeType} ($timestamp)';
   }
 
 }
