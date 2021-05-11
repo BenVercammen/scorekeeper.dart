@@ -54,6 +54,7 @@ class InvalidEventException implements Exception {
 }
 
 /// In memory implementation of the EventStore
+/// Should only be used in tests...
 ///
 class EventStoreInMemoryImpl extends EventStore {
 
@@ -70,6 +71,8 @@ class EventStoreInMemoryImpl extends EventStore {
     if (null != logger) {
       _logger = logger;
     }
+    // TODO: only log in non-testing environment?!
+    // _logger.w('Please note that the in memory implementation should only be used in tests, or with a small amount of events');
   }
 
   @override
