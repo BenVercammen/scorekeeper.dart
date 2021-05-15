@@ -32,7 +32,7 @@ To set things up:
 
 
 # Flutter
-From time to time, the flutte SDK (installed on the development machine) should be upgraded.
+From time to time, the flutter SDK (installed on the development machine) should be upgraded.
 To do so, follow these steps in CLI:
  - `cd %FLUTTER_HOME%`
  - `git reset --hard`

@@ -65,19 +65,19 @@ class Scorekeeper {
     _eventStore.registerAggregateIds(_registeredAggregates.keys);
 
     // Listen to the RemoteEventListener's event stream
-    _remoteEventListener?.domainEventStream.listen((DomainEvent event) {
+    _remoteEventListener?.domainEventStream.listen((DomainEvent event) async {
       _logger.d('Received remote event');
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
       if (_registeredAggregates.containsKey(event.aggregateId)) {
         try {
-          _eventStore.storeDomainEvent(event);
+          await _eventStore.storeDomainEvent(event);
           // If the event relates to a cached aggregate, we'll handle it immediately
           if (_aggregateCache.contains(event.aggregateId)) {
-            _handleRemoteEvent(event);
+            await _handleRemoteEvent(event);
           }
         } on Exception catch (exception) {
           _logger.w(exception);
-          _eventStore.storeSystemEvent(_domainEventFactory.eventNotHandled(event, exception.toString()));
+          await _eventStore.storeSystemEvent(_domainEventFactory.eventNotHandled(event, exception.toString()));
         }
       } else {
         _logger.d('ignored event because the aggregateId was not registered');
@@ -167,7 +167,7 @@ class Scorekeeper {
     final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
     final appliedDomainEvents = <DomainEvent>{};
     for (var event in aggregate.pendingEvents) {
-      final sequence = _getNextSequenceValueForAggregateEvent(aggregate);
+      final sequence = await _getNextSequenceValueForAggregateEvent(aggregate);
       final domainEvent = _domainEventFactory.local(aggregate.aggregateId, sequence, event);
       _logger.d('Handling event triggered by command: $domainEvent');
       try {
@@ -186,7 +186,7 @@ class Scorekeeper {
     // Actually store the events now that we know they've all been applied properly
     for (var domainEvent in appliedDomainEvents) {
       try {
-        _eventStore.storeDomainEvent(domainEvent);
+        await _eventStore.storeDomainEvent(domainEvent);
         _remoteEventPublisher?.publishDomainEvent(domainEvent);
       } on Exception catch (exception) {
         // TODO: testen + afhandelen!
@@ -209,7 +209,7 @@ class Scorekeeper {
       // For now only in local event manager, but maybe we should check the remote as well?
       // Or somehow allow for updating the aggregateId. The chances of accidentally using duplicate aggregateId's are very slim!
       // When it's done on purpose, tough luck then...
-      if (_eventStore.hasEventsForAggregate(aggregateId)) {
+      if (await _eventStore.hasEventsForAggregate(aggregateId)) {
         throw AggregateIdAlreadyExistsException(aggregateId);
       }
       aggregate = commandHandler.handleConstructorCommand(command);
@@ -256,13 +256,13 @@ class Scorekeeper {
     return aggregateId;
   }
 
-  int _getNextSequenceValueForAggregateEvent(Aggregate aggregate) {
-    return _eventStore.countEventsForAggregate(aggregate.aggregateId) + 1;
+  Future<int> _getNextSequenceValueForAggregateEvent(Aggregate aggregate) async {
+    return await _eventStore.countEventsForAggregate(aggregate.aggregateId) + 1;
   }
 
   /// Handle the given DomainEvent using the wired (generated) EventHandler.
   /// We don't pass the aggregate, each event should contain the "aggregateId" and "aggregateType".
-  void _handleRemoteEvent(DomainEvent domainEvent) async {
+  Future<void> _handleRemoteEvent(DomainEvent domainEvent) async {
     // Kijken of we de aggregate van dit event in't oog houden of niet...
     final aggregateId = domainEvent.aggregateId;
     if (!_registeredAggregates.containsKey(aggregateId)) {

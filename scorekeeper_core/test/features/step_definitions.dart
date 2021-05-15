@@ -5,9 +5,8 @@ import 'dart:collection';
 import 'package:logger/logger.dart';
 import 'package:ogurets/ogurets.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
+import 'package:scorekeeper_core/scorekeeper_test_util.dart';
 import 'package:scorekeeper_domain/core.dart';
-
-import '../scorekeeper_test.dart';
 
 /// Simple mock implementation we can use to mock incoming DomainEvents
 class MockRemoteEventListener extends RemoteEventListener {
@@ -65,8 +64,8 @@ class StepDefinitions {
     final givenDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in givenDomainEvents) {
       _localEventManager
-          ..registerAggregateId(domainEvent.aggregateId)
-          ..storeDomainEvent(domainEvent);
+          ..registerAggregateId(domainEvent.aggregateId);
+      await _localEventManager.storeDomainEvent(domainEvent);
     }
   }
 
@@ -74,7 +73,7 @@ class StepDefinitions {
   Future<void> eventManagerReceivesRemoteDomainEvents({required GherkinTable table}) async {
     final receivedDomainEvents = _parseDomainEvents(table);
     for (final domainEvent in receivedDomainEvents) {
-      _localEventManager.storeDomainEvent(domainEvent);
+      await _localEventManager.storeDomainEvent(domainEvent);
     }
   }
 

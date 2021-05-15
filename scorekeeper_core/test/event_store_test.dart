@@ -1,5 +1,5 @@
 import 'package:scorekeeper_core/scorekeeper.dart';
-import 'package:scorekeeper_core/scorekeeper_test.dart';
+import 'package:scorekeeper_core/scorekeeper_test_util.dart';
 
 /// Tests for the EventStore implementation(s)
 ///  - EventStoreInMemoryImpl: just keep everything in memory. Okay for testing and a small number of events, but won't scale...

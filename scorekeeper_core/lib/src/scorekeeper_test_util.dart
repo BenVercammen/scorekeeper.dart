@@ -1,7 +1,23 @@
 
+import 'dart:collection';
+
+import 'package:logger/logger.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:test/test.dart';
+
+
+class TracingLogger extends Logger {
+
+  final Map<Level, List<String>> loggedMessages = HashMap();
+
+  @override
+  void log(Level level, message, [error, StackTrace? stackTrace]) {
+    super.log(level, message, error, stackTrace);
+    loggedMessages.putIfAbsent(level, () => List.empty(growable: true));
+    loggedMessages[level]?.add(message.toString());
+  }
+}
 
 /// Abstract class containing the test suite for all EventStore implementations.
 /// This way we can easily reuse the default test set across multiple implementations.
@@ -36,20 +52,20 @@ abstract class EventStoreTestSuite {
         test('Event should be stored and retrievable', () async {
           var domainEvent1 = domainEventFactory.remote(
               eventId1, aggregateId1, 0, DateTime.now(), 'payload');
-          eventStore.storeDomainEvent(domainEvent1);
+          await eventStore.storeDomainEvent(domainEvent1);
           expect(await eventStore.getDomainEvents().toList(),
               contains(domainEvent1));
         });
 
         test('Retrieve all stored events by aggregateId', () async {
           // Given...
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId1', aggregateId1, 0, DateTime.now(), 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId2', aggregateId2, 1, DateTime.now(), 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId3', aggregateId1, 2, DateTime.now(), 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId4', aggregateId2, 3, DateTime.now(), 'payload'));
           // When
           final domainEvents =
@@ -60,13 +76,13 @@ abstract class EventStoreTestSuite {
 
         test('Retrieve all events since timestamp', () async {
           // Given...
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId1', aggregateId1, 0, ts1, 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId2', aggregateId2, 1, ts2, 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId3', aggregateId1, 2, ts3, 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId4', aggregateId2, 3, ts4, 'payload'));
           // When
           final domainEvents = await eventStore.getDomainEvents(timestamp: ts2)
@@ -77,13 +93,13 @@ abstract class EventStoreTestSuite {
 
         test('Retrieve all aggregate events since timestamp', () async {
           // Given...
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId1', aggregateId1, 0, ts1, 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId2', aggregateId2, 1, ts2, 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId3', aggregateId1, 2, ts3, 'payload'));
-          eventStore.storeDomainEvent(domainEventFactory.remote(
+          await eventStore.storeDomainEvent(domainEventFactory.remote(
               'eventId4', aggregateId2, 3, ts4, 'payload'));
           // When
           final domainEvents = await eventStore.getDomainEvents(
@@ -98,16 +114,16 @@ abstract class EventStoreTestSuite {
 
         test('Retrieve all aggregate events in sequence order', () async {
           // Given...
-          eventStore.storeDomainEvent(
+          await eventStore.storeDomainEvent(
               domainEventFactory.remote(
                   'id1', aggregateId1, 0, ts2, 'payload'));
-          eventStore.storeDomainEvent(
+          await eventStore.storeDomainEvent(
               domainEventFactory.remote(
                   'id2', aggregateId1, 1, ts1, 'payload'));
-          eventStore.storeDomainEvent(
+          await eventStore.storeDomainEvent(
               domainEventFactory.remote(
                   'id4', aggregateId1, 3, ts3, 'payload'));
-          eventStore.storeDomainEvent(
+          await eventStore.storeDomainEvent(
               domainEventFactory.remote(
                   'id3', aggregateId1, 2, ts4, 'payload'));
           // When
@@ -126,19 +142,19 @@ abstract class EventStoreTestSuite {
           /// Events should be written in sequence order
           /// It is not allowed to write an already used sequence,
           /// or to skip a sequence number.
-          test('Sequence number should be positive', () {
+          test('Sequence number should be positive', () async {
             try {
-              eventStore.storeDomainEvent(
+              await eventStore.storeDomainEvent(
                   domainEventFactory.local(aggregateId1, -1, 'payload'));
-              fail('xpected InvalidEventException');
+              fail('Expected InvalidEventException');
             } on InvalidEventException catch (e) {
               expect(e.toString(), contains('Invalid sequence'));
             }
           });
 
-          test('AggregateId should be known/registered if sequence > 0', () {
+          test('AggregateId should be known/registered if sequence > 0', () async {
             try {
-              eventStore.storeDomainEvent(domainEventFactory.local(
+              await eventStore.storeDomainEvent(domainEventFactory.local(
                   AggregateId.of('unknownaggregateid'), 1, 'payload'));
               fail('Expected InvalidEventException');
             } on InvalidEventException catch (e) {
@@ -146,9 +162,9 @@ abstract class EventStoreTestSuite {
             }
           });
 
-          test('AggregateId should be registered', () {
+          test('AggregateId should be registered', () async {
             try {
-              eventStore.storeDomainEvent(domainEventFactory.local(
+              await eventStore.storeDomainEvent(domainEventFactory.local(
                   AggregateId.of('unknownaggregateid'), 0, 'payload'));
               fail('Expected InvalidEventException');
             } on InvalidEventException catch (e) {
@@ -156,13 +172,13 @@ abstract class EventStoreTestSuite {
             }
           });
 
-          test('EventId should be unique', () {
+          test('EventId should be unique', () async {
             // First event
-            eventStore.storeDomainEvent(domainEventFactory.remote(
+            await eventStore.storeDomainEvent(domainEventFactory.remote(
                 'eventId1', aggregateId1, 0, DateTime.now(), 'payload'));
             try {
               // Second event with same eventId, all other parameters are different, should fail
-              eventStore.storeDomainEvent(domainEventFactory.remote(
+              await eventStore.storeDomainEvent(domainEventFactory.remote(
                   'eventId1', aggregateId2, 1, DateTime.now(), 'payload2'));
               fail('Expected InvalidEventException');
             } on InvalidEventException catch (e) {
@@ -175,12 +191,12 @@ abstract class EventStoreTestSuite {
 
           /// In case we receive the same event twice, we just silently ignore it.
           /// Equals means the same EventId, AggregateId and sequence.
-          test('Duplicate events should be ignored', () {
+          test('Duplicate events should be ignored', () async {
             // First event
-            eventStore.storeDomainEvent(domainEventFactory.remote(
+            await eventStore.storeDomainEvent(domainEventFactory.remote(
                 'eventId1', aggregateId1, 0, DateTime.now(), 'payload'));
             // Second event with same EventId, AggregateId and sequence, should succeed
-            eventStore.storeDomainEvent(domainEventFactory.remote(
+            await eventStore.storeDomainEvent(domainEventFactory.remote(
                 'eventId1', aggregateId1, 0, DateTime.now(), 'payload'));
           });
         });

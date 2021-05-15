@@ -1,18 +1,18 @@
 #!/bin/bash
-# Created with package:mono_repo v3.4.7
+# Created with package:mono_repo v4.0.0
 
 # Support built in commands on windows out of the box.
+# When it is a flutter repo (check the pubspec.yaml for "sdk: flutter")
+# then "flutter" is called instead of "pub".
+# This assumes that the Flutter SDK has been installed in a previous step.
 function pub() {
-
   if grep -Fq "sdk: flutter" "${PWD}/pubspec.yaml"; then
-    echo -e '\033[31m========= WITH FLUTTER =========== \033[0m'
     if [[ $TRAVIS_OS_NAME == "windows" ]]; then
       command flutter.bat pub "$@"
     else
       command flutter pub "$@"
     fi
   else
-    echo -e '\033[31m========= WITHOUT FLUTTER =========== \033[0m'
     if [[ $TRAVIS_OS_NAME == "windows" ]]; then
       command pub.bat "$@"
     else

@@ -9,13 +9,13 @@ import 'package:uuid/uuid.dart';
 abstract class EventStore {
 
   /// Store the given DomainEvent or throw an exception
-  void storeDomainEvent(DomainEvent event);
+  Future<void> storeDomainEvent(DomainEvent event);
 
   /// Store the given SystemEvent.
-  void storeSystemEvent(SystemEvent event);
+  Future<void> storeSystemEvent(SystemEvent event);
 
   /// Get the number of events for a single aggregate
-  int countEventsForAggregate(AggregateId aggregateId);
+  Future<int> countEventsForAggregate(AggregateId aggregateId);
 
   /// Get all domain events by the given criteria
   Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
@@ -23,13 +23,13 @@ abstract class EventStore {
   /// Get all system events
   Stream<SystemEvent> getSystemEvents();
 
-  void registerAggregateId(AggregateId aggregateId);
+  Future<void> registerAggregateId(AggregateId aggregateId);
 
-  void registerAggregateIds(Iterable<AggregateId> aggregateIds);
+  Future<void> registerAggregateIds(Iterable<AggregateId> aggregateIds);
 
-  void unregisterAggregateId(AggregateId aggregateId);
+  Future<void> unregisterAggregateId(AggregateId aggregateId);
 
-  bool hasEventsForAggregate(AggregateId aggregateId);
+  Future<bool> hasEventsForAggregate(AggregateId aggregateId);
 
   _validateDomainEvent(DomainEvent event) {
     if (event.sequence < 0) {
@@ -76,7 +76,7 @@ class EventStoreInMemoryImpl extends EventStore {
   }
 
   @override
-  void storeDomainEvent(DomainEvent event) {
+  Future<void> storeDomainEvent(DomainEvent event) async {
     // If the aggregateId is not yet registered, throw an exception
     // (yes, Aggregates need to be registered explicitly)
     if (!_registeredAggregateIds.contains(event.aggregateId)) {
@@ -97,7 +97,7 @@ class EventStoreInMemoryImpl extends EventStore {
   }
 
   @override
-  void storeSystemEvent(SystemEvent event) {
+  Future<void> storeSystemEvent(SystemEvent event) async {
     _systemEventStore.add(event);
   }
 
@@ -162,7 +162,7 @@ class EventStoreInMemoryImpl extends EventStore {
   }
 
   @override
-  int countEventsForAggregate(AggregateId aggregateId) {
+  Future<int> countEventsForAggregate(AggregateId aggregateId) async {
     if (_domainEventStore.containsKey(aggregateId)) {
       return _domainEventStore[aggregateId]!.length;
     }
@@ -175,24 +175,24 @@ class EventStoreInMemoryImpl extends EventStore {
   }
 
   @override
-  void registerAggregateId(AggregateId aggregateId) {
+  Future<void> registerAggregateId(AggregateId aggregateId) async {
     _registeredAggregateIds.add(aggregateId);
   }
 
   @override
-  void registerAggregateIds(Iterable<AggregateId> aggregateIds) {
+  Future<void> registerAggregateIds(Iterable<AggregateId> aggregateIds) async {
     _registeredAggregateIds.addAll(aggregateIds);
   }
 
   @override
-  void unregisterAggregateId(AggregateId aggregateId) {
+  Future<void> unregisterAggregateId(AggregateId aggregateId) async {
     _registeredAggregateIds.remove(aggregateId);
     _domainEventStore.removeWhere((key, value) => key == aggregateId);
   }
 
   @override
-  bool hasEventsForAggregate(AggregateId aggregateId) {
-    return _domainEventStore.containsKey(aggregateId);
+  Future<bool> hasEventsForAggregate(AggregateId aggregateId) async {
+    return Future.sync(() => _domainEventStore.containsKey(aggregateId));
   }
 
 }

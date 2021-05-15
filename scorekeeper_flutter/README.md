@@ -109,6 +109,7 @@ Verifies the behavior of Flutter widgets without running the app itself.
 
 ## Integration tests
 https://flutter.dev/docs/testing/integration-tests
+https://github.com/flutter/flutter/tree/master/packages/integration_test#integration_test
 Also called end-to-end testing or GUI testing, runs the full app.
 Used for automated testing of the actual UI.
 Makes use of the `flutter drive` command in order to run on physical devices, emulators or in the Firebase Test Lab.
@@ -117,8 +118,8 @@ Makes use of the `flutter drive` command in order to run on physical devices, em
 Using the commands below, you can run the integration tests on an emulator.
 
  - `flutter devices` (check device id)
- - `flutter drive --driver integration_test/driver.dart --target integration_test/app_test.dart`
- - `flutter drive --driver=integration_test/driver.dart --target=integration_test/app_test.dart -d "emulator-5554"`
+ - `flutter drive --driver test_driver/driver.dart --target integration_test/app_test.dart`
+ - `flutter drive --driver=test_driver/driver.dart --target=integration_test/app_test.dart -d "emulator-5554"`
 
 
 ### Developing integration tests with 'tooling'

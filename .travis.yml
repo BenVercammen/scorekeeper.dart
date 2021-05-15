@@ -1,4 +1,4 @@
-# Created with package:mono_repo v3.4.7
+# Created with package:mono_repo v4.0.0
 language: dart
 
 # Custom configuration
@@ -19,10 +19,10 @@ after_failure:
 
 jobs:
   include:
-#    - stage: analyzer_and_format
-#      name: mono_repo self validate
-#      os: linux
-#      script: "pub global activate mono_repo 3.4.7 && pub global run mono_repo generate --validate"
+    - stage: analyzer_and_format
+      name: mono_repo self validate
+      os: linux
+      script: "pub global activate mono_repo 4.0.0 && pub global run mono_repo generate --validate"
     - stage: analyzer_and_format
       name: "PKGS: scorekeeper_codegen, scorekeeper_core, scorekeeper_domain, scorekeeper_example_domain, scorekeeper_flutter; `dartanalyzer --fatal-infos .`"
       dart: dev
