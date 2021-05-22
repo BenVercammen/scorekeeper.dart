@@ -146,6 +146,8 @@ https://pvba04.medium.com/flutter-integration-tests-in-intellij-idea-16736df35bc
 
 
 # Troubleshooting
+ 
+## Various
  - Because every version of flutter_driver from sdk depends on crypto 2.1.5 and uuid >=3.0.0 depends on crypto ^3.0.0, flutter_driver from sdk is incompatible with uuid >=3.0.0.
     - upgrade flutter sdk on machine, see README file in `scorekeeper_core`
 
@@ -191,3 +193,37 @@ Update: 30/04/21:
  - https://github.com/google/mono_repo.dart/pull/318
  - for now, we'll just be content with regular tests
     - for "integration testing" and "deploying" etc, we'll try to set up a separate codemagic build...
+
+
+## Persistence
+### Moor, SQFLite, SQLite
+As a persistence solution we're currently looking at the `moor` package.
+Issues we've encountered:
+
+ - Code generation:
+    - the file containing the `@UseMoor` annotation has the following import:
+        `part 'YOUR_FILENAME_HERE.g.dart';`
+        - make sure that the file names match!
+     - `flutter pub run build_runner build`
+        ```
+        [SEVERE] Failed to snapshot build script .dart_tool/build/entrypoint/build.dart.
+        This is likely caused by a misconfigured builder definition.
+        ```
+       - Problem is that the build_runner is picking up our `scorekeeper_domain/build.yaml` file
+            - Cannot prevent this from happening, but... can fix the "dependency issue"
+                -> scorekeeper_codegen should be added as dev_dependency
+       - Problem 2:
+            - after first success, we keep getting the following:
+            ```
+            [SEVERE] scorekeeper_domain:aggregate_dto_factory_generator on lib/$lib$ (cached):
+            FileSystemException: Cannot open file, path = 'lib/src/event_store_moor.moor.g.part' (OS Error: Het systeem kan het opgegeven bestand niet vinden.
+            , errno = 2)
+            ```
+            - added extra check...
+ - Testing:
+    - `Invalid argument(s): Failed to load dynamic library 'sqlite3.dll': 126`
+        - Make sure the `sqlite3.dll` file is present on the `PATH` of your local machine
+    - `SqliteException(14): bad parameter or other API misuse, bad parameter or other API misuse (code 21)`
+        - https://github.com/simolus3/moor/issues/731
+        - Make sure your `flutter_tester.exe` process has access to the local machine's `ApplicationDocumentsDirectory` folder
+

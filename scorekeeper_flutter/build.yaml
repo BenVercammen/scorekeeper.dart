@@ -1,0 +1,8 @@
+---
+# Custom configuration for the moor builders/generators.
+targets:
+  $default:
+    builders:
+      moor_generator:
+        options:
+          compact_query_methods: true

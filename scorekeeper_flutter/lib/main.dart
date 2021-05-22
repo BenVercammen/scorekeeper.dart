@@ -8,8 +8,10 @@ import 'src/services/service.dart';
 
 Future<void> main() async {
   // Create an instance
+  final eventStore = EventStoreInMemoryImpl();
   final scorekeeper = Scorekeeper(
-      eventStore: EventStoreInMemoryImpl(),
+      // eventStore: EventStoreInMemoryImpl(),
+      eventStore: eventStore,
       aggregateCache: AggregateCacheInMemoryImpl(),
       domainEventFactory: const DomainEventFactory<Scorable>(
           producerId: 'ScorekeeperMain', applicationVersion: 'v1'))

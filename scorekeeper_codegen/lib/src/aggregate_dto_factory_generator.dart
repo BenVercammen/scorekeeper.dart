@@ -60,8 +60,13 @@ class AggregateDtoFactoryGenerator implements Builder {
   Future<void> build(BuildStep buildStep) async {
     final aggregates = <String>[];
     await for (final input in buildStep.findAssets(_allFilesInLib)) {
+      final file = File(input.path);
+      // Skip if the file does not exist (happens since the moor codegen stuff)
+      if (!file.existsSync()) {
+        break;
+      }
       // Check if the file contains the @aggregate annotation
-      final fileContent = File(input.path).readAsStringSync();
+      final fileContent = file.readAsStringSync();
       if (fileContent.contains('@aggregate')) {
         // Aggregate = first instance of string between "class " and " extends" after "@aggregate" annotation
         final start = fileContent.indexOf('class ', fileContent.indexOf('@aggregate')) + 'class '.length;

@@ -4,6 +4,8 @@
 targets:
   $default:
     builders:
+  scorekeeper_domain:
+    builders:
       handler_generator:
         generate_for:
           - lib/src/scorable.dart

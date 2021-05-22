@@ -67,6 +67,20 @@ abstract class Event {
 
   DateTime get timestamp => _timestamp;
 
+  String? get userId => _userId;
+
+  String? get processId => _processId;
+
+  String get producerId => _producerId;
+
+  String get applicationVersion => _applicationVersion;
+
+  String get domainId => _domainId;
+
+  String get domainVersion => _domainVersion;
+
+  dynamic get payload => _payload;
+
   @override
   String toString() {
     return '$_eventId@${_timestamp.toIso8601String()}';
@@ -120,8 +134,8 @@ class DomainEvent<T extends Aggregate> extends Event {
     required String applicationVersion,
     required String domainId,
     required String domainVersion,
-    required AggregateId aggregateId,
     required dynamic payload,
+    required AggregateId aggregateId,
     required int sequence,
   })   : _sequence = sequence,
         _aggregateId = aggregateId,
@@ -137,8 +151,6 @@ class DomainEvent<T extends Aggregate> extends Event {
             payload: payload);
 
   AggregateId get aggregateId => _aggregateId;
-
-  dynamic get payload => _payload;
 
   int get sequence => _sequence;
 

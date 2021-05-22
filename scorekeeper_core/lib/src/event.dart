@@ -5,7 +5,16 @@ import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:uuid/uuid.dart';
 
-/// The EventStore is responsible for persisting DomainEvents.
+/// The EventStore is responsible for persisting DomainEvents of a single instance.
+/// The EventStore will only accept events when
+///  - the aggregateId is registered up front (else ignore)
+///  - the event sequence is correct (ignore if duplicate event, throw exception otherwise)
+///
+/// Question: should we have 2 event stores to keep track of events for an aggregate
+///   -> local events
+///   -> remote events
+///   Or do we want to make our EventStore intelligent enough to resolve conflicts between sources???
+///
 abstract class EventStore {
 
   /// Store the given DomainEvent or throw an exception
@@ -19,6 +28,10 @@ abstract class EventStore {
 
   /// Get all domain events by the given criteria
   Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp});
+
+  /// Get all domain events that have been "quarantined" because they conflict with the remote event store
+  /// TODO: do we really want to go there?
+  /// TODO Stream<DomainEvent> getConflictingDomainEvents(AggregateId aggregateId);
 
   /// Get all system events
   Stream<SystemEvent> getSystemEvents();
@@ -224,6 +237,7 @@ class DomainEventFactory<T extends Aggregate> {
 
   final String applicationVersion;
 
+  // TODO: https://stackoverflow.com/questions/23613279/access-to-pubspec-yaml-attributes-version-from-dart-app
   final String domainId = 'TODO: domainId';
   final String domainVersion = 'TODO: domainVersion';
 
