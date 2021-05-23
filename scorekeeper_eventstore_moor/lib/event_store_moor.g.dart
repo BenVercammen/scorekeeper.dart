@@ -594,13 +594,213 @@ class $DomainEventTableTable extends DomainEventTable
   }
 }
 
+class RegisteredAggregateData extends DataClass
+    implements Insertable<RegisteredAggregateData> {
+  final DateTime timestamp;
+  final String aggregateId;
+  RegisteredAggregateData({required this.timestamp, required this.aggregateId});
+  factory RegisteredAggregateData.fromData(
+      Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return RegisteredAggregateData(
+      timestamp: const DateTimeType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}timestamp'])!,
+      aggregateId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}aggregate_id'])!,
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    map['aggregate_id'] = Variable<String>(aggregateId);
+    return map;
+  }
+
+  RegisteredAggregateTableCompanion toCompanion(bool nullToAbsent) {
+    return RegisteredAggregateTableCompanion(
+      timestamp: Value(timestamp),
+      aggregateId: Value(aggregateId),
+    );
+  }
+
+  factory RegisteredAggregateData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return RegisteredAggregateData(
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      aggregateId: serializer.fromJson<String>(json['aggregateId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+      'aggregateId': serializer.toJson<String>(aggregateId),
+    };
+  }
+
+  RegisteredAggregateData copyWith(
+          {DateTime? timestamp, String? aggregateId}) =>
+      RegisteredAggregateData(
+        timestamp: timestamp ?? this.timestamp,
+        aggregateId: aggregateId ?? this.aggregateId,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('RegisteredAggregateData(')
+          ..write('timestamp: $timestamp, ')
+          ..write('aggregateId: $aggregateId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf($mrjc(timestamp.hashCode, aggregateId.hashCode));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RegisteredAggregateData &&
+          other.timestamp == this.timestamp &&
+          other.aggregateId == this.aggregateId);
+}
+
+class RegisteredAggregateTableCompanion
+    extends UpdateCompanion<RegisteredAggregateData> {
+  final Value<DateTime> timestamp;
+  final Value<String> aggregateId;
+  const RegisteredAggregateTableCompanion({
+    this.timestamp = const Value.absent(),
+    this.aggregateId = const Value.absent(),
+  });
+  RegisteredAggregateTableCompanion.insert({
+    required DateTime timestamp,
+    required String aggregateId,
+  })  : timestamp = Value(timestamp),
+        aggregateId = Value(aggregateId);
+  static Insertable<RegisteredAggregateData> custom({
+    Expression<DateTime>? timestamp,
+    Expression<String>? aggregateId,
+  }) {
+    return RawValuesInsertable({
+      if (timestamp != null) 'timestamp': timestamp,
+      if (aggregateId != null) 'aggregate_id': aggregateId,
+    });
+  }
+
+  RegisteredAggregateTableCompanion copyWith(
+      {Value<DateTime>? timestamp, Value<String>? aggregateId}) {
+    return RegisteredAggregateTableCompanion(
+      timestamp: timestamp ?? this.timestamp,
+      aggregateId: aggregateId ?? this.aggregateId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (aggregateId.present) {
+      map['aggregate_id'] = Variable<String>(aggregateId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RegisteredAggregateTableCompanion(')
+          ..write('timestamp: $timestamp, ')
+          ..write('aggregateId: $aggregateId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RegisteredAggregateTableTable extends RegisteredAggregateTable
+    with TableInfo<$RegisteredAggregateTableTable, RegisteredAggregateData> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  $RegisteredAggregateTableTable(this._db, [this._alias]);
+  final VerificationMeta _timestampMeta = const VerificationMeta('timestamp');
+  @override
+  late final GeneratedDateTimeColumn timestamp = _constructTimestamp();
+  GeneratedDateTimeColumn _constructTimestamp() {
+    return GeneratedDateTimeColumn(
+      'timestamp',
+      $tableName,
+      false,
+    );
+  }
+
+  final VerificationMeta _aggregateIdMeta =
+      const VerificationMeta('aggregateId');
+  @override
+  late final GeneratedTextColumn aggregateId = _constructAggregateId();
+  GeneratedTextColumn _constructAggregateId() {
+    return GeneratedTextColumn('aggregate_id', $tableName, false,
+        minTextLength: 36, maxTextLength: 36);
+  }
+
+  @override
+  List<GeneratedColumn> get $columns => [timestamp, aggregateId];
+  @override
+  $RegisteredAggregateTableTable get asDslTable => this;
+  @override
+  String get $tableName => _alias ?? 'registered_aggregate_table';
+  @override
+  final String actualTableName = 'registered_aggregate_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<RegisteredAggregateData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('timestamp')) {
+      context.handle(_timestampMeta,
+          timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    if (data.containsKey('aggregate_id')) {
+      context.handle(
+          _aggregateIdMeta,
+          aggregateId.isAcceptableOrUnknown(
+              data['aggregate_id']!, _aggregateIdMeta));
+    } else if (isInserting) {
+      context.missing(_aggregateIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => <GeneratedColumn>{};
+  @override
+  RegisteredAggregateData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : null;
+    return RegisteredAggregateData.fromData(data, _db, prefix: effectivePrefix);
+  }
+
+  @override
+  $RegisteredAggregateTableTable createAlias(String alias) {
+    return $RegisteredAggregateTableTable(_db, alias);
+  }
+}
+
 abstract class _$EventStoreMoorImpl extends GeneratedDatabase {
   _$EventStoreMoorImpl(QueryExecutor e)
       : super(SqlTypeSystem.defaultInstance, e);
   late final $DomainEventTableTable domainEventTable =
       $DomainEventTableTable(this);
+  late final $RegisteredAggregateTableTable registeredAggregateTable =
+      $RegisteredAggregateTableTable(this);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [domainEventTable];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [domainEventTable, registeredAggregateTable];
 }

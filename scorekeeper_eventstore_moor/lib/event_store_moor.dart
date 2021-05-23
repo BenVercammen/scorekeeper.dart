@@ -12,7 +12,7 @@ import 'package:scorekeeper_domain/core.dart';
 part 'event_store_moor.g.dart';
 
 /// Tell moor to prepare a database class that uses the defined table(s).
-@UseMoor(tables: [DomainEventTable])
+@UseMoor(tables: [DomainEventTable, RegisteredAggregateTable])
 class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   EventStoreMoorImpl() : super(_openConnection());
@@ -21,9 +21,13 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   int get schemaVersion => 1;
 
   @override
-  Future<int> countEventsForAggregate(AggregateId aggregateId) {
-    // TODO: implement countEventsForAggregate
-    throw UnimplementedError();
+  Future<int> countEventsForAggregate(AggregateId aggregateId) async {
+    var countExp = domainEventTable.aggregateId.count();
+    final query = selectOnly(domainEventTable)
+      ..addColumns([countExp])
+      ..where(domainEventTable.aggregateId.equals(aggregateId.id));
+    final count = await query.map((row) => row.read(countExp)).getSingle();
+    return count;
   }
 
   @override
@@ -50,15 +54,14 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   }
 
   @override
-  Future<bool> hasEventsForAggregate(AggregateId aggregateId) {
-    // TODO: implement hasEventsForAggregate
-    throw UnimplementedError();
+  Future<bool> hasEventsForAggregate(AggregateId aggregateId) async {
+    return await countEventsForAggregate(aggregateId) > 0;
   }
 
   @override
-  Future<void> registerAggregateId(AggregateId aggregateId) {
-    // TODO: implement registerAggregateId
-    throw UnimplementedError();
+  Future<void> registerAggregateId(AggregateId aggregateId) async {
+    await into(registeredAggregateTable).insert(RegisteredAggregateData(
+        timestamp: DateTime.now(), aggregateId: aggregateId.id));
   }
 
   @override
@@ -91,9 +94,21 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   }
 
   @override
-  Future<void> unregisterAggregateId(AggregateId aggregateId) {
-    // TODO: implement unregisterAggregateId
-    throw UnimplementedError();
+  Future<void> unregisterAggregateId(AggregateId aggregateId) async {
+    await delete(registeredAggregateTable)..where((a) => a.aggregateId.equals(aggregateId.id))..go();
+  }
+
+  @override
+  Future<void> clear() async {
+    await delete(domainEventTable).go();
+  }
+
+  @override
+  Future<bool> isRegisteredAggregateId(AggregateId aggregateId) async {
+    final aggregate = select(registeredAggregateTable)
+      ..where((a) => a.aggregateId.equals(aggregateId.id))
+      ..watchSingle();
+    return null != await aggregate.getSingleOrNull();
   }
 
 }
@@ -113,7 +128,7 @@ LazyDatabase _openConnection() {
 }
 
 
-/// The "DomainEvent" table
+/// The "DomainEvent" table, containing domain events for registered Aggregates
 @DataClassName('DomainEventData')
 class DomainEventTable extends Table {
   TextColumn get eventId => text().withLength(min: 36, max: 36)();
@@ -127,4 +142,11 @@ class DomainEventTable extends Table {
   TextColumn get aggregateId => text().withLength(min: 36, max: 36)();
   IntColumn get sequence => integer()();
   TextColumn get payload => text()();
+}
+
+/// The "AggregateId" table, to keep track of Aggregates for which events should be stored
+@DataClassName('RegisteredAggregateData')
+class RegisteredAggregateTable extends Table {
+  DateTimeColumn get timestamp => dateTime()();
+  TextColumn get aggregateId => text().withLength(min: 36, max: 36)();
 }

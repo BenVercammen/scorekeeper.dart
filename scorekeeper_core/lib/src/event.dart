@@ -50,6 +50,11 @@ abstract class EventStore {
     }
   }
 
+  /// Remove all events from the EventStore
+  Future<void> clear();
+
+  Future<bool> isRegisteredAggregateId(AggregateId aggregateId);
+
 }
 
 /// Exception to be thrown in case an invalid Event is being stored or handled.
@@ -206,6 +211,16 @@ class EventStoreInMemoryImpl extends EventStore {
   @override
   Future<bool> hasEventsForAggregate(AggregateId aggregateId) async {
     return Future.sync(() => _domainEventStore.containsKey(aggregateId));
+  }
+
+  @override
+  Future<void> clear() async {
+    _domainEventStore.clear();
+  }
+
+  @override
+  Future<bool> isRegisteredAggregateId(AggregateId aggregateId) {
+    return Future.sync(() => _registeredAggregateIds.contains(aggregateId));
   }
 
 }
