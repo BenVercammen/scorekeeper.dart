@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
@@ -118,7 +119,7 @@ void main() {
 
   late TracingLogger _logger;
 
-  const scorableId = 'SCORABLE_ID';
+  const scorableId = '11111111-1111-1111-1111-111111111111';
 
   group('Scorekeeper', () {
 
@@ -193,7 +194,7 @@ void main() {
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
       eventId ??= Uuid().v4().toString();
-      sequence ??= await eventStore.countEventsForAggregate(aggregateId) + 1;
+      sequence ??= await eventStore.nextSequenceForAggregate(aggregateId);
       final event = domainEventFactory.remote(eventId, aggregateId, sequence, DateTime.now(), scorableCreated);
       await eventStore.storeDomainEvent(event);
     }
@@ -206,7 +207,7 @@ void main() {
       participantAdded.participant = participant;
       // Store and publish
       final aggregateId = AggregateId.of(aggregateIdValue);
-      final sequence = await eventStore.countEventsForAggregate(aggregateId) + 1;
+      final sequence = await eventStore.nextSequenceForAggregate(aggregateId);
       final event = domainEventFactory.local(aggregateId, sequence, participantAdded);
       await eventStore.storeDomainEvent(event);
     }
@@ -264,7 +265,7 @@ void main() {
 
     /// When the RemoteEventListener receives a new DomainEvent
     Future<void> receivedRemoteEvent(DomainEvent domainEvent) async {
-      return Future.sync(() => remoteEventListener.emitEvent(domainEvent));
+      return await Future.sync(() => remoteEventListener.emitEvent(domainEvent));
     }
 
     /// When an aggregate with given Id is evicted from cache
@@ -274,7 +275,7 @@ void main() {
 
     /// Eventually means asynchronously, so we'll just wait a few millis to check
     Future<void> eventually(Function() callback) async {
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 100));
       callback();
     }
 
@@ -426,11 +427,11 @@ void main() {
           scorekeeper.registerAggregate(aggregateId, Scorable);
           await givenScorableCreatedEvent(aggregateId.id, 'Test');
           thenAggregateShouldBeRegistered(aggregateId.id);
-          thenEventTypeShouldBeStoredNumberOfTimes(aggregateId.id, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(aggregateId.id, ScorableCreated, 1);
           // unregister
           scorekeeper.unregisterAggregate(aggregateId);
           thenAggregateShouldNotBeRegistered(aggregateId.id);
-          thenEventTypeShouldBeStoredNumberOfTimes(aggregateId.id, ScorableCreated, 0);
+          await thenEventTypeShouldBeStoredNumberOfTimes(aggregateId.id, ScorableCreated, 0);
         });
       });
 
@@ -472,7 +473,7 @@ void main() {
             ..name = 'Test';
           await when(() => receivedRemoteEvent(
             domainEventFactory.local(AggregateId.of(scorableId), 0, payload)));
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1));
           thenAggregateShouldNotBeCached(scorableId);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
           thenNoEventsShouldBePublishedForAggregateId(scorableId);
@@ -492,7 +493,7 @@ void main() {
             return receivedRemoteEvent(domainEventFactory.local(
                 AggregateId.of(scorableId), 0, payload));
           });
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
           thenAggregateShouldNotBeCached(scorableId);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
@@ -506,7 +507,7 @@ void main() {
                     ..aggregateId = scorableId
                     ..name = 'Test'))
           );
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1));
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           // TODO: but the cached state is not up-to-date, our whole "given event" premise is messed up... there's no WHEN action...
         });
@@ -520,7 +521,7 @@ void main() {
           await givenAggregateIdRegistered(scorableId);
           await givenAggregateIdCached(scorableId);
           await givenScorableCreatedEvent(scorableId, 'TEST 1', 0, eventId1);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
           try {
             await givenScorableCreatedEvent(scorableId, 'TEST 1', 0, eventId2);
@@ -567,11 +568,11 @@ void main() {
         test('Handle regular event for registered, non-cached aggregateId', () async {
           await givenAggregateIdRegistered(scorableId);
           await givenScorableCreatedEvent(scorableId, 'TEST 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
           await when(() => evictAggregateFromCache(scorableId));
           thenAggregateShouldNotBeCached(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
           await eventually(() => thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1));
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
@@ -587,7 +588,7 @@ void main() {
           await when(() => evictAggregateFromCache(scorableId));
           thenAggregateShouldNotBeCached(scorableId);
           await givenParticipantAddedEvent(scorableId, 'PARTICIPANT_ID', 'Player One');
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
           await eventually(() => thenAggregateShouldNotBeCached(scorableId));
         });
 
@@ -595,7 +596,7 @@ void main() {
           await givenAggregateIdNotRegistered(scorableId);
           await when(() => receivedRemoteEvent(domainEventFactory.local(AggregateId.of(scorableId), 0, 'TEST 1')));
           thenAggregateShouldNotBeRegistered(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
         });
 
         test('Handle regular event for registered, cached aggregateId', () async {
@@ -606,8 +607,8 @@ void main() {
           // TODO: dus ook scenario's schrijven waarin cache out-of-date is? of zou da nooit mogen?
           await givenCacheIsUpToDate(scorableId);
           await eventually(() => thenAggregateShouldBeCached(scorableId));
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ParticipantAdded, 1);
           // Cached state should reflect the handled event...
           thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
             expect(scorable.name, equals('Test 1'));
@@ -619,7 +620,7 @@ void main() {
           await givenAggregateIdNotRegistered(scorableId);
           await when(() => receivedRemoteEvent(domainEventFactory.local(AggregateId.of(scorableId), 0, 'TEST 1')));
           thenAggregateShouldNotBeCached(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 0);
         });
 
       });
@@ -756,7 +757,7 @@ void main() {
           await when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
           thenAggregateShouldBeCached(scorableId);
           thenAggregateShouldBeRegistered(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           // Check cached values (this is actually testing the domain itself, so not really something we need to do here)
           thenAssertCachedState<Scorable>(scorableId, (Scorable scorable) {
             expect(scorable, isNotNull);
@@ -771,7 +772,7 @@ void main() {
           await givenAggregateIdEvictedFromCache(scorableId);
           await when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
           thenAggregateShouldBeCached(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldBeRegistered(scorableId);
         });
 
@@ -781,7 +782,7 @@ void main() {
           await givenAggregateIdCached(scorableId);
           await when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
           thenAggregateShouldBeCached(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldBeRegistered(scorableId);
         });
 
@@ -792,7 +793,7 @@ void main() {
           await when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
           thenAggregateShouldBeCached(scorableId);
           thenAggregateShouldBeRegistered(scorableId);
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
         });
 
         /// Scorekeeper should block new constructor commands for already existing aggregates
@@ -800,10 +801,10 @@ void main() {
           await givenAggregateIdRegistered(scorableId);
           await givenAggregateIdCached(scorableId);
           await givenScorableCreatedEvent(scorableId, 'Test Scorable 1');
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           await when(() => createScorableCommand(scorableId, 'Test Scorable 1'));
           thenExceptionShouldBeThrown(AggregateIdAlreadyExistsException(AggregateId.of(scorableId)));
-          thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
+          await thenEventTypeShouldBeStoredNumberOfTimes(scorableId, ScorableCreated, 1);
           thenAggregateShouldBeCached(scorableId);
           thenAggregateShouldBeRegistered(scorableId);
         });
@@ -961,22 +962,23 @@ void main() {
       /// Scenario: Receive a remote event while handling a local command
       ///  Given a registered and cached aggregate
       ///  Given ScorableCreatedEvent for the aggregate
-      ///  When simultaneously a local AddParticipant command is being sent
-      ///  And a remote ParticipantAdded event is received
-      ///  Then both the command and the event will be handled
+      ///  When simultaneously
+      ///  And a local AddParticipant command is being sent (event should set sequence 1)
+      ///  And a remote ParticipantAdded event is received (event is sequence 1)
+      ///  Then only one of them will be handled
       ///
       /// The explanation, for now:
       ///  - the remoteEvent listener is faster than our local command handler
-      ///  - the remoteEvent's sequence is correct, since we instantiate it using domainEventFactory.local
+      ///  - the remoteEvent's sequence is correct, since we instantiate it using domainEventFactory.local (thus using nextSequence)
       ///  - by the time the local command is being handled, the remote event is already fully processed, so the sequence number is OKAY
-      ///  - in case the sequence would be off (local command is being served first), then we'd get an "invalid sequance" exception for the remote event
+      ///  - in case the sequence would be off (local command is being served first), then we'd get an "invalid sequence" exception for the remote event
       test('Receiving external event while handling command', () async {
         await givenAggregateIdRegistered(scorableId);
         await givenAggregateIdCached(scorableId);
         await givenScorableCreatedEvent(scorableId, 'Test Scorable');
         await givenCacheIsUpToDate(scorableId);
         thenAssertCachedState(scorableId, (Scorable scorable) => expect(scorable.name, equals('Test Scorable')));
-        // Make sure handling commands takes a while
+        // Make sure handling the local command takes a while, so the remote event can interfere...
         commandHandler.addHandlerInterceptor((beforeAfter, aggregate, command) async {
           if (command is AddParticipant && command.participant.name == 'Player One' && beforeAfter == 'BEFORE') {
             sleep(Duration(milliseconds: 10));
@@ -987,23 +989,27 @@ void main() {
         final participant = Participant('REMOTE_ID', 'REMOTE PLAYER');
         final remoteDomainEvent = domainEventFactory.local(
             AggregateId.of(scorableId),
-            2,
+            1,
             ParticipantAdded()
               ..aggregateId = scorableId
               ..participant = participant
         );
         // Let's presume adding participant One takes a while...
         await whenSimultaneously(
-          // First action: the command
-          () async => await addParticipantCommand(scorableId, 'LOCAL_ID', 'LOCAL PLAYER'),
-          // Second action: the remote event
-          () => receivedRemoteEvent(remoteDomainEvent),
+          // First action: the command (wrapped in when to catch exception)
+          () => when(()=> addParticipantCommand(scorableId, 'LOCAL_ID', 'LOCAL PLAYER')),
+          // Second action: the remote event (wrapped in when to catch exception)
+          () => when(() => receivedRemoteEvent(remoteDomainEvent))
         );
         // Before we went async, the command would have been handled without interrupting for the remote event
         // meaning the remote event would become stale...
         // However, after the switch, the remote event is being handled before the local command...
-        await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ScorableCreated, 1));
-        await eventually(() => thenEventTypeShouldBeHandledNumberOfTimes(scorableId, ParticipantAdded, 2));
+        await eventually(() =>
+            thenEventTypeShouldBeHandledNumberOfTimes(
+                scorableId, ScorableCreated, 1));
+        await eventually(() =>
+            thenEventTypeShouldBeHandledNumberOfTimes(
+                scorableId, ParticipantAdded, 1));
         await eventually(() => thenNoSystemEventShouldBePublished());
         thenAggregateShouldBeCached(scorableId);
         // Check if Participant is actually added
@@ -1059,7 +1065,7 @@ void main() {
         // The first event should be handled (add Player Two), but it should not be stored because of failure adding Player One
         thenEventTypeShouldBeHandledNumberOfTimes(
             scorableId, ParticipantAdded, 1);
-        thenEventTypeShouldBeStoredNumberOfTimes(
+        await thenEventTypeShouldBeStoredNumberOfTimes(
             scorableId, ParticipantAdded, 0);
         thenNoSystemEventShouldBePublished();
         // Participant cannot be added

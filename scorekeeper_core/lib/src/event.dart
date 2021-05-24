@@ -44,11 +44,9 @@ abstract class EventStore {
 
   Future<bool> hasEventsForAggregate(AggregateId aggregateId);
 
-  _validateDomainEvent(DomainEvent event) {
-    if (event.sequence < 0) {
-      throw new InvalidEventException(event, "Invalid sequence");
-    }
-  }
+  Future<void> validateDomainEvent(DomainEvent event);
+
+  Future<int> nextSequenceForAggregate(AggregateId aggregateId);
 
   /// Remove all events from the EventStore
   Future<void> clear();
@@ -95,35 +93,33 @@ class EventStoreInMemoryImpl extends EventStore {
 
   @override
   Future<void> storeDomainEvent(DomainEvent event) async {
-    // If the aggregateId is not yet registered, throw an exception
-    // (yes, Aggregates need to be registered explicitly)
-    if (!_registeredAggregateIds.contains(event.aggregateId)) {
-      throw new InvalidEventException(event, 'AggregateId not registered');
-    }
-    _validateDomainEvent(event);
+    await validateDomainEvent(event);
+    // Finally, persist!
     _domainEventStore.putIfAbsent(event.aggregateId, () => LinkedHashSet<DomainEvent>());
-    // In case of duplicate event, ignore siltently
-    if (_domainEventExists(event)) {
-      _logger.i('Received and ignored duplicate $event');
-      return;
-    }
-    // EventId should be unique
-    _checkUniqueEventId(event);
-    // Also check if the sequence is unique
-    _domainEventSequenceInvalid(event);
     _domainEventStore[event.aggregateId]!.add(event);
   }
 
-  @override
-  Future<void> storeSystemEvent(SystemEvent event) async {
-    _systemEventStore.add(event);
+  Future<void> validateDomainEvent(DomainEvent event) async {
+    if (event.sequence < 0) {
+      throw new InvalidEventException(event, "Invalid sequence");
+    }
+    // If the aggregateId is not yet registered, throw an exception
+    // (yes, Aggregates need to be registered explicitly)
+    if (! await isRegisteredAggregateId(event.aggregateId)) {
+      throw InvalidEventException(event, 'AggregateId not registered');
+    }
+    await _checkDomainEventExists(event);
+    // EventId should be unique
+    await _checkUniqueEventId(event);
+    // Also check if the sequence is valid / unique
+    await _domainEventSequenceInvalid(event);
   }
 
-  /// Make sure that there is only one event with the given EventId
+  /// Make sure that there is only one event in the entiry event store with the given EventId
   /// TODO: hmm, this is quite a heavy operation... digging through all aggregates and their events...
-  void _checkUniqueEventId(DomainEvent event) {
-    _domainEventStore.values.forEach((aggregateEvents) {
-      if (aggregateEvents.where((aggregateEvent) => aggregateEvent.eventId == event.eventId).isNotEmpty) {
+  Future<void> _checkUniqueEventId(DomainEvent event) async {
+    await getDomainEvents().forEach((aggregateEvent) {
+      if (aggregateEvent.eventId == event.eventId) {
         throw new InvalidEventException(event, 'Non-identical event with the same ID already stored in EventStore');
       }
     });
@@ -131,31 +127,31 @@ class EventStoreInMemoryImpl extends EventStore {
 
   /// Check if the DomainEvent sequence is OK.
   /// Currently, this means no other event with the given sequence
-  void _domainEventSequenceInvalid(DomainEvent event) {
-    // TODO: because of "memory limitations", we'll not be able to actually loop over ALL the events... probably...
-    // We'll need to work with snapshots etc...
-    var storedAggregateEvents = _domainEventStore[event.aggregateId];
-    if (null == storedAggregateEvents) {
-      throw InvalidEventException(event, 'Sequence invalid: expected 0 but was ${event.sequence}');
-    }
-    if (storedAggregateEvents.where((storedEvent) {
-      return storedEvent.sequence == event.sequence;
-    }).isNotEmpty) {
-      throw InvalidEventException(event, 'Sequence invalid: expected ${storedAggregateEvents.length + 1} but was ${event.sequence}');
+  Future<void> _domainEventSequenceInvalid(DomainEvent event) async {
+    final nextSequence = await nextSequenceForAggregate(event.aggregateId);
+    _logger.w('next sequence for aggregate ${event.aggregateId.id}: $nextSequence - current sequence == ${event.sequence}');
+    if (nextSequence != event.sequence) {
+      throw InvalidEventException(event, 'Sequence invalid: expected ${nextSequence} but was ${event.sequence}');
     }
   }
 
   /// Check if the DomainEvent is already persisted
   /// We ignore the actual payload, as soon as EventId, AggregateId and sequence match,
   /// we presume the entire DomainEvent matches.
-  bool _domainEventExists(DomainEvent domainEvent) {
-    var storedAggregateEvents = _domainEventStore[domainEvent.aggregateId];
-    if (null == storedAggregateEvents) {
-      return false;
-    }
-    return storedAggregateEvents.where((event) {
+  Future<void> _checkDomainEventExists(DomainEvent domainEvent) async {
+    final storedAggregateEvents = getDomainEvents(aggregateId: domainEvent.aggregateId);
+    final matches = await storedAggregateEvents.where((event) {
       return event.eventId == domainEvent.eventId && event.aggregateId == event.aggregateId;
-    }).isNotEmpty;
+    }).toList();
+    if (!matches.isEmpty) {
+      throw new InvalidEventException(domainEvent, 'Event already stored');
+    }
+  }
+
+
+  @override
+  Future<void> storeSystemEvent(SystemEvent event) async {
+    _systemEventStore.add(event);
   }
 
   /// TODO: I want this to be a stream as this could end up being very large,
@@ -223,6 +219,12 @@ class EventStoreInMemoryImpl extends EventStore {
     return Future.sync(() => _registeredAggregateIds.contains(aggregateId));
   }
 
+  @override
+  Future<int> nextSequenceForAggregate(AggregateId aggregateId) {
+    return Future.sync(() => _domainEventStore.containsKey(aggregateId)
+        ? _domainEventStore[aggregateId]!.length
+        : 0);
+  }
 }
 
 /// Class that should publish events to all remote listeners

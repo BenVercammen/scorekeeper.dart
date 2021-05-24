@@ -131,7 +131,9 @@ class Scorekeeper {
     // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
     await _cacheAndRegisterAggregate(aggregate);
     // De appliedEvents nog effectief handlen
+    print('============= De appliedEvents nog effectief handlen');
     await _handleEventsAppliedByCommand(aggregate);
+
   }
 
   /// Load an aggregate by id from the cache...
@@ -167,7 +169,7 @@ class Scorekeeper {
     final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
     final appliedDomainEvents = <DomainEvent>{};
     for (var event in aggregate.pendingEvents) {
-      final sequence = await _getNextSequenceValueForAggregateEvent(aggregate);
+      final sequence = await _eventStore.nextSequenceForAggregate(aggregate.aggregateId);
       final domainEvent = _domainEventFactory.local(aggregate.aggregateId, sequence, event);
       _logger.d('Handling event triggered by command: $domainEvent');
       try {
@@ -189,8 +191,12 @@ class Scorekeeper {
         await _eventStore.storeDomainEvent(domainEvent);
         _remoteEventPublisher?.publishDomainEvent(domainEvent);
       } on Exception catch (exception) {
+        print('========== prbleem tijdens command.... ABORT ALL THE THINGs!');
+        // TODO: okay, hier zit de meat van het probleem! we moeten zien dat het commando geweigerd wordt indien hier iets foutloopt??
+        // damn...
         // TODO: testen + afhandelen!
         _logger.e(exception);
+        throw exception;
       }
     }
     aggregate.pendingEvents.clear();
@@ -223,7 +229,9 @@ class Scorekeeper {
           aggregate.apply(event.payload);
         });
       }
+      print("----------- handling commando... ");
       commandHandler.handle(aggregate, command);
+      print("----------- DONE handling commando... what about the events... ");
     }
     return aggregate;
   }
@@ -254,10 +262,6 @@ class Scorekeeper {
   AggregateId _extractAggregateId(command) {
     final aggregateId = AggregateId.of(command.aggregateId as String);
     return aggregateId;
-  }
-
-  Future<int> _getNextSequenceValueForAggregateEvent(Aggregate aggregate) async {
-    return await _eventStore.countEventsForAggregate(aggregate.aggregateId) + 1;
   }
 
   /// Handle the given DomainEvent using the wired (generated) EventHandler.

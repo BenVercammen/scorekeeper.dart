@@ -227,3 +227,9 @@ Issues we've encountered:
         - https://github.com/simolus3/moor/issues/731
         - Make sure your `flutter_tester.exe` process has access to the local machine's `ApplicationDocumentsDirectory` folder
 
+ - SqliteException(1): no such table: registered_aggregate_table, SQL logic error (code 1)
+    - when you've added new table(s), delete the already existing `db.sqlite` file
+    - maybe there is some migration possibility
+
+ - WARNING (moor): It looks like you've created the database class EventStoreMoorImpl multiple times. When these two databases use the same QueryExecutor, race conditions will occur and might corrupt the database.
+   - TODO: !!!

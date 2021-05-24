@@ -15,25 +15,29 @@ part 'event_store_moor.g.dart';
 @UseMoor(tables: [DomainEventTable, RegisteredAggregateTable])
 class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
-  EventStoreMoorImpl() : super(_openConnection());
+  EventStoreMoorImpl([LazyDatabase? database]) : super(database??_openConnection());
 
   @override
   int get schemaVersion => 1;
 
   @override
   Future<int> countEventsForAggregate(AggregateId aggregateId) async {
-    var countExp = domainEventTable.aggregateId.count();
-    final query = selectOnly(domainEventTable)
-      ..addColumns([countExp])
-      ..where(domainEventTable.aggregateId.equals(aggregateId.id));
-    final count = await query.map((row) => row.read(countExp)).getSingle();
-    return count;
+    final countCol = countAll(filter: domainEventTable.aggregateId.equals(aggregateId.id));
+    final query = selectOnly(domainEventTable)..addColumns([countCol]);
+    return await query.map((row) => row.read(countCol)).getSingle();
   }
 
   @override
   Stream<DomainEvent<Aggregate>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) async* {
-    // TODO: WHERE toevoegen afhankelijk van params
-    final list = await select(domainEventTable).get();
+    final query = select(domainEventTable);
+    if (aggregateId != null) {
+      query.where((e) => e.aggregateId.equals(aggregateId.id));
+    }
+    if (timestamp != null) {
+      query.where((e) => e.timestamp.isBiggerOrEqualValue(timestamp));
+    }
+
+    final list = await query.get();
     for (final event in list) {
       yield DomainEvent(eventId: event.eventId,
       timestamp: event.timestamp,
@@ -72,6 +76,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   @override
   Future<void> storeDomainEvent(DomainEvent<Aggregate> event) async {
+    await validateDomainEvent(event);
     await into(domainEventTable).insert(DomainEventData(
         eventId: event.eventId,
         timestamp: event.timestamp,
@@ -95,12 +100,15 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   @override
   Future<void> unregisterAggregateId(AggregateId aggregateId) async {
-    await delete(registeredAggregateTable)..where((a) => a.aggregateId.equals(aggregateId.id))..go();
+    final deleteStatement = delete(registeredAggregateTable)
+      ..where((a) => a.aggregateId.equals(aggregateId.id));
+    await deleteStatement.go();
   }
 
   @override
   Future<void> clear() async {
-    await delete(domainEventTable).go();
+    // TODO: remove clear() from API??
+    throw Exception('Not allowed to clear all events from event store!');
   }
 
   @override
@@ -111,8 +119,68 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
     return null != await aggregate.getSingleOrNull();
   }
 
-}
+  @override
+  Future<int> nextSequenceForAggregate(AggregateId aggregateId) async {
+    final max = domainEventTable.sequence.max();
+    final query = selectOnly(domainEventTable)
+      ..where(domainEventTable.aggregateId.equals(aggregateId.id))
+      ..addColumns([max]);
+    return (await query.map((row) => row.read(max)).getSingle() ?? -1) + 1;
+  }
 
+  /// TODO: duplicate! apart trekken somehow..
+  Future<void> validateDomainEvent(DomainEvent event) async {
+    if (event.sequence < 0) {
+      throw new InvalidEventException(event, "Invalid sequence");
+    }
+    // If the aggregateId is not yet registered, throw an exception
+    // (yes, Aggregates need to be registered explicitly)
+    if (! await isRegisteredAggregateId(event.aggregateId)) {
+      throw InvalidEventException(event, 'AggregateId not registered');
+    }
+    await _checkDomainEventExists(event);
+    // EventId should be unique
+    await _checkUniqueEventId(event);
+    // Also check if the sequence is valid / unique
+    await _domainEventSequenceInvalid(event);
+  }
+
+  /// TODO: duplicate! apart trekken somehow..
+  /// Make sure that there is only one event in the entiry event store with the given EventId
+  /// TODO: hmm, this is quite a heavy operation... digging through all aggregates and their events...
+  Future<void> _checkUniqueEventId(DomainEvent event) async {
+    await getDomainEvents().forEach((aggregateEvent) {
+      if (aggregateEvent.eventId == event.eventId) {
+        throw new InvalidEventException(event, 'Non-identical event with the same ID already stored in EventStore');
+      }
+    });
+  }
+
+  /// TODO: duplicate! apart trekken somehow..
+  /// Check if the DomainEvent sequence is OK.
+  /// Currently, this means no other event with the given sequence
+  Future<void> _domainEventSequenceInvalid(DomainEvent event) async {
+    final nextSequence = await nextSequenceForAggregate(event.aggregateId);
+    if (nextSequence != event.sequence) {
+      throw InvalidEventException(event, 'Sequence invalid: expected ${nextSequence} but was ${event.sequence}');
+    }
+  }
+
+  /// TODO: duplicate! apart trekken somehow..
+  /// Check if the DomainEvent is already persisted
+  /// We ignore the actual payload, as soon as EventId, AggregateId and sequence match,
+  /// we presume the entire DomainEvent matches.
+  Future<void> _checkDomainEventExists(DomainEvent domainEvent) async {
+    final storedAggregateEvents = getDomainEvents(aggregateId: domainEvent.aggregateId);
+    final matches = await storedAggregateEvents.where((event) {
+      return event.eventId == domainEvent.eventId && event.aggregateId == event.aggregateId;
+    }).toList();
+    if (!matches.isEmpty) {
+      throw new InvalidEventException(domainEvent, 'Event already stored');
+    }
+  }
+
+}
 
 /// The method to open a connection to the event store (.sqlite file)
 LazyDatabase _openConnection() {
@@ -135,9 +203,9 @@ class DomainEventTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   TextColumn get userId => text().withLength(min: 36, max: 36).nullable()();
   TextColumn get processId => text().withLength(min: 36, max: 36).nullable()();
-  TextColumn get producerId => text().withLength(min: 36, max: 36)();
+  TextColumn get producerId => text().withLength(min: 6, max: 36)();
   TextColumn get applicationVersion => text().withLength(min: 1, max: 36)();
-  TextColumn get domainId => text().withLength(min: 36, max: 36)();
+  TextColumn get domainId => text().withLength(min: 6, max: 36)();
   TextColumn get domainVersion => text().withLength(min: 1, max: 36)();
   TextColumn get aggregateId => text().withLength(min: 36, max: 36)();
   IntColumn get sequence => integer()();

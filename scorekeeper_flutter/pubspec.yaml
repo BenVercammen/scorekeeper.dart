@@ -33,8 +33,8 @@ dependencies:
     path: ../scorekeeper_core
   scorekeeper_domain:
     path: ../scorekeeper_domain
-  scorekeeper_eventstore_moor:
-    path: ../scorekeeper_eventstore_moor
+  scorekeeper_event_store_moor:
+    path: ../scorekeeper_event_store_moor
   scorekeeper_example_domain:
     path: ../scorekeeper_example_domain
   uuid: ^3.0.3

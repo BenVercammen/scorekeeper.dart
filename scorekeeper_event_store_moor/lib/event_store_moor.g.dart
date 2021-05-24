@@ -421,7 +421,7 @@ class $DomainEventTableTable extends DomainEventTable
   late final GeneratedTextColumn producerId = _constructProducerId();
   GeneratedTextColumn _constructProducerId() {
     return GeneratedTextColumn('producer_id', $tableName, false,
-        minTextLength: 36, maxTextLength: 36);
+        minTextLength: 6, maxTextLength: 36);
   }
 
   final VerificationMeta _applicationVersionMeta =
@@ -439,7 +439,7 @@ class $DomainEventTableTable extends DomainEventTable
   late final GeneratedTextColumn domainId = _constructDomainId();
   GeneratedTextColumn _constructDomainId() {
     return GeneratedTextColumn('domain_id', $tableName, false,
-        minTextLength: 36, maxTextLength: 36);
+        minTextLength: 6, maxTextLength: 36);
   }
 
   final VerificationMeta _domainVersionMeta =
