@@ -53,6 +53,8 @@ abstract class EventStore {
 
   Future<bool> isRegisteredAggregateId(AggregateId aggregateId);
 
+  Stream<AggregateId> registeredAggregateIds();
+
 }
 
 /// Exception to be thrown in case an invalid Event is being stored or handled.
@@ -148,10 +150,9 @@ class EventStoreInMemoryImpl extends EventStore {
     }
   }
 
-
   @override
   Future<void> storeSystemEvent(SystemEvent event) async {
-    _systemEventStore.add(event);
+    return Future.sync(() => _systemEventStore.add(event));
   }
 
   /// TODO: I want this to be a stream as this could end up being very large,
@@ -224,6 +225,11 @@ class EventStoreInMemoryImpl extends EventStore {
     return Future.sync(() => _domainEventStore.containsKey(aggregateId)
         ? _domainEventStore[aggregateId]!.length
         : 0);
+  }
+
+  @override
+  Stream<AggregateId> registeredAggregateIds() {
+    return Stream.fromIterable(_registeredAggregateIds);
   }
 }
 

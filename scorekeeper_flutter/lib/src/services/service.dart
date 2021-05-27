@@ -23,7 +23,7 @@ class ScorekeeperService {
       ..aggregateId = aggregateId.id
       ..name = scorableName;
     await _scorekeeper.handleCommand(command);
-    return _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
+    return await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
   }
 
   /// Add a newly created Participant to the Scorable
@@ -42,7 +42,13 @@ class ScorekeeperService {
   }
 
   /// Load Scorables ordered descending by last modified date
-  OrderedSet<MuurkeKlopNDownDto> loadScorables(int page, int pageSize) {
+  /// TODO: for now it's loading ALL aggregates, this needs to be fixed!
+  Future<OrderedSet<MuurkeKlopNDownDto>> loadScorables(int page, int pageSize) async {
+    final registeredAggregateIds = await _scorekeeper.registeredAggregateIds.toSet();
+    final cachedAggregates = <MuurkeKlopNDownDto>{};
+    registeredAggregateIds.forEach((a) async =>
+      await cachedAggregates.add(await _scorekeeper.getCachedAggregateDtoById(a))
+    );
     final allDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
       if (null == dto2.lastModified && null == dto1.lastModified) {
         return 0;
@@ -55,7 +61,7 @@ class ScorekeeperService {
       }
       return dto2.lastModified!.millisecondsSinceEpoch - dto1.lastModified!.millisecondsSinceEpoch;
     })
-      ..addAll(_scorekeeper.registeredAggregateIds.map(_scorekeeper.getCachedAggregateDtoById));
+      ..addAll(cachedAggregates);
     final resultDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
       return dto2.lastModified!.millisecondsSinceEpoch - dto1.lastModified!.millisecondsSinceEpoch;
     });

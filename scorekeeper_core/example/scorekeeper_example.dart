@@ -30,7 +30,7 @@ void main() async {
   await scorekeeper.handleCommand(addParticipantCommand);
 
   // Retrieve (cached) aggregate
-  final scorable = scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
+  final scorable = await scorekeeper.getCachedAggregateDtoById<ScorableDto>(aggregateId);
 
   // Query the Scorable aggregate DTO...
   print(scorable.participants);

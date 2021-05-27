@@ -581,7 +581,7 @@ class $DomainEventTableTable extends DomainEventTable
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => <GeneratedColumn>{};
+  Set<GeneratedColumn> get $primaryKey => {eventId};
   @override
   DomainEventData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : null;
@@ -596,32 +596,32 @@ class $DomainEventTableTable extends DomainEventTable
 
 class RegisteredAggregateData extends DataClass
     implements Insertable<RegisteredAggregateData> {
-  final DateTime timestamp;
   final String aggregateId;
-  RegisteredAggregateData({required this.timestamp, required this.aggregateId});
+  final DateTime timestamp;
+  RegisteredAggregateData({required this.aggregateId, required this.timestamp});
   factory RegisteredAggregateData.fromData(
       Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return RegisteredAggregateData(
-      timestamp: const DateTimeType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}timestamp'])!,
       aggregateId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}aggregate_id'])!,
+      timestamp: const DateTimeType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}timestamp'])!,
     );
   }
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['timestamp'] = Variable<DateTime>(timestamp);
     map['aggregate_id'] = Variable<String>(aggregateId);
+    map['timestamp'] = Variable<DateTime>(timestamp);
     return map;
   }
 
   RegisteredAggregateTableCompanion toCompanion(bool nullToAbsent) {
     return RegisteredAggregateTableCompanion(
-      timestamp: Value(timestamp),
       aggregateId: Value(aggregateId),
+      timestamp: Value(timestamp),
     );
   }
 
@@ -629,83 +629,83 @@ class RegisteredAggregateData extends DataClass
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return RegisteredAggregateData(
-      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       aggregateId: serializer.fromJson<String>(json['aggregateId']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'timestamp': serializer.toJson<DateTime>(timestamp),
       'aggregateId': serializer.toJson<String>(aggregateId),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
     };
   }
 
   RegisteredAggregateData copyWith(
-          {DateTime? timestamp, String? aggregateId}) =>
+          {String? aggregateId, DateTime? timestamp}) =>
       RegisteredAggregateData(
-        timestamp: timestamp ?? this.timestamp,
         aggregateId: aggregateId ?? this.aggregateId,
+        timestamp: timestamp ?? this.timestamp,
       );
   @override
   String toString() {
     return (StringBuffer('RegisteredAggregateData(')
-          ..write('timestamp: $timestamp, ')
-          ..write('aggregateId: $aggregateId')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('timestamp: $timestamp')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(timestamp.hashCode, aggregateId.hashCode));
+  int get hashCode => $mrjf($mrjc(aggregateId.hashCode, timestamp.hashCode));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is RegisteredAggregateData &&
-          other.timestamp == this.timestamp &&
-          other.aggregateId == this.aggregateId);
+          other.aggregateId == this.aggregateId &&
+          other.timestamp == this.timestamp);
 }
 
 class RegisteredAggregateTableCompanion
     extends UpdateCompanion<RegisteredAggregateData> {
-  final Value<DateTime> timestamp;
   final Value<String> aggregateId;
+  final Value<DateTime> timestamp;
   const RegisteredAggregateTableCompanion({
-    this.timestamp = const Value.absent(),
     this.aggregateId = const Value.absent(),
+    this.timestamp = const Value.absent(),
   });
   RegisteredAggregateTableCompanion.insert({
-    required DateTime timestamp,
     required String aggregateId,
-  })  : timestamp = Value(timestamp),
-        aggregateId = Value(aggregateId);
+    required DateTime timestamp,
+  })  : aggregateId = Value(aggregateId),
+        timestamp = Value(timestamp);
   static Insertable<RegisteredAggregateData> custom({
-    Expression<DateTime>? timestamp,
     Expression<String>? aggregateId,
+    Expression<DateTime>? timestamp,
   }) {
     return RawValuesInsertable({
-      if (timestamp != null) 'timestamp': timestamp,
       if (aggregateId != null) 'aggregate_id': aggregateId,
+      if (timestamp != null) 'timestamp': timestamp,
     });
   }
 
   RegisteredAggregateTableCompanion copyWith(
-      {Value<DateTime>? timestamp, Value<String>? aggregateId}) {
+      {Value<String>? aggregateId, Value<DateTime>? timestamp}) {
     return RegisteredAggregateTableCompanion(
-      timestamp: timestamp ?? this.timestamp,
       aggregateId: aggregateId ?? this.aggregateId,
+      timestamp: timestamp ?? this.timestamp,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (timestamp.present) {
-      map['timestamp'] = Variable<DateTime>(timestamp.value);
-    }
     if (aggregateId.present) {
       map['aggregate_id'] = Variable<String>(aggregateId.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
     }
     return map;
   }
@@ -713,8 +713,8 @@ class RegisteredAggregateTableCompanion
   @override
   String toString() {
     return (StringBuffer('RegisteredAggregateTableCompanion(')
-          ..write('timestamp: $timestamp, ')
-          ..write('aggregateId: $aggregateId')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('timestamp: $timestamp')
           ..write(')'))
         .toString();
   }
@@ -725,6 +725,15 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
   final GeneratedDatabase _db;
   final String? _alias;
   $RegisteredAggregateTableTable(this._db, [this._alias]);
+  final VerificationMeta _aggregateIdMeta =
+      const VerificationMeta('aggregateId');
+  @override
+  late final GeneratedTextColumn aggregateId = _constructAggregateId();
+  GeneratedTextColumn _constructAggregateId() {
+    return GeneratedTextColumn('aggregate_id', $tableName, false,
+        minTextLength: 36, maxTextLength: 36);
+  }
+
   final VerificationMeta _timestampMeta = const VerificationMeta('timestamp');
   @override
   late final GeneratedDateTimeColumn timestamp = _constructTimestamp();
@@ -736,17 +745,8 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
     );
   }
 
-  final VerificationMeta _aggregateIdMeta =
-      const VerificationMeta('aggregateId');
   @override
-  late final GeneratedTextColumn aggregateId = _constructAggregateId();
-  GeneratedTextColumn _constructAggregateId() {
-    return GeneratedTextColumn('aggregate_id', $tableName, false,
-        minTextLength: 36, maxTextLength: 36);
-  }
-
-  @override
-  List<GeneratedColumn> get $columns => [timestamp, aggregateId];
+  List<GeneratedColumn> get $columns => [aggregateId, timestamp];
   @override
   $RegisteredAggregateTableTable get asDslTable => this;
   @override
@@ -759,12 +759,6 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('timestamp')) {
-      context.handle(_timestampMeta,
-          timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
-    } else if (isInserting) {
-      context.missing(_timestampMeta);
-    }
     if (data.containsKey('aggregate_id')) {
       context.handle(
           _aggregateIdMeta,
@@ -773,11 +767,17 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
     } else if (isInserting) {
       context.missing(_aggregateIdMeta);
     }
+    if (data.containsKey('timestamp')) {
+      context.handle(_timestampMeta,
+          timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => <GeneratedColumn>{};
+  Set<GeneratedColumn> get $primaryKey => {aggregateId};
   @override
   RegisteredAggregateData map(Map<String, dynamic> data,
       {String? tablePrefix}) {

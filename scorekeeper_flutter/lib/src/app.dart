@@ -26,7 +26,7 @@ class ScorableApp extends StatelessWidget {
     return MaterialApp(
       title: 'Scorekeeper Demo Application - Muurke Klop',
       theme: ThemeData(
-        primarySwatch: Colors.purple,
+        primarySwatch: Colors.blueGrey,
       ),
       // home: ScorableOverviewPage(title: 'Scorekeeper Demo Application - Muurke Klop', scorekeeperService: _scorekeeperService),
       home: LoginScreen(scorekeeperService: _scorekeeperService),

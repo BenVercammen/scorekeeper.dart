@@ -15,11 +15,6 @@ class Scorekeeper {
   /// The EventStore for storing DomainEvents of the local Scorekeeper instance
   late EventStore _eventStore;
 
-  /// Map of aggregates this Scorekeeper needs to follow up on.
-  /// In order to receive events from external source,
-  /// the relevant Aggregate Id and name needs to be registered in this list
-  final Map<AggregateId, Type> _registeredAggregates = HashMap();
-
   /// The cache in which to store the hydrated aggregate
   late AggregateCache _aggregateCache;
 
@@ -61,14 +56,12 @@ class Scorekeeper {
       _logger.i('No remote event listener was passed along, so no remote events will be applied on the local machine');
     }
     _remoteEventListener = remoteEventListener;
-    // Make sure that the local event manager keeps track only of the registered AggregateIds
-    _eventStore.registerAggregateIds(_registeredAggregates.keys);
 
     // Listen to the RemoteEventListener's event stream
     _remoteEventListener?.domainEventStream.listen((DomainEvent event) async {
       _logger.d('Received remote event');
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
-      if (_registeredAggregates.containsKey(event.aggregateId)) {
+      if (await isRegistered(event.aggregateId)) {
         try {
           await _eventStore.storeDomainEvent(event);
           // If the event relates to a cached aggregate, we'll handle it immediately
@@ -86,7 +79,7 @@ class Scorekeeper {
   }
 
   /// Get the registered AggregateIds
-  Set<AggregateId> get registeredAggregateIds => Set.from(_registeredAggregates.keys);
+  Stream<AggregateId> get registeredAggregateIds => _eventStore.registeredAggregateIds();
 
   /// Register the given event handler
   void registerEventHandler(EventHandler handler) {
@@ -111,14 +104,14 @@ class Scorekeeper {
   /// Add an aggregate as being available within the current Scorekeeper instance.
   /// This is important as otherwise aggregates from outside this instance won't be available.
   void registerAggregate(AggregateId aggregateId, Type aggregateType) {
-    _registeredAggregates.putIfAbsent(aggregateId, () => aggregateType);
+    // _registeredAggregates.putIfAbsent(aggregateId, () => aggregateType);
     _eventStore.registerAggregateId(aggregateId);
   }
 
   /// Mark an aggregate as no longer being registered.
   /// Removes a "cached" aggregate from this scorekeeper instance and stops listening for (domain) events of that aggregate.
   void unregisterAggregate(AggregateId aggregateId) {
-    _registeredAggregates.remove(aggregateId);
+    // _registeredAggregates.remove(aggregateId);
     _aggregateCache.purge(aggregateId);
     _eventStore.unregisterAggregateId(aggregateId);
   }
@@ -133,13 +126,18 @@ class Scorekeeper {
     // De appliedEvents nog effectief handlen
     print('============= De appliedEvents nog effectief handlen');
     await _handleEventsAppliedByCommand(aggregate);
-
   }
 
   /// Load an aggregate by id from the cache...
   /// This is actually a DTO wrapped around a private reference to the actual aggregate,
   /// so we are sure that any changes to the aggregate immediately reflect the DTO
-  T getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) {
+  Future<T> getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) async {
+    // TODO: if not exists, make sure to rehydrate from events...
+    if (!_aggregateCache.contains(aggregateId)) {
+      // TODO: hmm, nog die types meegeven/bewaren???
+      final aggregate = await _loadHydratedAggregate(MuurkeKlopNDown, aggregateId);
+      _aggregateCache.store(aggregate);
+    }
     return AggregateDtoFactory.create(_aggregateCache.get(aggregateId));
   }
 
@@ -156,8 +154,8 @@ class Scorekeeper {
     }
   }
 
-  bool isRegistered(AggregateId aggregateId) {
-    return _registeredAggregates.containsKey(aggregateId);
+  Future<bool> isRegistered(AggregateId aggregateId) async {
+    return await _eventStore.isRegisteredAggregateId(aggregateId);
   }
 
   Future<void> refreshCache(Type aggregateType, AggregateId aggregateId) async {
@@ -269,7 +267,7 @@ class Scorekeeper {
   Future<void> _handleRemoteEvent(DomainEvent domainEvent) async {
     // Kijken of we de aggregate van dit event in't oog houden of niet...
     final aggregateId = domainEvent.aggregateId;
-    if (!_registeredAggregates.containsKey(aggregateId)) {
+    if (!await isRegistered(aggregateId)) {
       _logger.w('Ignoring $domainEvent for unregistered aggregate $aggregateId');
       return;
     }
@@ -301,6 +299,7 @@ class Scorekeeper {
     // Alle events die we al hebben eerst nog apply'en!
     _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((DomainEvent domainEvent) {
       _logger.d('Handling event triggered by hydration: $domainEvent');
+      // TODO: nog testen dat payload van en naar string tegoei wordt ge(de)serializeerd...
       eventHandler.handle(aggregate, domainEvent);
     });
     return aggregate as T;

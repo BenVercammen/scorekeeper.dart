@@ -5,7 +5,7 @@ import 'package:moor/moor.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_event_store_moor/event_store_moor.dart';
+import 'package:scorekeeper_event_store_moor/src/event_store_moor.dart';
 import 'package:test/test.dart';
 
 import 'package:path/path.dart' as p;
@@ -28,6 +28,15 @@ class TestEventStoreMoorImpl extends EventStoreMoorImpl {
   }
 }
 
+class _TestDomainEvent {
+  final String eventId;
+  final DateTime timestamp;
+  final String? userId;
+  final String? processId;
+
+  _TestDomainEvent(this.eventId, this.timestamp, this.userId, this.processId);
+}
+
 /// We test specific implementation of the EventStoreMoorImpl class.
 void main() {
   const domainEventFactory =
@@ -45,11 +54,27 @@ void main() {
   group('RegisteredAggregateId', () {
     test("Write + read registered AggregateId's", () async {
       final aggregateId = AggregateId.random();
-      expect(
-          await eventStore.isRegisteredAggregateId(aggregateId), equals(false));
+      final aggregateId2 = AggregateId.random();
+      expect(await eventStore.isRegisteredAggregateId(aggregateId), equals(false));
+      expect(await eventStore.isRegisteredAggregateId(aggregateId2), equals(false));
       await eventStore.registerAggregateId(aggregateId);
-      final loaded = await eventStore.isRegisteredAggregateId(aggregateId);
-      expect(loaded, equals(true));
+      await eventStore.registerAggregateId(aggregateId);
+      expect(await eventStore.isRegisteredAggregateId(aggregateId), equals(true));
+      expect(await eventStore.isRegisteredAggregateId(aggregateId2), equals(false));
+      await eventStore.registerAggregateId(aggregateId2);
+      expect(await eventStore.isRegisteredAggregateId(aggregateId), equals(true));
+      expect(await eventStore.isRegisteredAggregateId(aggregateId2), equals(true));
+    });
+
+    test('AggregateId can only be registered once', () async {
+      final aggregateId = AggregateId.random();
+      await eventStore.registerAggregateId(aggregateId);
+      try {
+        await eventStore.registerAggregateId(aggregateId);
+        fail('AggregateId can only be registered once!');
+      } on Exception catch(e) {
+        expect(e.toString(), contains('bblabla'));
+      }
     });
 
     test('Is registered AggregateId', () async {
@@ -67,6 +92,20 @@ void main() {
         aggregateId1,
         0,
         'payload',
+      );
+      await eventStore.registerAggregateId(aggregateId1);
+      await eventStore.storeDomainEvent(domainEventToStore);
+      final loaded = await eventStore.getDomainEvents().toList();
+      expect(loaded.length, equals(1));
+      expect(loaded.first, equals(domainEventToStore));
+    });
+
+    test('Write + read DomainEvent with non-string payload', () async {
+      final aggregateId1 = AggregateId.random();
+      final domainEventToStore = domainEventFactory.local(
+        aggregateId1,
+        0,
+        _TestDomainEvent('1', DateTime.now(), 'test', 'test')
       );
       await eventStore.registerAggregateId(aggregateId1);
       await eventStore.storeDomainEvent(domainEventToStore);
