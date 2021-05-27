@@ -207,7 +207,7 @@ class ParticipantRemoved {
 ///   - for working with inside the internal state of the aggregate
 ///   - for passing along in commands & events
 ///
-/// TODO: another question, should we treat Entity/Aggregate referrin VO DTO's differently?
+/// TODO: another question, should we treat Entity/Aggregate referring VO DTO's differently?
 class Participant {
 
   final String participantId;
@@ -228,39 +228,4 @@ class Participant {
 
   @override
   int get hashCode => participantId.hashCode;
-}
-
-/// DTO that tells whether or not a given command is allowed, along with a possible reason for it.
-class CommandAllowance {
-
-  final dynamic command;
-
-  final bool isAllowed;
-
-  final String reason;
-
-  CommandAllowance(this.command, this.isAllowed, this.reason);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is CommandAllowance &&
-          runtimeType == other.runtimeType &&
-          command == other.command &&
-          isAllowed == other.isAllowed &&
-          reason == other.reason;
-
-  @override
-  int get hashCode => command.hashCode ^ isAllowed.hashCode ^ reason.hashCode;
-
-  @override
-  String toString() {
-    if (isAllowed) {
-      return '${command.runtimeType} allowed';
-    }
-    if (reason.isNotEmpty) {
-      return '${command.runtimeType} not allowed because $reason';
-    }
-    return '${command.runtimeType} not allowed';
-  }
 }

@@ -21,7 +21,7 @@ void main() {
 
     /// Events that are being applied within the aggregate, should be stored temporarily
     /// in order for the Scorekeeper application to publish them to the EventManager(s)
-    test('Apply event should add the event to the applied events', () {
+    test('Apply event should add the event to the pending events', () {
       final event = Object();
       aggregate.apply(event);
       expect(aggregate.pendingEvents, contains(event));

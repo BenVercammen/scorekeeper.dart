@@ -2,5 +2,6 @@
 library scorekeeper_domain;
 
 export 'src/aggregate.dart';
+export 'src/allowance.dart';
 export 'src/event.dart';
 export 'src/handler.dart';

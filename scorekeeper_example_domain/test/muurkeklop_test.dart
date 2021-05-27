@@ -1,3 +1,4 @@
+import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_example_domain/example.dart';
 import 'package:scorekeeper_example_domain/src/muurkeklop.dart';
 import 'package:scorekeeper_example_domain/src/muurkeklop.h.dart';

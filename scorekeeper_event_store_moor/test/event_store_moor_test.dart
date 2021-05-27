@@ -10,6 +10,8 @@ import 'package:test/test.dart';
 
 import 'package:path/path.dart' as p;
 
+import 'test_domain_event.dart';
+
 /// In order to store the .sqlite file some place else,
 /// we'll be using the temporary directory
 final tempTestDatabase = LazyDatabase(() async {
@@ -26,15 +28,6 @@ class TestEventStoreMoorImpl extends EventStoreMoorImpl {
     await delete(domainEventTable).go();
     await delete(registeredAggregateTable).go();
   }
-}
-
-class _TestDomainEvent {
-  final String eventId;
-  final DateTime timestamp;
-  final String? userId;
-  final String? processId;
-
-  _TestDomainEvent(this.eventId, this.timestamp, this.userId, this.processId);
 }
 
 /// We test specific implementation of the EventStoreMoorImpl class.
@@ -105,7 +98,7 @@ void main() {
       final domainEventToStore = domainEventFactory.local(
         aggregateId1,
         0,
-        _TestDomainEvent('1', DateTime.now(), 'test', 'test')
+        TestDomainEvent('1', DateTime.now(), 'test', 'test')
       );
       await eventStore.registerAggregateId(aggregateId1);
       await eventStore.storeDomainEvent(domainEventToStore);
