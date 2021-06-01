@@ -85,6 +85,7 @@ class DomainEventFactory<T extends Aggregate> {
         domainId: 'testDomain',
         domainVersion: 'domainVersion',
         aggregateId: aggregateId,
+        payloadType: payload.runtimeType.toString(),
         payload: payload,
         sequence: sequence);
   }

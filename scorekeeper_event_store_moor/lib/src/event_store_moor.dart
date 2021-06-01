@@ -1,4 +1,5 @@
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:moor/ffi.dart';
@@ -39,13 +40,16 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
     final list = await query.get();
     for (final event in list) {
-      yield DomainEvent(eventId: event.eventId,
-      timestamp: event.timestamp,
+      yield DomainEvent(
+          eventId: event.eventId,
+          timestamp: event.timestamp,
           producerId: event.producerId,
           applicationVersion: event.applicationVersion,
           domainId: event.domainId,
           domainVersion: event.domainVersion,
-          payload: event.payload,
+          payloadType: event.payloadType,
+          payload:
+              domainDeserializer.deserialize(event.payloadType, event.payload),
           aggregateId: AggregateId.of(event.aggregateId),
           sequence: event.sequence);
     }
@@ -91,9 +95,9 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
         domainVersion: event.domainVersion,
         aggregateId: event.aggregateId.id,
         sequence: event.sequence,
-        // TODO: serializer???
-        // https://flutter.dev/docs/development/data-and-backend/json
-        payload: event.payload.toString()));
+        payloadType: event.payloadType,
+        payload: domainSerializer.serialize(event.payload)
+    ));
   }
 
   @override
@@ -227,6 +231,7 @@ class DomainEventTable extends Table {
   TextColumn get domainVersion => text().withLength(min: 1, max: 36)();
   TextColumn get aggregateId => text().withLength(min: 36, max: 36)();
   IntColumn get sequence => integer()();
+  TextColumn get payloadType => text()();
   TextColumn get payload => text()();
 }
 

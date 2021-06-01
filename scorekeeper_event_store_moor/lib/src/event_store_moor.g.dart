@@ -18,6 +18,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
   final String domainVersion;
   final String aggregateId;
   final int sequence;
+  final String payloadType;
   final String payload;
   DomainEventData(
       {required this.eventId,
@@ -30,6 +31,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
       required this.domainVersion,
       required this.aggregateId,
       required this.sequence,
+      required this.payloadType,
       required this.payload});
   factory DomainEventData.fromData(
       Map<String, dynamic> data, GeneratedDatabase db,
@@ -56,6 +58,8 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
           .mapFromDatabaseResponse(data['${effectivePrefix}aggregate_id'])!,
       sequence: const IntType()
           .mapFromDatabaseResponse(data['${effectivePrefix}sequence'])!,
+      payloadType: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}payload_type'])!,
       payload: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}payload'])!,
     );
@@ -77,6 +81,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
     map['domain_version'] = Variable<String>(domainVersion);
     map['aggregate_id'] = Variable<String>(aggregateId);
     map['sequence'] = Variable<int>(sequence);
+    map['payload_type'] = Variable<String>(payloadType);
     map['payload'] = Variable<String>(payload);
     return map;
   }
@@ -96,6 +101,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
       domainVersion: Value(domainVersion),
       aggregateId: Value(aggregateId),
       sequence: Value(sequence),
+      payloadType: Value(payloadType),
       payload: Value(payload),
     );
   }
@@ -115,6 +121,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
       domainVersion: serializer.fromJson<String>(json['domainVersion']),
       aggregateId: serializer.fromJson<String>(json['aggregateId']),
       sequence: serializer.fromJson<int>(json['sequence']),
+      payloadType: serializer.fromJson<String>(json['payloadType']),
       payload: serializer.fromJson<String>(json['payload']),
     );
   }
@@ -132,6 +139,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
       'domainVersion': serializer.toJson<String>(domainVersion),
       'aggregateId': serializer.toJson<String>(aggregateId),
       'sequence': serializer.toJson<int>(sequence),
+      'payloadType': serializer.toJson<String>(payloadType),
       'payload': serializer.toJson<String>(payload),
     };
   }
@@ -147,6 +155,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
           String? domainVersion,
           String? aggregateId,
           int? sequence,
+          String? payloadType,
           String? payload}) =>
       DomainEventData(
         eventId: eventId ?? this.eventId,
@@ -159,6 +168,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
         domainVersion: domainVersion ?? this.domainVersion,
         aggregateId: aggregateId ?? this.aggregateId,
         sequence: sequence ?? this.sequence,
+        payloadType: payloadType ?? this.payloadType,
         payload: payload ?? this.payload,
       );
   @override
@@ -174,6 +184,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
           ..write('domainVersion: $domainVersion, ')
           ..write('aggregateId: $aggregateId, ')
           ..write('sequence: $sequence, ')
+          ..write('payloadType: $payloadType, ')
           ..write('payload: $payload')
           ..write(')'))
         .toString();
@@ -198,8 +209,10 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
                                   domainVersion.hashCode,
                                   $mrjc(
                                       aggregateId.hashCode,
-                                      $mrjc(sequence.hashCode,
-                                          payload.hashCode)))))))))));
+                                      $mrjc(
+                                          sequence.hashCode,
+                                          $mrjc(payloadType.hashCode,
+                                              payload.hashCode))))))))))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -214,6 +227,7 @@ class DomainEventData extends DataClass implements Insertable<DomainEventData> {
           other.domainVersion == this.domainVersion &&
           other.aggregateId == this.aggregateId &&
           other.sequence == this.sequence &&
+          other.payloadType == this.payloadType &&
           other.payload == this.payload);
 }
 
@@ -228,6 +242,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
   final Value<String> domainVersion;
   final Value<String> aggregateId;
   final Value<int> sequence;
+  final Value<String> payloadType;
   final Value<String> payload;
   const DomainEventTableCompanion({
     this.eventId = const Value.absent(),
@@ -240,6 +255,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
     this.domainVersion = const Value.absent(),
     this.aggregateId = const Value.absent(),
     this.sequence = const Value.absent(),
+    this.payloadType = const Value.absent(),
     this.payload = const Value.absent(),
   });
   DomainEventTableCompanion.insert({
@@ -253,6 +269,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
     required String domainVersion,
     required String aggregateId,
     required int sequence,
+    required String payloadType,
     required String payload,
   })  : eventId = Value(eventId),
         timestamp = Value(timestamp),
@@ -262,6 +279,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
         domainVersion = Value(domainVersion),
         aggregateId = Value(aggregateId),
         sequence = Value(sequence),
+        payloadType = Value(payloadType),
         payload = Value(payload);
   static Insertable<DomainEventData> custom({
     Expression<String>? eventId,
@@ -274,6 +292,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
     Expression<String>? domainVersion,
     Expression<String>? aggregateId,
     Expression<int>? sequence,
+    Expression<String>? payloadType,
     Expression<String>? payload,
   }) {
     return RawValuesInsertable({
@@ -287,6 +306,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
       if (domainVersion != null) 'domain_version': domainVersion,
       if (aggregateId != null) 'aggregate_id': aggregateId,
       if (sequence != null) 'sequence': sequence,
+      if (payloadType != null) 'payload_type': payloadType,
       if (payload != null) 'payload': payload,
     });
   }
@@ -302,6 +322,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
       Value<String>? domainVersion,
       Value<String>? aggregateId,
       Value<int>? sequence,
+      Value<String>? payloadType,
       Value<String>? payload}) {
     return DomainEventTableCompanion(
       eventId: eventId ?? this.eventId,
@@ -314,6 +335,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
       domainVersion: domainVersion ?? this.domainVersion,
       aggregateId: aggregateId ?? this.aggregateId,
       sequence: sequence ?? this.sequence,
+      payloadType: payloadType ?? this.payloadType,
       payload: payload ?? this.payload,
     );
   }
@@ -351,6 +373,9 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
     if (sequence.present) {
       map['sequence'] = Variable<int>(sequence.value);
     }
+    if (payloadType.present) {
+      map['payload_type'] = Variable<String>(payloadType.value);
+    }
     if (payload.present) {
       map['payload'] = Variable<String>(payload.value);
     }
@@ -370,6 +395,7 @@ class DomainEventTableCompanion extends UpdateCompanion<DomainEventData> {
           ..write('domainVersion: $domainVersion, ')
           ..write('aggregateId: $aggregateId, ')
           ..write('sequence: $sequence, ')
+          ..write('payloadType: $payloadType, ')
           ..write('payload: $payload')
           ..write(')'))
         .toString();
@@ -471,6 +497,18 @@ class $DomainEventTableTable extends DomainEventTable
     );
   }
 
+  final VerificationMeta _payloadTypeMeta =
+      const VerificationMeta('payloadType');
+  @override
+  late final GeneratedTextColumn payloadType = _constructPayloadType();
+  GeneratedTextColumn _constructPayloadType() {
+    return GeneratedTextColumn(
+      'payload_type',
+      $tableName,
+      false,
+    );
+  }
+
   final VerificationMeta _payloadMeta = const VerificationMeta('payload');
   @override
   late final GeneratedTextColumn payload = _constructPayload();
@@ -494,6 +532,7 @@ class $DomainEventTableTable extends DomainEventTable
         domainVersion,
         aggregateId,
         sequence,
+        payloadType,
         payload
       ];
   @override
@@ -570,6 +609,14 @@ class $DomainEventTableTable extends DomainEventTable
           sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta));
     } else if (isInserting) {
       context.missing(_sequenceMeta);
+    }
+    if (data.containsKey('payload_type')) {
+      context.handle(
+          _payloadTypeMeta,
+          payloadType.isAcceptableOrUnknown(
+              data['payload_type']!, _payloadTypeMeta));
+    } else if (isInserting) {
+      context.missing(_payloadTypeMeta);
     }
     if (data.containsKey('payload')) {
       context.handle(_payloadMeta,

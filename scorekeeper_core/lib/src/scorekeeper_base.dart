@@ -130,7 +130,7 @@ class Scorekeeper {
 
   /// Load an aggregate by id from the cache...
   /// This is actually a DTO wrapped around a private reference to the actual aggregate,
-  /// so we are sure that any changes to the aggregate immediately reflect the DTO
+  /// so we are sure that any changes to the aggregate immediately reflect in the DTO
   Future<T> getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) async {
     // TODO: if not exists, make sure to rehydrate from events...
     if (!_aggregateCache.contains(aggregateId)) {

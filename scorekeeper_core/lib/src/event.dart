@@ -291,6 +291,7 @@ class DomainEventFactory<T extends Aggregate> {
         domainId: domainId,
         domainVersion: domainVersion,
         aggregateId: aggregateId,
+        payloadType: payload.runtimeType.toString(),
         payload: payload,
         sequence: sequence);
   }

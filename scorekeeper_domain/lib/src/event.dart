@@ -40,6 +40,9 @@ abstract class Event {
   /// The version of the domain
   final String _domainVersion;
 
+  /// Identifier for the type of the payload, required for deserialization
+  final String _payloadType;
+
   /// The actual payload of the event, contains all relevant domain data
   final dynamic _payload;
 
@@ -52,6 +55,7 @@ abstract class Event {
     required String applicationVersion,
     required String domainId,
     required String domainVersion,
+    required String payloadType,
     required dynamic payload,
   })  : _eventId = eventId,
         _timestamp = timestamp,
@@ -61,6 +65,7 @@ abstract class Event {
         _applicationVersion = applicationVersion,
         _domainId = domainId,
         _domainVersion = domainVersion,
+        _payloadType = payloadType,
         _payload = payload;
 
   String get eventId => _eventId;
@@ -134,6 +139,7 @@ class DomainEvent<T extends Aggregate> extends Event {
     required String applicationVersion,
     required String domainId,
     required String domainVersion,
+    required String payloadType,
     required dynamic payload,
     required AggregateId aggregateId,
     required int sequence,
@@ -148,11 +154,14 @@ class DomainEvent<T extends Aggregate> extends Event {
             applicationVersion: applicationVersion,
             domainId: domainId,
             domainVersion: domainVersion,
+            payloadType: payloadType,
             payload: payload);
 
   AggregateId get aggregateId => _aggregateId;
 
   int get sequence => _sequence;
+
+  String get payloadType => _payloadType;
 
   @override
   bool operator ==(Object other) =>
@@ -206,6 +215,7 @@ abstract class SystemEvent extends Event {
     required String applicationVersion,
     required String domainId,
     required String domainVersion,
+    required String payloadType,
     required dynamic payload,
   })   : super(
       eventId: eventId,
@@ -216,6 +226,7 @@ abstract class SystemEvent extends Event {
       applicationVersion: applicationVersion,
       domainId: domainId,
       domainVersion: domainVersion,
+      payloadType: payloadType,
       payload: payload);
 
   /// Constructor to be used when creating a locally generated event.
@@ -253,6 +264,7 @@ class EventNotHandled<T extends Aggregate> extends SystemEvent {
       applicationVersion: applicationVersion,
       domainId: domainId,
       domainVersion: domainVersion,
+      payloadType: 'NotHandledEvent',
       payload: notHandledEvent);
 
   dynamic get notHandledEvent => _payload;
