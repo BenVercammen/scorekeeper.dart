@@ -13,7 +13,10 @@ Future<void> main() async {
 
   // Create a Scorekeeper instance
   // final eventStore = EventStoreInMemoryImpl();
-  final eventStore = EventStoreMoorImpl();
+  final domainSerializer = ExampleDomainSerializer();
+  final domainDeserializer = ExampleDomainDeserializer();
+
+  final eventStore = EventStoreMoorImpl(domainSerializer, domainDeserializer);
   final scorekeeper = Scorekeeper(
       eventStore: eventStore,
       aggregateCache: AggregateCacheInMemoryImpl(),

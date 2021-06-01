@@ -16,7 +16,11 @@ part 'event_store_moor.g.dart';
 @UseMoor(tables: [DomainEventTable, RegisteredAggregateTable])
 class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
-  EventStoreMoorImpl([LazyDatabase? database]) : super(database??_openConnection());
+  final DomainSerializer domainSerializer;
+
+  final DomainDeserializer domainDeserializer;
+
+  EventStoreMoorImpl(this.domainSerializer, this.domainDeserializer, [LazyDatabase? database]) : super(database??_openConnection());
 
   @override
   int get schemaVersion => 1;

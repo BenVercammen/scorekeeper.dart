@@ -15,6 +15,9 @@ targets:
       aggregate_dto_factory_generator:
         generate_for:
           - lib/src/scorable.dart
+      domain_serializer_generator:
+        generate_for:
+          - lib/src/scorable.dart
 
 builders:
   handler_generator:
@@ -33,5 +36,11 @@ builders:
     import: "package:scorekeeper_codegen/generator.dart"
     builder_factories: ["aggregateDtoFactoryGenerator"]
     build_extensions: {".dart": [".f.dart"]}
+    auto_apply: dependents
+    build_to: source
+  domain_serializer_generator:
+    import: "package:scorekeeper_codegen/generator.dart"
+    builder_factories: ["serializerGenerator"]
+    build_extensions: {".dart": [".s.dart"]}
     auto_apply: dependents
     build_to: source

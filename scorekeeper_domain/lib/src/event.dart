@@ -275,3 +275,12 @@ class EventNotHandled<T extends Aggregate> extends SystemEvent {
   }
 
 }
+
+
+abstract class DomainSerializer {
+  String serialize(dynamic object);
+}
+
+abstract class DomainDeserializer {
+  dynamic deserialize(String payloadType, String payload);
+}

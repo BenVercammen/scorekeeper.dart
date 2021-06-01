@@ -21,7 +21,11 @@ final tempTestDatabase = LazyDatabase(() async {
 });
 
 class TestEventStoreMoorImpl extends EventStoreMoorImpl {
-  TestEventStoreMoorImpl() : super(tempTestDatabase);
+  TestEventStoreMoorImpl() : super(
+    TestDomainEventSerializer(),
+    TestDomainEventDeserializer(),
+    tempTestDatabase
+  );
 
   @override
   Future<void> clear() async {
