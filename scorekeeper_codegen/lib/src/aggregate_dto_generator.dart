@@ -40,7 +40,8 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
     final parentDtoClass = getSuperClass(aggregate);
     final aggregateDtoBuilder = ClassBuilder()
       ..name = '${aggregateName}Dto'
-      ..extend = refer('${parentDtoClass!.name}Dto');
+      ..extend = refer('${parentDtoClass!.name}Dto')
+    ;
     // The only field this DTO will have, is a final, protected reference to the actual aggregate
     final aggregateFieldName = '_${camelName(aggregateName!)}';
     final fieldBuilder = FieldBuilder()

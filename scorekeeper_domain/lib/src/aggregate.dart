@@ -114,5 +114,10 @@ class EventHandlerAnnotation {
   const EventHandlerAnnotation();
 }
 
-/// Mark the method as an event handler. Method should take exactly one argument.
 const eventHandler = EventHandlerAnnotation();
+
+/// Annotation to mark a given aggregate method as event handler
+class RefEventHandler {
+  const RefEventHandler(this.refType);
+  final Type refType;
+}

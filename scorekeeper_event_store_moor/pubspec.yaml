@@ -23,6 +23,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+
+  json_annotation: ^4.0.1
+  json_serializable: ^4.1.3
+
+
   # Core package defining most API's
   moor: ^4.3.0
   # used to find suitable location to store sqlite database
@@ -46,6 +52,11 @@ dev_dependencies:
   scorekeeper_codegen:
     path: ../scorekeeper_codegen
   test: ^1.14.4
+
+  # for the test domain stuff...
+  scorekeeper_domain:
+    path: ../scorekeeper_domain
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

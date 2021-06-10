@@ -122,7 +122,8 @@ abstract class Event {
 /// TODO: https://medium.com/google-cloud/using-cloud-events-and-cloud-events-generator-4b71b8a90277 checken...
 /// hoe gaan we die specifiëren?
 /// DomainEvent = payload + metadata, en enkel die payload is voor onze aggregate interessant...
-class DomainEvent<T extends Aggregate> extends Event {
+// @JsonSerializable()
+class DomainEvent<T extends Aggregate> extends Event/* implements Serializable */{
 
   /// The sequence of the event
   final int _sequence;

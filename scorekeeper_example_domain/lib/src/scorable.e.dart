@@ -1,0 +1,24 @@
+part of 'scorable.dart';
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/// Event for a newly created Scorable
+// @JsonSerializable()
+class ScorableCreated {
+  late String aggregateId;
+  late String name;
+}
+
+/// Event for a newly added Participant
+class ParticipantAdded {
+  late String aggregateId;
+  late Participant participant;
+}
+
+/// Event for a removed Participant
+class ParticipantRemoved {
+  late String aggregateId;
+  late Participant participant;
+}

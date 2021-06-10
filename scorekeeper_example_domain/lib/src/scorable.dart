@@ -1,12 +1,23 @@
 
 import 'package:scorekeeper_domain/core.dart';
 
+part 'scorable.c.dart';
+part 'scorable.e.dart';
+part 'scorable.vo.dart';
+
 /// The (root) aggregate of our domain
 /// It is possible to extend this one. The generated handler classes will also contain these handler methods.
 /// TODO: only strange thing is the "CreateScorable" command that can be inherited
 ///  well, actually a custom constructor is required (or handler generator will fail)
 ///  but I guess that's the only command/event combo that explicitly uses "Scorable" in its name?
+///
+/// The reason why we want this to be overridable, is because we want to allow
+/// for multiple types of scorables within a single domain.
+///  eg: muurke klop = N-down + 3-strikes-out
+///  -> depending on the stage, the scorable type is different
+///
 @aggregate
+@AggregateAnnotation()
 class Scorable extends Aggregate {
 
   late String name;
@@ -136,96 +147,4 @@ class Scorable extends Aggregate {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-/// COMMANDS///////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// Command to create a new Scorable
-class CreateScorable {
-  late String aggregateId;
-  late String name;
-}
-
-/// Command to add a Participant to a Scorable
-/// TODO: moet ik in die commands en events ook niet meegeven voor welk type aggregate die gelden?
-/// alleszins expliciet maken dat het aan een Scorable toegevoegd wordt? desnoods in naamgeving?
-class AddParticipant {
-  late String aggregateId;
-  late Participant participant;
-}
-
-class RemoveParticipant {
-  late String aggregateId;
-  /// Note that we use a full participant object, and not just the ID.
-  /// This way we might get some extra details about the user's state
-  /// at the time of removal. This could be used in the command handler to
-  /// determine whether or not the participant is actually allowed to be removed.
-  late Participant participant;
-}
-
-class StartScorable {
-  late String aggregateId;
-}
-
-class FinishScorable {
-  late String aggregateId;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-/// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// Event for a newly created Scorable
-class ScorableCreated {
-  late String aggregateId;
-  late String name;
-}
-
-/// Event for a newly added Participant
-class ParticipantAdded {
-  late String aggregateId;
-  late Participant participant;
-}
-
-/// Event for a removed Participant
-class ParticipantRemoved {
-  late String aggregateId;
-  late Participant participant;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-/// VALUE OBJECTS /////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-/// Value object used within the Scorable aggregate
-/// TODO: are we allowed to pass these along? We'll probably have to de-dupe this usage...
-///  We now use Participant for 2 purposes:
-///   - for working with inside the internal state of the aggregate
-///   - for passing along in commands & events
-///
-/// TODO: another question, should we treat Entity/Aggregate referring VO DTO's differently?
-class Participant {
-
-  final String participantId;
-
-  final String name;
-
-  Participant(this.participantId, this.name);
-
-  @override
-  String toString() {
-    return 'Participant $name ($participantId)';
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Participant && runtimeType == other.runtimeType && participantId == other.participantId;
-
-  @override
-  int get hashCode => participantId.hashCode;
-}
+// OKAY, these classes have been moved..

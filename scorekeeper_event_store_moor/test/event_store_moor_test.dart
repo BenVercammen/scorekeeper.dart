@@ -17,6 +17,8 @@ import 'test_domain_event.dart';
 final tempTestDatabase = LazyDatabase(() async {
   final dbFolder = await getTemporaryDirectory();
   final file = File(p.join(dbFolder.path, 'db.sqlite'));
+  // TODO: bestand toch maar wegsmijten aan het begin van test run, zeker indien database schema nog vaak wijzigt..
+  print('DB FILE located in ${file.absolute.path}');
   return VmDatabase(file);
 });
 

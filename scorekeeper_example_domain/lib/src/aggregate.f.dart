@@ -4,6 +4,9 @@ import 'package:scorekeeper_example_domain/example.dart';
 class AggregateDtoFactory {
   static R create<R extends AggregateDto>(Aggregate aggregate) {
     switch (aggregate.runtimeType) {
+      case Contest:
+        final contest = aggregate as Contest;
+        return ContestDto(contest) as R;
       case MuurkeKlopNDown:
         final muurkeKlopNDown = aggregate as MuurkeKlopNDown;
         return MuurkeKlopNDownDto(muurkeKlopNDown) as R;
