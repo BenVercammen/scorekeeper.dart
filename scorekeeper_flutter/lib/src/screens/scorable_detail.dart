@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 
 import '../services/service.dart';
 

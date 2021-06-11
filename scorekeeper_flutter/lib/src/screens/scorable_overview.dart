@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 
 import '../services/service.dart';
 import 'scorable_create.dart';

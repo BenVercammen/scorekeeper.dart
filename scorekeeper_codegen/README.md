@@ -54,3 +54,19 @@ In order to build the required Command- and EventHandlers, execute:
 ``` pub run build_runner build ```
 
 
+
+
+
+TODO:
+ - deze flow wordt aangepast!
+    1. protoc generate dart classes from commands and events
+        -> kunnen we die laten "parten"??
+    2. scorekeeper_codegen "pub run build_runner build", waarbij generated event/command classes gebruikt worden
+        -> moeten we aggregates ook serializable maken?
+            -> zou handig zijn voor snapshots...
+            -> maar dan moet aggregate wel een wrapper rond een aparte "state" worden...
+                -> ipv "late String name" => "final ScorableState state;" waarin dan gewerkt kan worden met de gekende properties
+                -> en dan kan een aggregate gemakkelijk op basis van "state" gecreëerd worden...
+                -> moet die ni obv events altijd aangemaakt worden? => NOPE: snapshots!
+        -> zullen beginnen met events & commands
+       

@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
-import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 import 'package:scorekeeper_flutter/src/app.dart';
 import 'package:scorekeeper_flutter/src/services/service.dart';
 

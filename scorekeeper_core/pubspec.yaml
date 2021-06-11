@@ -12,8 +12,8 @@ dependencies:
   ordered_set: ^3.0.0
   scorekeeper_domain:
     path: ../scorekeeper_domain
-  scorekeeper_example_domain:
-    path: ../scorekeeper_example_domain
+  scorekeeper_domain_scorable:
+    path: ../scorekeeper_domain_scorable
   uuid: ^3.0.3
 
 dev_dependencies:

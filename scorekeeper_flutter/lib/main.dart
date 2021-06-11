@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_event_store_moor/event_store_moor.dart';
-import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 
 import 'src/app.dart';
 import 'src/services/service.dart';

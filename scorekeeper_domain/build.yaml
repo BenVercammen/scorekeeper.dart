@@ -8,16 +8,16 @@ targets:
     builders:
       handler_generator:
         generate_for:
-          - lib/src/scorable.dart
+          - lib/src/contest.dart
       aggregate_dto_generator:
         generate_for:
-          - lib/src/scorable.dart
+          - lib/src/contest.dart
       aggregate_dto_factory_generator:
         generate_for:
-          - lib/src/scorable.dart
+          - lib/src/contest.dart
       domain_serializer_generator:
         generate_for:
-          - lib/src/scorable.dart
+          - lib/src/contest.dart
 
 builders:
   handler_generator:

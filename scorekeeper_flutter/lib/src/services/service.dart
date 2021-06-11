@@ -1,7 +1,7 @@
 import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_example_domain/example.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 import 'package:uuid/uuid.dart';
 
 /// An API implementation designed specifically for the UI
