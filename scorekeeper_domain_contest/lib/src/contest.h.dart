@@ -6,6 +6,7 @@
 
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_domain/src/aggregate.dart';
+import 'package:scorekeeper_domain_contest/contest.dart';
 import 'package:scorekeeper_domain_contest/src/contest.dart';
 
 class ContestCommandHandler implements CommandHandler<Contest> {

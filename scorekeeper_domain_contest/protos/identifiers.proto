@@ -1,0 +1,11 @@
+syntax = "proto3";
+package io.scorekeeper.identifiers;
+
+message ContestId {
+  string uuid = 1;
+}
+
+message ParticipantId {
+  string uuid = 1;
+}
+

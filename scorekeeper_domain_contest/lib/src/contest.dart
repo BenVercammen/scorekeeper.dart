@@ -1,5 +1,6 @@
 
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_domain_contest/contest.dart';
 
 
 /// The (root) aggregate of our domain
@@ -20,8 +21,8 @@ class Contest extends Aggregate {
   @commandHandler
   Contest.command(CreateContest command) : super(AggregateId.of(command.aggregateId)) {
     final event = ContestCreated()
-      ..aggregateId = command.aggregateId
-      ..name = command.name;
+      ..contestId = ContestId(uuid: command.aggregateId)
+      ..contestName = command.name;
     apply(event);
   }
 
@@ -72,7 +73,7 @@ class Contest extends Aggregate {
 
   @eventHandler
   void handleContestCreated(ContestCreated event) {
-    name = event.name;
+    name = event.contestName;
   }
 
   @eventHandler
@@ -89,12 +90,12 @@ class Contest extends Aggregate {
 
   // Child aggregate Event Handlers
 
-  // TODO: zoiet in den aard?
-  @RefEventHandler(ScorableRef)
-  void handleScorableCreated(ScorableCreated event) {
-    // TODO: dit is pas verder uit te werken zodra we aggregates gaan linken...
-    // nu eerst voort doen met serialization!
-  }
+  // // TODO: zoiet in den aard?
+  // @RefEventHandler(ScorableRef)
+  // void handleScorableCreated(ScorableCreated event) {
+  //   // TODO: dit is pas verder uit te werken zodra we aggregates gaan linken...
+  //   // nu eerst voort doen met serialization!
+  // }
 
 
   @override
@@ -163,11 +164,11 @@ class AddScorable {
 /// EVENTS ////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Event for a newly created Contest
-class ContestCreated {
-  late String aggregateId;
-  late String name;
-}
+// /// Event for a newly created Contest
+// class ContestCreated {
+//   late String aggregateId;
+//   late String name;
+// }
 
 /// Event for a newly added Participant
 class ParticipantAdded {

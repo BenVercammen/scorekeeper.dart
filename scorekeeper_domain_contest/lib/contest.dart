@@ -5,4 +5,7 @@ export 'src/aggregate.f.dart';
 export 'src/contest.d.dart';
 export 'src/contest.dart';
 export 'src/contest.h.dart';
-// export 'src/serializer.s.dart';
+export 'src/serializer.s.dart';
+
+export 'src/generated/events.pb.dart';
+export 'src/generated/identifiers.pb.dart';
