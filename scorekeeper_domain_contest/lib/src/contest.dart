@@ -87,7 +87,6 @@ class Contest extends Aggregate {
     participants.remove(event.participant);
   }
 
-
   // Child aggregate Event Handlers
 
   // // TODO: zoiet in den aard?
@@ -96,7 +95,6 @@ class Contest extends Aggregate {
   //   // TODO: dit is pas verder uit te werken zodra we aggregates gaan linken...
   //   // nu eerst voort doen met serialization!
   // }
-
 
   @override
   String toString() {

@@ -6,8 +6,8 @@
 
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_domain/src/aggregate.dart';
-import 'package:scorekeeper_domain_contest/contest.dart';
 import 'package:scorekeeper_domain_contest/src/contest.dart';
+import 'package:scorekeeper_domain_contest/src/generated/events.pb.dart';
 
 class ContestCommandHandler implements CommandHandler<Contest> {
   @override

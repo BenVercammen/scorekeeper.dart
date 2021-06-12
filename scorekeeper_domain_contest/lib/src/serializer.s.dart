@@ -1,6 +1,5 @@
-
+import 'package:scorekeeper_domain_contest/src/generated/events.pb.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_domain_contest/contest.dart';
 
 class ContestSerializer implements DomainSerializer {
   @override
@@ -8,27 +7,28 @@ class ContestSerializer implements DomainSerializer {
     switch (object.runtimeType) {
       case String:
         return object.toString();
-    case ContestCreated:
-      return (object as ContestCreated).writeToJson();
-    default:
-      throw Exception('CANNOT SERIALIZE ${object.runtimeType}');
+      case EventMetadata:
+        return (object as EventMetadata).writeToJson();
+      case ContestCreated:
+        return (object as ContestCreated).writeToJson();
+      default:
+        throw Exception('Cannot serialize "${object.runtimeType}"');
     }
   }
 }
 
-// TODO: in domain te laten genereren!
 class ContestDeserializer implements DomainDeserializer {
   @override
   dynamic deserialize(String payloadType, String serialized) {
     switch (payloadType) {
       case 'String':
         return serialized;
+      case 'EventMetadata':
+        return EventMetadata.fromJson(serialized);
       case 'ContestCreated':
         return ContestCreated.fromJson(serialized);
       default:
-        throw Exception('CANNOT DESERIALIZE "$payloadType"');
+        throw Exception('Cannot deserialize "$payloadType"');
     }
   }
-
 }
-
