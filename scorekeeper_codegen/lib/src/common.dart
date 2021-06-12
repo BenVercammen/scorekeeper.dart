@@ -55,11 +55,17 @@ Set<String> getRelevantImports(List<Element> list) {
     // element.library?.imports.map((importElement) {
     //    return importElement.importedLibrary;
     // });
-    // TODO: In case of inheritance, we'll also need to make sure to get the import for the parent class
+    // In case of inheritance, we'll also need to make sure to get the import for the parent class
     if (element is ClassElement) {
       final superclass = getSuperClass(element);
       if (null != superclass) {
         fullImports.add(superclass.library.identifier);
+      }
+    }
+    // In case of method, make sure that we have imports for the parameter classes...
+    if (element is MethodElement) {
+      for (final parameter in element.parameters) {
+        fullImports.add(parameter.type.element!.location!.components[0]);
       }
     }
     final fullLibraryIdentifier = element.library!.identifier;
