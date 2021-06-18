@@ -5,10 +5,14 @@
 // **************************************************************************
 
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_domain_scorable/src/muurkeklop.d.dart';
 import 'package:scorekeeper_domain_scorable/src/scorable.dart';
 import 'package:scorekeeper_domain_scorable/src/muurkeklop.dart';
+import 'package:scorekeeper_domain_scorable/src/generated/commands.pb.dart';
+import 'package:scorekeeper_domain_scorable/src/generated/events.pb.dart';
 
-class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
+class MuurkeKlopNDownCommandHandler
+    implements CommandHandler<MuurkeKlopNDown, MuurkeKlopNDownAggregateId> {
   @override
   bool isConstructorCommand(dynamic command) {
     return command is CreateScorable;
@@ -64,8 +68,9 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
   }
 
   @override
-  MuurkeKlopNDown newInstance(AggregateId aggregateId) {
-    return MuurkeKlopNDown.aggregateId(aggregateId);
+  MuurkeKlopNDown newInstance(
+      MuurkeKlopNDownAggregateId muurkeKlopNDownAggregateId) {
+    return MuurkeKlopNDown.aggregateId(muurkeKlopNDownAggregateId);
   }
 
   @override
@@ -89,7 +94,8 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
   }
 }
 
-class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
+class MuurkeKlopNDownEventHandler
+    implements EventHandler<MuurkeKlopNDown, MuurkeKlopNDownAggregateId> {
   @override
   void handle(MuurkeKlopNDown muurkeKlopNDown, DomainEvent event) {
     switch (event.payload.runtimeType) {
@@ -141,8 +147,9 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
   }
 
   @override
-  MuurkeKlopNDown newInstance(AggregateId aggregateId) {
-    return MuurkeKlopNDown.aggregateId(aggregateId);
+  MuurkeKlopNDown newInstance(
+      MuurkeKlopNDownAggregateId muurkeKlopNDownAggregateId) {
+    return MuurkeKlopNDown.aggregateId(muurkeKlopNDownAggregateId);
   }
 
   @override

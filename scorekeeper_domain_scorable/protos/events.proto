@@ -1,0 +1,97 @@
+syntax = "proto3";
+package io.scorekeeper.scorable;
+
+import "identifiers.proto";
+
+// Value Objects
+
+message EventMetadata {
+  string eventId = 1;
+  // TODO: dit is dan string, die andere zijn effectief "Id" objects... waarom niet alles in string zetten?
+  string aggregateId = 2;
+  int64 sequence = 3;
+  string aggregateType = 4;
+  string eventType = 5;
+  // TODO: user, timestamp, machine, ... etc!
+}
+
+message Participant {
+  io.scorekeeper.identifiers.ParticipantId participantId = 1;
+  string participantName = 2;
+}
+
+// Events
+
+message ScorableCreated {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string name = 3;
+}
+
+message ParticipantAdded {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  Participant participant = 3;
+}
+
+message ParticipantRemoved {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  Participant participant = 3;
+}
+
+
+
+
+
+/// Muurke Klop /////////////////////////////////////////////////////////////////////////////////////////
+
+message ParticipantStruckOut {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  Participant participant = 3;
+  int32 roundIndex = 4;
+}
+
+message ParticipantStrikeOutUndone {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  Participant participant = 3;
+  int32 roundIndex = 4;
+}
+
+message RoundAdded {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  int32 roundIndex = 3;
+}
+
+message RoundRemoved {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  int32 roundIndex = 3;
+}
+
+message RoundStarted {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  int32 roundIndex = 3;
+}
+
+message RoundFinished {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  int32 roundIndex = 3;
+}
+
+message RoundPaused {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  int32 roundIndex = 3;
+}
+
+message RoundResumed {
+  EventMetadata metadata = 1;
+  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  int32 roundIndex = 3;
+}

@@ -21,3 +21,4 @@
 ## Troubleshooting
  - ``Target of URI doesn't exist: 'package:protobuf/protobuf.dart'. (Documentation)``
     - Make sure your pubspec contains the `protobuf: 2.0.0` dependency
+

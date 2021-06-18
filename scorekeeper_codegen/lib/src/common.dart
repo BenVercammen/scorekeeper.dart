@@ -1,5 +1,6 @@
 
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 
 
 /// Generate a "camelCase" name for a given string.
@@ -66,6 +67,12 @@ Set<String> getRelevantImports(List<Element> list) {
     if (element is MethodElement) {
       for (final parameter in element.parameters) {
         fullImports.add(parameter.type.element!.location!.components[0]);
+      }
+    }
+    // In case of field, make sure that we have imports for typed parameter classes...
+    if (element is FieldElement && element.type is InterfaceType) {
+      for (final parameter in (element.type as InterfaceType).typeArguments) {
+        fullImports.add(parameter.element!.location!.components[0]);
       }
     }
     final fullLibraryIdentifier = element.library!.identifier;

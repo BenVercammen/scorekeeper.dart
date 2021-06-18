@@ -258,7 +258,7 @@ class Scorekeeper {
   }
 
   AggregateId _extractAggregateId(command) {
-    final aggregateId = AggregateId.of(command.aggregateId as String);
+    final aggregateId = ScorableAggregateId.of(command.aggregateId as String);
     return aggregateId;
   }
 
@@ -305,7 +305,7 @@ class Scorekeeper {
     return aggregate as T;
   }
 
-  CommandHandler<Aggregate> _getCommandHandlerFor(dynamic command) {
+  CommandHandler<Aggregate, AggregateId> _getCommandHandlerFor(dynamic command) {
     final handlers = _commandHandlers.where((handler) => handler.handles(command)).toSet();
     if (handlers.isEmpty) {
       throw UnsupportedCommandException(command);

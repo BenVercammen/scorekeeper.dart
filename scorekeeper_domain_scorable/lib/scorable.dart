@@ -9,3 +9,7 @@ export 'src/serializer.s.dart';
 export 'src/scorable.d.dart';
 export 'src/scorable.dart';
 export 'src/scorable.h.dart';
+
+export 'src/generated/commands.pb.dart';
+export 'src/generated/events.pb.dart';
+export 'src/generated/identifiers.pb.dart';

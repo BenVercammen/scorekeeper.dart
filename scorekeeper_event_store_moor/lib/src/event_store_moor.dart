@@ -20,7 +20,14 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   final DomainDeserializer domainDeserializer;
 
-  EventStoreMoorImpl(this.domainSerializer, this.domainDeserializer, [LazyDatabase? database]) : super(database??_openConnection());
+  final AggregateIdFactory aggregateIdFactory;
+
+  EventStoreMoorImpl(
+      this.domainSerializer,
+      this.domainDeserializer,
+      this.aggregateIdFactory,
+      [LazyDatabase? database])
+      : super(database ?? _openConnection());
 
   @override
   int get schemaVersion => 1;
@@ -33,7 +40,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   }
 
   @override
-  Stream<DomainEvent<Aggregate>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) async* {
+  Stream<DomainEvent<Aggregate, AggregateId>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) async* {
     final query = select(domainEventTable);
     if (aggregateId != null) {
       query.where((e) => e.aggregateId.equals(aggregateId.id));
@@ -44,7 +51,8 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
     final list = await query.get();
     for (final event in list) {
-      yield DomainEvent(
+      final payload = domainDeserializer.deserialize(event.payloadType, event.payload);
+      yield DomainEvent<Aggregate, AggregateId>(
           eventId: event.eventId,
           timestamp: event.timestamp,
           producerId: event.producerId,
@@ -52,9 +60,8 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
           domainId: event.domainId,
           domainVersion: event.domainVersion,
           payloadType: event.payloadType,
-          payload:
-              domainDeserializer.deserialize(event.payloadType, event.payload),
-          aggregateId: AggregateId.of(event.aggregateId),
+          payload: payload,
+          aggregateId: (payload as Aggregate).aggregateId,
           sequence: event.sequence);
     }
   }
@@ -77,7 +84,10 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
       return;
     }
     await into(registeredAggregateTable).insert(RegisteredAggregateData(
-        timestamp: DateTime.now(), aggregateId: aggregateId.id));
+      aggregateId: aggregateId.id,
+      aggregateType: aggregateId.type.toString(),
+      timestamp: DateTime.now(),
+    ));
   }
 
   @override
@@ -86,7 +96,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   }
 
   @override
-  Future<void> storeDomainEvent(DomainEvent<Aggregate> event) async {
+  Future<void> storeDomainEvent(DomainEvent event) async {
     await validateDomainEvent(event);
     await into(domainEventTable).insert(DomainEventData(
         eventId: event.eventId,
@@ -198,7 +208,18 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
     // TODO: is geen stream he, kan nog problemen opleveren, niet?
     final list = await select(registeredAggregateTable).get();
     for (final aggregate in list) {
-      yield AggregateId.of(aggregate.aggregateId);
+
+
+      /// TODO: oké, ik ben veeeeeeeeeel te veel tijd en moeite aan't steken in die "AggregateId" subclasses :/
+      ///  -> is dat écht nodig?
+      ///   + duidelijk in API waar we mee bezig zijn
+      ///   - veel generics, factories, IOC, ... om weinig gedaan te krijgen
+      ///   - aggregateId's gaan echt gewoon UUID + AggregateType zijn, nooit meer...
+      ///   -> AggregateDto moet wel zorgen voor het aanmaken van AggregateId??
+      ///
+      ///  => dus, schrappen die shit?
+
+      yield aggregateIdFactory.of(aggregate.aggregateId, aggregate.aggregateType);
     }
   }
 
@@ -246,6 +267,13 @@ class RegisteredAggregateTable extends Table {
   @override
   Set<Column> get primaryKey => {aggregateId};
 
+  /// The UUID of the AggregateId
   TextColumn get aggregateId => text().withLength(min: 36, max: 36)();
+
+  /// The Type of the Aggregate to which the Id points
+  /// Required in order to instantiate the correct AggregateId subclass
+  TextColumn get aggregateType => text().withLength(min: 1, max: 48)();
+
+  /// TODO: other metadata...
   DateTimeColumn get timestamp => dateTime()();
 }

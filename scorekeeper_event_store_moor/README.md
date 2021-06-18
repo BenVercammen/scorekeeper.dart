@@ -3,6 +3,11 @@
 Event store implementation using moor / sqflite
 
 
+## Development
+When adjusting the `@DataClassName` annotated classes, you'll need to generate the code again.
+This can be done with the build_runner, like this:
+``flutter pub run build_runner build``
+
 
 ## Troubleshooting
 
@@ -24,3 +29,10 @@ So, we should be able to tell moor to clear/delete the database.
 In the future, we'll need to make sure that we can handle such things.
 Of course, right now this is because of required metadata. Our (volatile) domain events are simply serialized and stored without any structure.
 
+
+
+## Testing
+ - ``pub global activate protoc_plugin`` (if not already installed)
+ - ``cd C:\Workspace\dart\scorekeeper\scorekeeper_event_store_moor``
+ - ``mkdir test\generated`` (if not already exists)
+ - ``protoc --dart_out=test/generated -Itest/protos test/protos/events.proto``

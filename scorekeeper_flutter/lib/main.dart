@@ -13,14 +13,14 @@ Future<void> main() async {
 
   // Create a Scorekeeper instance
   // final eventStore = EventStoreInMemoryImpl();
-  final domainSerializer = ExampleDomainSerializer();
-  final domainDeserializer = ExampleDomainDeserializer();
+  final domainSerializer = ScorableSerializer();
+  final domainDeserializer = ScorableDeserializer();
 
   final eventStore = EventStoreMoorImpl(domainSerializer, domainDeserializer);
   final scorekeeper = Scorekeeper(
       eventStore: eventStore,
       aggregateCache: AggregateCacheInMemoryImpl(),
-      domainEventFactory: const DomainEventFactory<Scorable>(
+      domainEventFactory: const DomainEventFactory<MuurkeKlopNDown, MuurkeKlopNDownAggregateId>(
           producerId: 'ScorekeeperMain', applicationVersion: 'v1'))
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(MuurkeKlopNDownCommandHandler())

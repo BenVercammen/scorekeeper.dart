@@ -1,9 +1,7 @@
 
 import 'package:scorekeeper_domain/core.dart';
-
-part 'scorable.c.dart';
-part 'scorable.e.dart';
-part 'scorable.vo.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
+import 'package:scorekeeper_domain_scorable/src/generated/identifiers.pb.dart';
 
 /// The (root) aggregate of our domain
 /// It is possible to extend this one. The generated handler classes will also contain these handler methods.
@@ -16,20 +14,25 @@ part 'scorable.vo.dart';
 ///  eg: muurke klop = N-down + 3-strikes-out
 ///  -> depending on the stage, the scorable type is different
 ///
+
+// TODO: oké, eigenlijk stom da'k hier 2 dinges doe he, zowel extenden als annoteren!
+// Die annotatie mag in principe weg dan...
 @aggregate
+@AggregateIdType(ScorableId)
 class Scorable extends Aggregate {
 
   late String name;
 
   final List<Participant> participants = List.empty(growable: true);
 
-  Scorable.aggregateId(AggregateId aggregateId) : super(aggregateId);
+  Scorable.aggregateId(ScorableAggregateId scorableId) : super(scorableId);
 
   @commandHandler
-  Scorable.command(CreateScorable command) : super(AggregateId.of(command.aggregateId)) {
-    final event = ScorableCreated()
-      ..aggregateId = command.aggregateId
-      ..name = command.name;
+  Scorable.command(CreateScorable command) : super(ScorableAggregateId.of(command.scorableId.uuid)) {
+    final event = ScorableCreated(
+        metadata: null,
+        scorableId: command.scorableId,
+        name: command.name);
     apply(event);
   }
 
@@ -39,9 +42,13 @@ class Scorable extends Aggregate {
     if (participants.contains(participant)) {
       throw Exception('Participant already added to Scorable');
     }
-    final event = ParticipantAdded()
-      ..aggregateId = command.aggregateId
-      ..participant = command.participant;
+    final event = ParticipantAdded(
+      metadata: null,
+      scorableId: command.scorableId,
+      participant: Participant(
+        participantId: command.participant.participantId,
+        participantName: command.participant.participantName)
+    );
     apply(event);
   }
 
@@ -51,9 +58,13 @@ class Scorable extends Aggregate {
     if (!participants.contains(participant)) {
       throw Exception('Participant not on Scorable');
     }
-    final event = ParticipantRemoved()
-      ..aggregateId = command.aggregateId
-      ..participant = command.participant;
+    final event = ParticipantRemoved(
+        metadata: null,
+        scorableId: command.scorableId,
+        participant: Participant(
+            participantId: command.participant.participantId,
+            participantName: command.participant.participantName)
+    );
     apply(event);
   }
 

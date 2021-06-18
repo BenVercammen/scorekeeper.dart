@@ -52,6 +52,8 @@ dev_dependencies:
   scorekeeper_codegen:
     path: ../scorekeeper_codegen
   test: ^1.14.4
+  protobuf: 2.0.0
+  uuid: ^3.0.3
 
   # for the test domain stuff...
   scorekeeper_domain:

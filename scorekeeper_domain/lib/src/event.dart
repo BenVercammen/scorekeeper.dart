@@ -123,13 +123,13 @@ abstract class Event {
 /// hoe gaan we die specifiëren?
 /// DomainEvent = payload + metadata, en enkel die payload is voor onze aggregate interessant...
 // @JsonSerializable()
-class DomainEvent<T extends Aggregate> extends Event/* implements Serializable */{
+class DomainEvent<T extends Aggregate, A extends AggregateId> extends Event/* implements Serializable */{
 
   /// The sequence of the event
   final int _sequence;
 
   /// The ID of the aggregate of the event
-  final AggregateId _aggregateId;
+  final A _aggregateId;
 
   const DomainEvent({
     required String eventId,
@@ -142,7 +142,7 @@ class DomainEvent<T extends Aggregate> extends Event/* implements Serializable *
     required String domainVersion,
     required String payloadType,
     required dynamic payload,
-    required AggregateId aggregateId,
+    required A aggregateId,
     required int sequence,
   })   : _sequence = sequence,
         _aggregateId = aggregateId,
@@ -158,7 +158,7 @@ class DomainEvent<T extends Aggregate> extends Event/* implements Serializable *
             payloadType: payloadType,
             payload: payload);
 
-  AggregateId get aggregateId => _aggregateId;
+  A get aggregateId => _aggregateId;
 
   int get sequence => _sequence;
 

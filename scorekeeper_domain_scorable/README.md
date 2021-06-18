@@ -14,6 +14,13 @@ In case it is your first build, you'll need to run the following command:
 Once that is out of the way, you can use your IDE.
 
 
+## Development
+- ``pub global activate protoc_plugin`` (if not already installed)
+- ``cd C:\Workspace\dart\scorekeeper\scorekeeper_domain_scorable``
+- ``mkdir lib\src\generated`` (if not already exists)
+- ``protoc --dart_out=lib/src/generated -Iprotos protos/identifiers.proto``
+- ``protoc --dart_out=lib/src/generated -Iprotos protos/events.proto``
+
 
 
 ### Input
@@ -41,3 +48,5 @@ In your domain package, each ``[domain].dart`` file will be used to generate a s
         3. run the ``pub run build_runner build`` command to generate sources anew
             - select the "delete" option when prompted
     - The old generators were being cached, so the new one wouldn't be picked up...
+
+

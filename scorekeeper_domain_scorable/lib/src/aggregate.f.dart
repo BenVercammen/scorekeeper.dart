@@ -15,3 +15,16 @@ class AggregateDtoFactory {
     }
   }
 }
+
+class AggregateIdFactory {
+  static R of<R extends AggregateId>(String id, String type) {
+    switch (type) {
+      case 'MuurkeKlopNDown':
+        return MuurkeKlopNDownAggregateId.of(id) as R;
+      case 'Scorable':
+        return ScorableAggregateId.of(id) as R;
+      default:
+        throw Exception('Cannot create $R of type "$type" with id "$id"');
+    }
+  }
+}

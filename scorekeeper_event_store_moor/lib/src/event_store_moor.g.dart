@@ -643,9 +643,19 @@ class $DomainEventTableTable extends DomainEventTable
 
 class RegisteredAggregateData extends DataClass
     implements Insertable<RegisteredAggregateData> {
+  /// The UUID of the AggregateId
   final String aggregateId;
+
+  /// The Type of the Aggregate to which the Id points
+  /// Required in order to instantiate the correct AggregateId subclass
+  final String aggregateType;
+
+  /// TODO: other metadata...
   final DateTime timestamp;
-  RegisteredAggregateData({required this.aggregateId, required this.timestamp});
+  RegisteredAggregateData(
+      {required this.aggregateId,
+      required this.aggregateType,
+      required this.timestamp});
   factory RegisteredAggregateData.fromData(
       Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
@@ -653,6 +663,8 @@ class RegisteredAggregateData extends DataClass
     return RegisteredAggregateData(
       aggregateId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}aggregate_id'])!,
+      aggregateType: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}aggregate_type'])!,
       timestamp: const DateTimeType()
           .mapFromDatabaseResponse(data['${effectivePrefix}timestamp'])!,
     );
@@ -661,6 +673,7 @@ class RegisteredAggregateData extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['aggregate_id'] = Variable<String>(aggregateId);
+    map['aggregate_type'] = Variable<String>(aggregateType);
     map['timestamp'] = Variable<DateTime>(timestamp);
     return map;
   }
@@ -668,6 +681,7 @@ class RegisteredAggregateData extends DataClass
   RegisteredAggregateTableCompanion toCompanion(bool nullToAbsent) {
     return RegisteredAggregateTableCompanion(
       aggregateId: Value(aggregateId),
+      aggregateType: Value(aggregateType),
       timestamp: Value(timestamp),
     );
   }
@@ -677,6 +691,7 @@ class RegisteredAggregateData extends DataClass
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return RegisteredAggregateData(
       aggregateId: serializer.fromJson<String>(json['aggregateId']),
+      aggregateType: serializer.fromJson<String>(json['aggregateType']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
     );
   }
@@ -685,62 +700,76 @@ class RegisteredAggregateData extends DataClass
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'aggregateId': serializer.toJson<String>(aggregateId),
+      'aggregateType': serializer.toJson<String>(aggregateType),
       'timestamp': serializer.toJson<DateTime>(timestamp),
     };
   }
 
   RegisteredAggregateData copyWith(
-          {String? aggregateId, DateTime? timestamp}) =>
+          {String? aggregateId, String? aggregateType, DateTime? timestamp}) =>
       RegisteredAggregateData(
         aggregateId: aggregateId ?? this.aggregateId,
+        aggregateType: aggregateType ?? this.aggregateType,
         timestamp: timestamp ?? this.timestamp,
       );
   @override
   String toString() {
     return (StringBuffer('RegisteredAggregateData(')
           ..write('aggregateId: $aggregateId, ')
+          ..write('aggregateType: $aggregateType, ')
           ..write('timestamp: $timestamp')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(aggregateId.hashCode, timestamp.hashCode));
+  int get hashCode => $mrjf($mrjc(
+      aggregateId.hashCode, $mrjc(aggregateType.hashCode, timestamp.hashCode)));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is RegisteredAggregateData &&
           other.aggregateId == this.aggregateId &&
+          other.aggregateType == this.aggregateType &&
           other.timestamp == this.timestamp);
 }
 
 class RegisteredAggregateTableCompanion
     extends UpdateCompanion<RegisteredAggregateData> {
   final Value<String> aggregateId;
+  final Value<String> aggregateType;
   final Value<DateTime> timestamp;
   const RegisteredAggregateTableCompanion({
     this.aggregateId = const Value.absent(),
+    this.aggregateType = const Value.absent(),
     this.timestamp = const Value.absent(),
   });
   RegisteredAggregateTableCompanion.insert({
     required String aggregateId,
+    required String aggregateType,
     required DateTime timestamp,
   })  : aggregateId = Value(aggregateId),
+        aggregateType = Value(aggregateType),
         timestamp = Value(timestamp);
   static Insertable<RegisteredAggregateData> custom({
     Expression<String>? aggregateId,
+    Expression<String>? aggregateType,
     Expression<DateTime>? timestamp,
   }) {
     return RawValuesInsertable({
       if (aggregateId != null) 'aggregate_id': aggregateId,
+      if (aggregateType != null) 'aggregate_type': aggregateType,
       if (timestamp != null) 'timestamp': timestamp,
     });
   }
 
   RegisteredAggregateTableCompanion copyWith(
-      {Value<String>? aggregateId, Value<DateTime>? timestamp}) {
+      {Value<String>? aggregateId,
+      Value<String>? aggregateType,
+      Value<DateTime>? timestamp}) {
     return RegisteredAggregateTableCompanion(
       aggregateId: aggregateId ?? this.aggregateId,
+      aggregateType: aggregateType ?? this.aggregateType,
       timestamp: timestamp ?? this.timestamp,
     );
   }
@@ -750,6 +779,9 @@ class RegisteredAggregateTableCompanion
     final map = <String, Expression>{};
     if (aggregateId.present) {
       map['aggregate_id'] = Variable<String>(aggregateId.value);
+    }
+    if (aggregateType.present) {
+      map['aggregate_type'] = Variable<String>(aggregateType.value);
     }
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
@@ -761,6 +793,7 @@ class RegisteredAggregateTableCompanion
   String toString() {
     return (StringBuffer('RegisteredAggregateTableCompanion(')
           ..write('aggregateId: $aggregateId, ')
+          ..write('aggregateType: $aggregateType, ')
           ..write('timestamp: $timestamp')
           ..write(')'))
         .toString();
@@ -781,6 +814,15 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
         minTextLength: 36, maxTextLength: 36);
   }
 
+  final VerificationMeta _aggregateTypeMeta =
+      const VerificationMeta('aggregateType');
+  @override
+  late final GeneratedTextColumn aggregateType = _constructAggregateType();
+  GeneratedTextColumn _constructAggregateType() {
+    return GeneratedTextColumn('aggregate_type', $tableName, false,
+        minTextLength: 1, maxTextLength: 48);
+  }
+
   final VerificationMeta _timestampMeta = const VerificationMeta('timestamp');
   @override
   late final GeneratedDateTimeColumn timestamp = _constructTimestamp();
@@ -793,7 +835,7 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
   }
 
   @override
-  List<GeneratedColumn> get $columns => [aggregateId, timestamp];
+  List<GeneratedColumn> get $columns => [aggregateId, aggregateType, timestamp];
   @override
   $RegisteredAggregateTableTable get asDslTable => this;
   @override
@@ -813,6 +855,14 @@ class $RegisteredAggregateTableTable extends RegisteredAggregateTable
               data['aggregate_id']!, _aggregateIdMeta));
     } else if (isInserting) {
       context.missing(_aggregateIdMeta);
+    }
+    if (data.containsKey('aggregate_type')) {
+      context.handle(
+          _aggregateTypeMeta,
+          aggregateType.isAcceptableOrUnknown(
+              data['aggregate_type']!, _aggregateTypeMeta));
+    } else if (isInserting) {
+      context.missing(_aggregateTypeMeta);
     }
     if (data.containsKey('timestamp')) {
       context.handle(_timestampMeta,

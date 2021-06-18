@@ -40,13 +40,14 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     // Keep track of the imported libraries
     final importedLibraries = <String>{}
       ..add('package:scorekeeper_domain/core.dart')
+      ..add(element.library.identifier.replaceAll('.dart', '.d.dart'))
       ..addAll(getRelevantImports([aggregate, ...commandHandlerMethods, ...eventHandlerMethods]))
     ;
 
     // Command Handler
     final commandHandlerBuilder = ClassBuilder()
       ..name = '${aggregateName}CommandHandler'
-      ..implements.add(Reference('CommandHandler<$aggregateName>'))
+      ..implements.add(Reference('CommandHandler<$aggregateName, ${aggregateName}AggregateId>'))
       ..methods.add(_commandIsConstructorMethod(constructor))
       ..methods.add(_commandConstructorMethod(aggregate, constructor))
       ..methods.add(_commandHandleMethod(aggregate, commandHandlerMethods))
@@ -56,7 +57,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     // Event Handler
     final eventHandlerBuilder = ClassBuilder()
       ..name = '${aggregateName}EventHandler'
-      ..implements.add(Reference('EventHandler<$aggregateName>'))
+      ..implements.add(Reference('EventHandler<$aggregateName, ${aggregateName}AggregateId>'))
       ..methods.add(_eventHandleMethod(aggregate, eventHandlerMethods))
       ..methods.add(_eventForTypeMethod(aggregate))
       ..methods.add(_newInstanceMethod(aggregate))
@@ -149,14 +150,15 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
 
   /// Build the newInstance method
   Method _newInstanceMethod(ClassElement aggregate) {
+    final aggregateIdClassName = '${aggregate.name}AggregateId';
     final builder = MethodBuilder()
       ..name = 'newInstance'
       ..returns = Reference(aggregate.name);
     final param1 = ParameterBuilder()
-      ..name = 'aggregateId'
-      ..type = const Reference('AggregateId');
+      ..name = camelName(aggregateIdClassName)
+      ..type = Reference(aggregateIdClassName);
     builder.requiredParameters.add(param1.build());
-    builder.body = Code('return ${aggregate.name}.aggregateId(aggregateId);');
+    builder.body = Code('return ${aggregate.name}.aggregateId(${camelName(aggregateIdClassName)});');
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }

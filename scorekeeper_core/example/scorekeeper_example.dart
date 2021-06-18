@@ -9,23 +9,23 @@ void main() async {
   final scorekeeper = Scorekeeper(
       eventStore: EventStoreInMemoryImpl(),
       aggregateCache: AggregateCacheInMemoryImpl(),
-    domainEventFactory: DomainEventFactory<Scorable>(producerId: 'example', applicationVersion: 'v1'))
+    domainEventFactory: DomainEventFactory<Scorable, ScorableAggregateId>(producerId: 'example', applicationVersion: 'v1'))
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(ScorableCommandHandler())
     ..registerEventHandler(ScorableEventHandler());
 
-  final aggregateId = AggregateId.random();
+  final aggregateId = ScorableAggregateId.random();
 
   // Handle a command
   final createScorableCommand = CreateScorable()
-    ..aggregateId = aggregateId.id
+    ..scorableId = aggregateId.scorableId
     ..name = 'Test Scorable 1';
   await scorekeeper.handleCommand(createScorableCommand);
 
   // Handle another command
-  final participant = Participant(Uuid().v4(), 'Player One');
+  final participant = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: 'Player One');
   final addParticipantCommand = AddParticipant()
-    ..aggregateId = aggregateId.id
+    ..scorableId = aggregateId.scorableId
     ..participant = participant;
   await scorekeeper.handleCommand(addParticipantCommand);
 

@@ -25,7 +25,7 @@ void main() {
     final _scorekeeper = Scorekeeper(
         eventStore: EventStoreInMemoryImpl(),
         aggregateCache: AggregateCacheInMemoryImpl(),
-        domainEventFactory: const DomainEventFactory<Scorable>(
+        domainEventFactory: const DomainEventFactory(
             producerId: 'app_test', applicationVersion: 'v1'))
       ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
       ..registerEventHandler(MuurkeKlopNDownEventHandler());

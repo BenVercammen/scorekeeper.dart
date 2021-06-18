@@ -1,65 +1,78 @@
-///
-/// Probleem nu is dat we nog via die @Serializable nog een en ander moeten laten genereren,
-/// om tot deze code te komen...
-/// Tenzij we zelf die code genereren op een of andere manier...
-///   ->
-///
-///
-/// EG:
-///
-///      TestDomainEvent _$TestDomainEventFromJson(Map<String, dynamic> json) {
-///        return TestDomainEvent(
-///          json['eventId'] as String,
-///          DateTime.parse(json['timestamp'] as String),
-///          json['userId'] as String?,
-///          json['processId'] as String?,
-///        );
-///      }
-///
-///      Map<String, dynamic> _$TestDomainEventToJson(TestDomainEvent instance) =>
-///          <String, dynamic>{
-///            'eventId': instance.eventId,
-///            'timestamp': instance.timestamp.toIso8601String(),
-///            'userId': instance.userId,
-///            'processId': instance.processId,
-///          };
-///
-///
-
-
-
-// TODO: in domain te laten genereren!
-// TODO: maar moet dan gewoon de serialize functies van de gegenereerde protobuff classes aanroepen...
+import 'package:scorekeeper_domain_scorable/src/generated/events.pb.dart';
 import 'package:scorekeeper_domain/core.dart';
 
-class ExampleDomainSerializer implements DomainSerializer {
+class ScorableSerializer implements DomainSerializer {
   @override
   String serialize(dynamic object) {
     switch (object.runtimeType) {
       case String:
         return object.toString();
-      // case ExampleDomain:
-      //   return jsonEncode((object as ExampleDomain).toJson());
-
+      case EventMetadata:
+        return (object as EventMetadata).writeToJson();
+      case Participant:
+        return (object as Participant).writeToJson();
+      case ScorableCreated:
+        return (object as ScorableCreated).writeToJson();
+      case ParticipantAdded:
+        return (object as ParticipantAdded).writeToJson();
+      case ParticipantRemoved:
+        return (object as ParticipantRemoved).writeToJson();
+      case ParticipantStruckOut:
+        return (object as ParticipantStruckOut).writeToJson();
+      case ParticipantStrikeOutUndone:
+        return (object as ParticipantStrikeOutUndone).writeToJson();
+      case RoundAdded:
+        return (object as RoundAdded).writeToJson();
+      case RoundRemoved:
+        return (object as RoundRemoved).writeToJson();
+      case RoundStarted:
+        return (object as RoundStarted).writeToJson();
+      case RoundFinished:
+        return (object as RoundFinished).writeToJson();
+      case RoundPaused:
+        return (object as RoundPaused).writeToJson();
+      case RoundResumed:
+        return (object as RoundResumed).writeToJson();
       default:
-        throw Exception('CANNOT SERIALIZE ${object.runtimeType}');
+        throw Exception('Cannot serialize "${object.runtimeType}"');
     }
   }
 }
 
-// TODO: in domain te laten genereren!
-class ExampleDomainDeserializer implements DomainDeserializer {
+class ScorableDeserializer implements DomainDeserializer {
   @override
   dynamic deserialize(String payloadType, String serialized) {
     switch (payloadType) {
       case 'String':
         return serialized;
-      // case 'ExampleDomain':
-      //   return ExampleDomain.fromJson(jsonDecode(serialized) as Map<String, dynamic>);
+      case 'EventMetadata':
+        return EventMetadata.fromJson(serialized);
+      case 'Participant':
+        return Participant.fromJson(serialized);
+      case 'ScorableCreated':
+        return ScorableCreated.fromJson(serialized);
+      case 'ParticipantAdded':
+        return ParticipantAdded.fromJson(serialized);
+      case 'ParticipantRemoved':
+        return ParticipantRemoved.fromJson(serialized);
+      case 'ParticipantStruckOut':
+        return ParticipantStruckOut.fromJson(serialized);
+      case 'ParticipantStrikeOutUndone':
+        return ParticipantStrikeOutUndone.fromJson(serialized);
+      case 'RoundAdded':
+        return RoundAdded.fromJson(serialized);
+      case 'RoundRemoved':
+        return RoundRemoved.fromJson(serialized);
+      case 'RoundStarted':
+        return RoundStarted.fromJson(serialized);
+      case 'RoundFinished':
+        return RoundFinished.fromJson(serialized);
+      case 'RoundPaused':
+        return RoundPaused.fromJson(serialized);
+      case 'RoundResumed':
+        return RoundResumed.fromJson(serialized);
       default:
-        throw Exception('CANNOT DESERIALIZE "$payloadType"');
+        throw Exception('Cannot deserialize "$payloadType"');
     }
   }
-
 }
-

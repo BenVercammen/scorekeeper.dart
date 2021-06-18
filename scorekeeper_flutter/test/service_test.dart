@@ -20,7 +20,7 @@ void main() {
       _scorekeeper = Scorekeeper(
           eventStore: EventStoreInMemoryImpl(),
           aggregateCache: AggregateCacheInMemoryImpl(),
-          domainEventFactory: const DomainEventFactory<Scorable>(
+          domainEventFactory: const DomainEventFactory<Scorable, ScorableAggregateId>(
               producerId: 'service_test', applicationVersion: 'v1'))
         // Register the command and event handlers for the relevant domain
         ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
@@ -35,9 +35,9 @@ void main() {
       // Given 20 Registered AggregateIds
       // (Aggregates the current instance is interested in, in this case because it created them itself)
       for (var i = 1; i <= 20; i++) {
-        final aggregateId = AggregateId.random();
+        final aggregateId = ScorableAggregateId.random();
         await _scorekeeper.handleCommand(CreateScorable()
-          ..aggregateId = aggregateId.id
+          ..scorableId = ScorableId(uuid: aggregateId.id)
           ..name = 'Aggregate $i');
         sleep(const Duration(milliseconds: 1));
         registeredAggregateIds.add(aggregateId);

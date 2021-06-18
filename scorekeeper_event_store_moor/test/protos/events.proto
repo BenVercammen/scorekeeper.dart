@@ -1,0 +1,17 @@
+syntax = "proto3";
+package io.scorekeeper.eventstore.test;
+
+message EventMetadata {
+  string eventId = 1;
+
+}
+
+message TestAggregateId {
+  string uuid = 1;
+}
+
+message TestAggregateCreated {
+  EventMetadata metadata = 1;
+  TestAggregateId testAggregateId = 2;
+  string contestName = 3;
+}

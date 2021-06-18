@@ -84,7 +84,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     // Body row
     for (final participant in scorable.participants) {
       rowList.add(TableRow(children: [
-        TableCell(child: _ParticipantTableContainer(Text(participant.name))),
+        TableCell(child: _ParticipantTableContainer(Text(participant.participantName))),
         ...participantRoundBody(participant),
         TableCell(child: _ParticipantTableContainer(const Text('Total')))
       ]));
@@ -154,10 +154,10 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     // First list all commands we are considering here
     final commands = [
       StartRound()
-        ..aggregateId = scorable.aggregateId.id
+        ..scorableId = ScorableId(uuid: scorable.aggregateId.id)
         ..roundIndex = round.roundIndex,
       FinishRound()
-        ..aggregateId = scorable.aggregateId.id
+        ..scorableId = ScorableId(uuid: scorable.aggregateId.id)
         ..roundIndex = round.roundIndex
     ];
 

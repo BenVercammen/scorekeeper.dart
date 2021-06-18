@@ -4,35 +4,42 @@ import 'dart:convert';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_event_store_moor/event_store_moor.dart';
+import 'package:uuid/uuid.dart';
 
-// Path to the generated source code part
-part 'test_domain_event.g.dart';
+import 'generated/events.pb.dart';
 
-@JsonSerializable()
-class TestDomainEvent {
-  final String eventId;
-  final DateTime timestamp;
-  final String? userId;
-  final String? processId;
+class TestDomainAggregateId extends AggregateId {
 
-  TestDomainEvent(this.eventId, this.timestamp, this.userId, this.processId);
+  final TestAggregateId testAggregateId;
 
-  factory TestDomainEvent.fromJson(Map<String, dynamic> json) => _$TestDomainEventFromJson(json);
+  @override
+  final Type type = TestDomainAggregateId;
 
-  Map<String, dynamic> toJson() => _$TestDomainEventToJson(this);
+  @override
+  String get id => testAggregateId.uuid;
 
+  TestDomainAggregateId(this.testAggregateId);
+
+  TestDomainAggregateId._(String id) : testAggregateId = TestAggregateId(uuid: id);
+
+  static TestDomainAggregateId random() {
+    return TestDomainAggregateId._(Uuid().v4());
+  }
+
+  static TestDomainAggregateId of(String id) {
+    return TestDomainAggregateId._(id);
+  }
 }
 
-
-// TODO: in domain te laten genereren!
+// TODO: in domain te laten genereren!!!!
 class TestDomainEventSerializer implements DomainSerializer {
   @override
   String serialize(dynamic object) {
     switch (object.runtimeType) {
       case String:
         return object.toString();
-      case TestDomainEvent:
-        return jsonEncode((object as TestDomainEvent).toJson());
+      case TestAggregateCreated:
+        return (object as TestAggregateCreated).writeToJson();
       default:
         throw Exception('CANNOT SERIALIZE ${object.runtimeType}');
     }
@@ -46,8 +53,8 @@ class TestDomainEventDeserializer implements DomainDeserializer {
     switch (payloadType) {
       case 'String':
         return serialized;
-      case 'TestDomainEvent':
-        return TestDomainEvent.fromJson(jsonDecode(serialized) as Map<String, dynamic>);
+      case 'TestAggregateCreated':
+        return TestAggregateCreated.fromJson(serialized);
       default:
         throw Exception('CANNOT DESERIALIZE "$payloadType"');
     }

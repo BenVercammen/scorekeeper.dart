@@ -8,7 +8,7 @@ class MuurkeKlopNDown extends Scorable {
 
   final Map<int, MuurkeKlopNDownRound> rounds = Map();
 
-  MuurkeKlopNDown.aggregateId(AggregateId aggregateId) : super.aggregateId(aggregateId);
+  MuurkeKlopNDown.aggregateId(ScorableAggregateId aggregateId) : super.aggregateId(aggregateId);
 
   @commandHandler
   MuurkeKlopNDown.command(CreateScorable command) : super.command(command) {
@@ -19,7 +19,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void addRound(AddRound command) {
     final event = RoundAdded()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = rounds.length;
     apply(event);
   }
@@ -27,7 +27,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void removeRound(RemoveRound command) {
     final event = RoundRemoved()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex;
     apply(event);
   }
@@ -35,7 +35,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void startRound(StartRound command) {
     final event = RoundStarted()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex;
     apply(event);
   }
@@ -43,7 +43,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void pauseRound(PauseRound command) {
     final event = RoundPaused()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex;
     apply(event);
   }
@@ -51,7 +51,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void resumeRound(ResumeRound command) {
     final event = RoundResumed()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex;
     apply(event);
   }
@@ -59,7 +59,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void finishRound(FinishRound command) {
     final event = RoundFinished()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex;
     apply(event);
   }
@@ -67,7 +67,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void strikeOutParticipant(StrikeOutParticipant command) {
     final event = ParticipantStruckOut()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex
       ..participant = command.participant;
     apply(event);
@@ -76,7 +76,7 @@ class MuurkeKlopNDown extends Scorable {
   @commandHandler
   void undoParticipantStrikeout(UndoParticipantStrikeOut command) {
     final event = ParticipantStrikeOutUndone()
-      ..aggregateId = command.aggregateId
+      ..scorableId = command.scorableId
       ..roundIndex = command.roundIndex
       ..participant = command.participant;
     apply(event);
@@ -218,106 +218,6 @@ class MuurkeKlopNDown extends Scorable {
 
 }
 
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-/// COMMANDS///////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// When a participant strikes out, he/she will receive a fixed number of points depending
-/// on the order in which he was struck out.
-class StrikeOutParticipant {
-  late String aggregateId;
-  late Participant participant;
-  late int roundIndex;
-}
-
-class UndoParticipantStrikeOut {
-  late String aggregateId;
-  late Participant participant;
-  late int roundIndex;
-}
-
-/// Add an extra Round to the Scorable
-class AddRound {
-  late String aggregateId;
-}
-
-/// Remove an existing Round from the Scorable
-class RemoveRound {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-/// Start a given Round of the Scorable
-class StartRound {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-/// Finish a given Round of the Scorable
-class FinishRound {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-/// Pause a given Round of the Scorable
-class PauseRound {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-/// Resume a given Round of the Scorable
-class ResumeRound {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// EVENTS /////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ParticipantStruckOut {
-  late String aggregateId;
-  late Participant participant;
-  late int roundIndex;
-}
-
-class ParticipantStrikeOutUndone {
-  late String aggregateId;
-  late Participant participant;
-  late int roundIndex;
-}
-
-class RoundAdded {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-class RoundRemoved {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-class RoundStarted {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-class RoundFinished {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-class RoundPaused {
-  late String aggregateId;
-  late int roundIndex;
-}
-
-class RoundResumed {
-  late String aggregateId;
-  late int roundIndex;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

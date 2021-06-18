@@ -5,11 +5,13 @@
 // **************************************************************************
 
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_domain_contest/src/contest.d.dart';
 import 'package:scorekeeper_domain/src/aggregate.dart';
 import 'package:scorekeeper_domain_contest/src/contest.dart';
 import 'package:scorekeeper_domain_contest/src/generated/events.pb.dart';
 
-class ContestCommandHandler implements CommandHandler<Contest> {
+class ContestCommandHandler
+    implements CommandHandler<Contest, ContestAggregateId> {
   @override
   bool isConstructorCommand(dynamic command) {
     return command is CreateContest;
@@ -46,8 +48,8 @@ class ContestCommandHandler implements CommandHandler<Contest> {
   }
 
   @override
-  Contest newInstance(AggregateId aggregateId) {
-    return Contest.aggregateId(aggregateId);
+  Contest newInstance(ContestAggregateId contestAggregateId) {
+    return Contest.aggregateId(contestAggregateId);
   }
 
   @override
@@ -65,7 +67,7 @@ class ContestCommandHandler implements CommandHandler<Contest> {
   }
 }
 
-class ContestEventHandler implements EventHandler<Contest> {
+class ContestEventHandler implements EventHandler<Contest, ContestAggregateId> {
   @override
   void handle(Contest contest, DomainEvent event) {
     switch (event.payload.runtimeType) {
@@ -89,8 +91,8 @@ class ContestEventHandler implements EventHandler<Contest> {
   }
 
   @override
-  Contest newInstance(AggregateId aggregateId) {
-    return Contest.aggregateId(aggregateId);
+  Contest newInstance(ContestAggregateId contestAggregateId) {
+    return Contest.aggregateId(contestAggregateId);
   }
 
   @override

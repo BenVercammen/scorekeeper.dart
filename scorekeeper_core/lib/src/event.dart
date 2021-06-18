@@ -254,7 +254,7 @@ abstract class RemoteEventListener {
 /// Takes care of a lot of metadata prefilling.
 /// TODO: This factory should probably be overidden by generated factory per domain aggregate?
 /// so we can auto-fill domainId and version??
-class DomainEventFactory<T extends Aggregate> {
+class DomainEventFactory<T extends Aggregate, A extends AggregateId> {
 
   final String producerId;
 
@@ -269,16 +269,16 @@ class DomainEventFactory<T extends Aggregate> {
     required this.applicationVersion,
   });
 
-  DomainEvent<T> local(AggregateId aggregateId, int sequence, dynamic payload) {
+  DomainEvent<T, A> local(A aggregateId, int sequence, dynamic payload) {
     return _event(Uuid().v4(), DateTime.now(), aggregateId, payload, sequence);
   }
 
-  DomainEvent<T> remote(String eventId, AggregateId aggregateId, int sequence, DateTime timestamp, payload) {
+  DomainEvent<T, A> remote(String eventId, A aggregateId, int sequence, DateTime timestamp, payload) {
     return _event(eventId, timestamp, aggregateId, payload, sequence);
   }
 
-  DomainEvent<T> _event(String eventId, DateTime timestamp, AggregateId aggregateId, payload, int sequence) {
-    return new DomainEvent(
+  DomainEvent<T, A> _event(String eventId, DateTime timestamp, A aggregateId, payload, int sequence) {
+    return new DomainEvent<T, A>(
         eventId: eventId,
         timestamp: timestamp,
 
@@ -296,7 +296,7 @@ class DomainEventFactory<T extends Aggregate> {
         sequence: sequence);
   }
 
-  EventNotHandled<T> eventNotHandled(DomainEvent<T> notHandledEvent, String reason) {
+  EventNotHandled<T> eventNotHandled(DomainEvent<T, A> notHandledEvent, String reason) {
     return EventNotHandled(notHandledEvent, reason, eventId: Uuid().v4(), timestamp: DateTime.now(), producerId: producerId, applicationVersion: applicationVersion, domainId: domainId, domainVersion: domainVersion);
   }
 
