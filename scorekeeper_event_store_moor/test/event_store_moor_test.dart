@@ -53,8 +53,8 @@ void main() {
 
   group('RegisteredAggregateId', () {
     test("Write + read registered AggregateId's", () async {
-      final aggregateId = TestDomainAggregateId.random();
-      final aggregateId2 = TestDomainAggregateId.random();
+      final aggregateId = AggregateId.random(Aggregate);
+      final aggregateId2 = AggregateId.random(Aggregate);
       expect(await eventStore.isRegisteredAggregateId(aggregateId), equals(false));
       expect(await eventStore.isRegisteredAggregateId(aggregateId2), equals(false));
       await eventStore.registerAggregateId(aggregateId);
@@ -67,7 +67,7 @@ void main() {
     });
 
     test('AggregateId can only be registered once', () async {
-      final aggregateId = TestDomainAggregateId.random();
+      final aggregateId = AggregateId.random(Aggregate);
       await eventStore.registerAggregateId(aggregateId);
       try {
         await eventStore.registerAggregateId(aggregateId);
@@ -78,7 +78,7 @@ void main() {
     });
 
     test('Is registered AggregateId', () async {
-      final aggregateId = TestDomainAggregateId.random();
+      final aggregateId = AggregateId.random(Aggregate);
       expect(await eventStore.isRegisteredAggregateId(aggregateId), equals(false));
       await eventStore.registerAggregateId(aggregateId);
       expect(await eventStore.isRegisteredAggregateId(aggregateId), equals(true));
@@ -87,7 +87,7 @@ void main() {
 
   group('DomainEvent', () {
     test('Write + read DomainEvent', () async {
-      final aggregateId1 = TestDomainAggregateId.random();
+      final aggregateId1 = AggregateId.random(Aggregate);
       final domainEventToStore = domainEventFactory.local(
         aggregateId1,
         0,
@@ -101,11 +101,11 @@ void main() {
     });
 
     test('Write + read DomainEvent with non-string payload', () async {
-      final aggregateId1 = TestDomainAggregateId.random();
+      final aggregateId1 = AggregateId.random(Aggregate);
       final domainEventToStore = domainEventFactory.local(
         aggregateId1,
         0,
-        TestAggregateCreated(metadata: EventMetadata(eventId: '1'), testAggregateId: aggregateId1.testAggregateId, contestName: 'test')
+        TestAggregateCreated(metadata: EventMetadata(eventId: '1'), testAggregateId: aggregateId1.id, contestName: 'test')
       );
       await eventStore.registerAggregateId(aggregateId1);
       await eventStore.storeDomainEvent(domainEventToStore);
@@ -115,8 +115,8 @@ void main() {
     });
 
     test('Count DomainEvents for Aggregate', () async {
-      final aggregateId1 = TestDomainAggregateId.random();
-      final aggregateId2 = TestDomainAggregateId.random();
+      final aggregateId1 = AggregateId.random(Aggregate);
+      final aggregateId2 = AggregateId.random(Aggregate);
       expect(await eventStore.countEventsForAggregate(aggregateId1), equals(0));
       await eventStore.registerAggregateId(aggregateId1);
       await eventStore.registerAggregateId(aggregateId2);
@@ -130,8 +130,8 @@ void main() {
     });
 
     test('nextSequenceForAggregate', () async {
-      final aggregateId1 = TestDomainAggregateId.random();
-      final aggregateId2 = TestDomainAggregateId.random();
+      final aggregateId1 = AggregateId.random(Aggregate);
+      final aggregateId2 = AggregateId.random(Aggregate);
       expect(await eventStore.nextSequenceForAggregate(aggregateId1), equals(0));
       expect(await eventStore.nextSequenceForAggregate(aggregateId2), equals(0));
       await eventStore.registerAggregateId(aggregateId1);

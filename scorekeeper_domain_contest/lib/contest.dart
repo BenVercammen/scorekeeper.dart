@@ -8,4 +8,4 @@ export 'src/contest.h.dart';
 export 'src/serializer.s.dart';
 
 export 'src/generated/events.pb.dart';
-export 'src/generated/identifiers.pb.dart';
+// export 'src/generated/identifiers.pb.dart';

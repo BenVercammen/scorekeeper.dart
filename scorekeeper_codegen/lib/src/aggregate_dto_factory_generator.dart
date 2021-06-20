@@ -78,12 +78,19 @@ class AggregateDtoFactoryGenerator implements Builder {
     final createMethod = _factoryCreateMethod(aggregates);
     final classBuilder = ClassBuilder()
       ..name = 'AggregateDtoFactory'
-      ..methods.add(createMethod);
+      ..methods.add(createMethod)
+      ..implements.add(const Reference('c.AggregateDtoFactory'))
+      ..docs.addAll({
+            "/// Generated DTO factory for instantiating AggregateDto's based on actual Aggregate classes.",
+            "/// These AggregateDto's are used as value objects for consuming classes, as we don't want them ",
+            '/// to have access to the annotated handler methods.'
+          })
+    ;
     final emitter = DartEmitter();
     final aggregateDtoFactory = classBuilder.build().accept(emitter);
 
     // global import
-    final importedLibraries = {'package:scorekeeper_domain/core.dart'};
+    final importedLibraries = <String>{};
     await for (final file in buildStep.findAssets(Glob('lib/*.dart'))) {
       final fileContents = File(file.path).readAsStringSync();
       if (fileContents.contains('library ')) {
@@ -92,7 +99,8 @@ class AggregateDtoFactoryGenerator implements Builder {
       }
     }
 
-    final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
+    var imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
+    imports += "\nimport 'package:scorekeeper_domain/core.dart' as c;";
     final output = _allFileOutput(buildStep);
     return buildStep.writeAsString(output, DartFormatter().format('$imports\n\n$aggregateDtoFactory'));
   }
@@ -100,7 +108,7 @@ class AggregateDtoFactoryGenerator implements Builder {
   Method _factoryCreateMethod(Iterable<String> aggregates) {
     final aggregateParam = ParameterBuilder()
       ..name = 'aggregate'
-      ..type = const Reference('Aggregate');
+      ..type = const Reference('c.Aggregate');
     final code = StringBuffer()..write('switch (aggregate.runtimeType) {');
 
     for (final aggregate in aggregates) {
@@ -112,8 +120,8 @@ class AggregateDtoFactoryGenerator implements Builder {
     final builder = MethodBuilder()
       ..name = 'create'
       ..returns = const Reference('R')
-      ..static = true
-      ..types.add(const Reference('R extends AggregateDto'))
+      ..annotations.add(const Reference('override'))
+      ..types.add(const Reference('R extends c.AggregateDto'))
       ..requiredParameters.add(aggregateParam.build())
       ..body = Code(code.toString());
     return builder.build();

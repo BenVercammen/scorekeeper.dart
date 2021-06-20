@@ -7,18 +7,18 @@ import 'package:uuid/uuid.dart';
 void main() {
 
   group('Command handling', () {
-    late TestFixture<Scorable, ScorableAggregateId> fixture;
+    late TestFixture<Scorable> fixture;
 
     setUp(() {
-      fixture = TestFixture<Scorable, ScorableAggregateId>(ScorableCommandHandler(), ScorableEventHandler());
+      fixture = TestFixture<Scorable>(ScorableCommandHandler(), ScorableEventHandler());
     });
 
     test('CreateScorable success', () {
-      final _aggregateId = ScorableAggregateId.random();
+      final _aggregateId = AggregateId.random(Scorable);
       fixture
         ..when(CreateScorable()
           ..name = 'Test 1'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..then((scorable) {
           expect(scorable.aggregateId, equals(_aggregateId));
           expect(scorable.name, equals('Test 1'));
@@ -26,28 +26,28 @@ void main() {
     });
 
     test('AddParticipant succes', () {
-      final _aggregateId = ScorableAggregateId.random();
+      final _aggregateId = AggregateId.random(Scorable);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..when(AddParticipant()
-          ..scorableId = _aggregateId.scorableId
-          ..participant = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: ''))
+          ..scorableId = _aggregateId.id
+          ..participant = Participant(participantId: Uuid().v4(), participantName: ''))
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
     });
 
     test('RemoveParticipant failed (non-existing participant)', () {
-      final _aggregateId = ScorableAggregateId.random();
-      final participant = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: 'Participant 1');
+      final _aggregateId = AggregateId.random(Scorable);
+      final participant = Participant(participantId: Uuid().v4(), participantName: 'Participant 1');
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..when(RemoveParticipant()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..participant = participant)
         ..then((scorable) {
           expect(fixture.lastThrownException.toString(), contains('Participant not on Scorable'));
@@ -58,18 +58,18 @@ void main() {
   });
 
   group('Event handling', () {
-    late TestFixture<Scorable, ScorableAggregateId> fixture;
+    late TestFixture<Scorable> fixture;
 
     setUp(() {
-      fixture = TestFixture<Scorable, ScorableAggregateId>(ScorableCommandHandler(), ScorableEventHandler());
+      fixture = TestFixture<Scorable>(ScorableCommandHandler(), ScorableEventHandler());
     });
 
     test('ScorableCreated', () {
-      final _aggregateId = ScorableAggregateId.random();
+      final _aggregateId = AggregateId.random(Scorable);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..then((scorable) {
           expect(scorable.name, equals('Test'));
           expect(scorable.aggregateId, equals(_aggregateId));
@@ -78,28 +78,28 @@ void main() {
     });
 
     test('ParticipantAdded', () {
-      final _aggregateId = ScorableAggregateId.random();
+      final _aggregateId = AggregateId.random(Scorable);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, ParticipantAdded()
-          ..scorableId = _aggregateId.scorableId
-          ..participant = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: ''))
+          ..scorableId = _aggregateId.id
+          ..participant = Participant(participantId: Uuid().v4(), participantName: ''))
         ..then((scorable) {
           expect(scorable.participants.length, equals(1));
         });
     });
 
     test('ParticipantRemoved', () {
-      final _aggregateId = ScorableAggregateId.random();
+      final _aggregateId = AggregateId.random(Scorable);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, ParticipantRemoved()
-          ..scorableId = _aggregateId.scorableId
-          ..participant = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: ''))
+          ..scorableId = _aggregateId.id
+          ..participant = Participant(participantId: Uuid().v4(), participantName: ''))
         ..then((scorable) {
           expect(scorable.participants.length, equals(0));
         });
@@ -113,9 +113,9 @@ void main() {
       /// are only checking against the referenced entity ID, and not any of the other properties.
       /// This way we can just use the default contains methods etc when checking if a Participant VO is present or not.
       test('Participant should equal on ParticipantId only', () {
-        final player1 = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: 'Player 1');
+        final player1 = Participant(participantId: Uuid().v4(), participantName: 'Player 1');
         final player1b = Participant(participantId: player1.participantId, participantName: 'Player 2');
-        final player2 = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: 'Player 2');
+        final player2 = Participant(participantId: Uuid().v4(), participantName: 'Player 2');
         expect(player1, equals(player1b));
         expect(player1, isNot(equals(player2)));
         expect(player1b, isNot(equals(player2)));
@@ -129,10 +129,10 @@ void main() {
     final deserializer = ScorableDeserializer();
 
     test('ScorableCreated', () {
-      final _aggregateId = ScorableAggregateId.random();
+      final _aggregateId = AggregateId.random(Scorable);
       final event = ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId;
+          ..scorableId = _aggregateId.id;
       final serialized = serializer.serialize(event);
       final deserialized = deserializer.deserialize('ScorableCreated', serialized);
       expect(deserialized, equals(event));

@@ -6,10 +6,10 @@ import 'package:uuid/uuid.dart';
 
 void main() {
   group('Command handling', () {
-    late TestFixture<Contest, ContestAggregateId> fixture;
+    late TestFixture<Contest> fixture;
 
     setUp(() {
-      fixture = TestFixture<Contest, ContestAggregateId>(ContestCommandHandler(), ContestEventHandler());
+      fixture = TestFixture<Contest>(ContestCommandHandler(), ContestEventHandler());
     });
 
   });
@@ -33,11 +33,10 @@ void main() {
     ///       -> heb da nodig in mijn scorekeeper applicatie,
     ///
     test('ContestCreated', () {
-      final _aggregateId = Uuid().v4();
       final event = ContestCreated(
         // TODO: metadata: EventMetadata(),  // Gaan we da nu wel of nie in da event steken?
         contestName: 'Test',
-        contestId: ContestId(uuid: _aggregateId));
+        contestId: AggregateId.random(Contest).id);
       final serialized = serializer.serialize(event);
       final deserialized = deserializer.deserialize('ContestCreated', serialized);
       expect(deserialized, equals(event));

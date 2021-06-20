@@ -18,8 +18,10 @@ Once that is out of the way, you can use your IDE.
 - ``pub global activate protoc_plugin`` (if not already installed)
 - ``cd C:\Workspace\dart\scorekeeper\scorekeeper_domain_scorable``
 - ``mkdir lib\src\generated`` (if not already exists)
-- ``protoc --dart_out=lib/src/generated -Iprotos protos/identifiers.proto``
+- ``protoc --dart_out=lib/src/generated -Iprotos ../scorekeeper_domain/protos/identifiers.proto``
+- ``protoc --dart_out=lib/src/generated -I%PROTOC_HOME%/include %PROTOC_HOME%/include/google/protobuf/timestamp.proto``
 - ``protoc --dart_out=lib/src/generated -Iprotos protos/events.proto``
+- ``protoc --dart_out=lib/src/generated -Iprotos protos/commands.proto``
 
 
 

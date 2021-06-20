@@ -93,94 +93,91 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
     }
 
     // AggregateId
-    final aggregateIdClassName = '${aggregateName}AggregateId';
-    final idType = _getAggregateIdType(element);
-    final aggregateIdBuilder = ClassBuilder()
-      ..name = aggregateIdClassName
-      ..extend = refer(parentDtoClass.name == 'Aggregate' ? 'AggregateId' : '${parentDtoClass.name}AggregateId')
-    ;
-
-    final idFieldName = idType!.element!.displayName;
-    final fieldBuilder2 = FieldBuilder()
-      ..name = camelName(idFieldName)
-      ..type = Reference(idFieldName)
-      ..modifier = FieldModifier.final$
-    ;
-    aggregateIdBuilder.fields.add(fieldBuilder2.build());
-
-    // Constructors
-    final constr1Param = ParameterBuilder()
-      ..name = 'this.${camelName(idFieldName)}';
-    final constrBuilder1 = ConstructorBuilder()
-      ..requiredParameters.add(constr1Param.build())
-    ;
+    // const aggregateIdClassName = 'AggregateId';
+    // final aggregateIdBuilder = ClassBuilder()
+    //   ..name = aggregateIdClassName
+    //   ..extend = refer(parentDtoClass.name == 'Aggregate' ? 'AggregateId' : '${parentDtoClass.name}AggregateId')
+    // ;
+    //
+    // final fieldBuilder2 = FieldBuilder()
+    //   ..name = camelName(aggregateIdClassName)
+    //   ..type = Reference(aggregateIdClassName)
+    //   ..modifier = FieldModifier.final$
+    // ;
+    // aggregateIdBuilder.fields.add(fieldBuilder2.build());
+    //
+    // // Constructors
+    // final constr1Param = ParameterBuilder()
+    //   ..name = 'this.${camelName(aggregateIdClassName)}';
+    // final constrBuilder1 = ConstructorBuilder()
+    //   ..requiredParameters.add(constr1Param.build())
+    // ;
     // In case we extend an Aggregate subclass, make sure to correctly initialize the constructor
-    final isSubclassed = element.supertype!.element.name != 'Aggregate';
-    if (isSubclassed) {
-      constrBuilder1.initializers.add(Code('super(${camelName(idFieldName)})'));
-    }
-    aggregateIdBuilder.constructors.add(constrBuilder1.build());
-
-    final constr2Param = ParameterBuilder()
-      ..name = 'id'
-      ..type = const Reference('String');
-
-    if (!isSubclassed) {
-      final constrBuilder2 = ConstructorBuilder()
-        ..name = '_'
-        ..requiredParameters.add(constr2Param.build())
-        ..initializers.add(
-            Code('${camelName(idFieldName)} = ${idFieldName}(uuid: id)'))
-      ;
-      aggregateIdBuilder.constructors.add(constrBuilder2.build());
-    }
-
-    final methodOf = MethodBuilder()
-      ..name = 'of'
-      ..returns = Reference(aggregateIdClassName)
-      ..static = true
-      ..requiredParameters.add(constr2Param.build())
-      ..body = Code('return $aggregateIdClassName._(id);')
-    ;
-    if (isSubclassed) {
-      methodOf.body = Code('return $aggregateIdClassName($idFieldName(uuid: id));');
-    }
-    aggregateIdBuilder.methods.add(methodOf.build());
-
-    final methodRandom = MethodBuilder()
-      ..name = 'random'
-      ..returns = Reference(aggregateIdClassName)
-      ..static = true
-      ..body = Code('return $aggregateIdClassName._(const Uuid().v4());')
-    ;
-    if (isSubclassed) {
-      methodRandom.body = Code('return $aggregateIdClassName($idFieldName(uuid: const Uuid().v4()));');
-    }
-    aggregateIdBuilder.methods.add(methodRandom.build());
-
-    final getType = MethodBuilder()
-      ..name = 'type'
-      ..type = MethodType.getter
-      ..returns = const Reference('Type')
-      ..lambda = true
-      ..body = Code(aggregateName)
-      ..annotations.add(const Reference('override'))
-    ;
-    aggregateIdBuilder.methods.add(getType.build());
-
-    final getId = MethodBuilder()
-      ..name = 'id'
-      ..type = MethodType.getter
-      ..returns = const Reference('String')
-      ..lambda = true
-      ..body = Code('${camelName(idFieldName)}.uuid')
-      ..annotations.add(const Reference('override'))
-    ;
-    aggregateIdBuilder.methods.add(getId.build());
+    final isSubclassed = element.supertype?.element.name != 'Aggregate';
+    // if (isSubclassed) {
+    //   constrBuilder1.initializers.add(Code('super(${camelName(aggregateIdClassName)})'));
+    // }
+    // aggregateIdBuilder.constructors.add(constrBuilder1.build());
+    //
+    // final constr2Param = ParameterBuilder()
+    //   ..name = 'id'
+    //   ..type = const Reference('String');
+    //
+    // if (!isSubclassed) {
+    //   final constrBuilder2 = ConstructorBuilder()
+    //     ..name = '_'
+    //     ..requiredParameters.add(constr2Param.build())
+    //     ..initializers.add(
+    //         Code('${camelName(aggregateIdClassName)} = ${aggregateIdClassName}(uuid: id)'))
+    //   ;
+    //   aggregateIdBuilder.constructors.add(constrBuilder2.build());
+    // }
+    //
+    // final methodOf = MethodBuilder()
+    //   ..name = 'of'
+    //   ..returns = Reference(aggregateIdClassName)
+    //   ..static = true
+    //   ..requiredParameters.add(constr2Param.build())
+    //   ..body = Code('return $aggregateIdClassName._(id);')
+    // ;
+    // if (isSubclassed) {
+    //   methodOf.body = Code('return $aggregateIdClassName($aggregateIdClassName(uuid: id));');
+    // }
+    // aggregateIdBuilder.methods.add(methodOf.build());
+    //
+    // final methodRandom = MethodBuilder()
+    //   ..name = 'random'
+    //   ..returns = Reference(aggregateIdClassName)
+    //   ..static = true
+    //   ..body = Code('return $aggregateIdClassName._(const Uuid().v4());')
+    // ;
+    // if (isSubclassed) {
+    //   methodRandom.body = Code('return $aggregateIdClassName($aggregateIdClassName(uuid: const Uuid().v4()));');
+    // }
+    // aggregateIdBuilder.methods.add(methodRandom.build());
+    //
+    // final getType = MethodBuilder()
+    //   ..name = 'type'
+    //   ..type = MethodType.getter
+    //   ..returns = const Reference('Type')
+    //   ..lambda = true
+    //   ..body = Code(aggregateName)
+    //   ..annotations.add(const Reference('override'))
+    // ;
+    // aggregateIdBuilder.methods.add(getType.build());
+    //
+    // final getId = MethodBuilder()
+    //   ..name = 'id'
+    //   ..type = MethodType.getter
+    //   ..returns = const Reference('String')
+    //   ..lambda = true
+    //   ..body = Code('${camelName(aggregateIdClassName)}.uuid')
+    //   ..annotations.add(const Reference('override'))
+    // ;
+    // aggregateIdBuilder.methods.add(getId.build());
 
     // Import the current aggregate package + scorekeeper_domain if necessary...
     var importedLibraries = getRelevantImports([...fields])
-    ..add(idType.element!.library!.identifier)
     ..add('package:uuid/uuid.dart');
     if (!isSubclassed) {
       importedLibraries.add('package:scorekeeper_domain/core.dart');
@@ -196,22 +193,8 @@ class AggregateDtoGenerator extends src.GeneratorForAnnotation<AggregateAnnotati
     // Put everything together!
     final emitter = DartEmitter();
     final aggregateDto = aggregateDtoBuilder.build().accept(emitter);
-    final aggregateId = aggregateIdBuilder.build().accept(emitter);
-    return DartFormatter().format('$imports\n\n$aggregateDto\n\n$aggregateId');
-  }
-
-  /// Check for the @AggregateIdType annotation on the class to try
-  /// and determine the exact type of the ID to be used within the generated AggregateId subclass.
-  DartType? _getAggregateIdType(ClassElement element) {
-    do {
-      for (final metadata in element.metadata) {
-        if (metadata.element is FunctionTypedElement && (metadata.element! as FunctionTypedElement).returnType.element!.name == 'AggregateIdType') {
-          return metadata.computeConstantValue()!.getField('idType')!.toTypeValue();
-        }
-      }
-      element = element.supertype!.element;
-    } while (element.allSupertypes.isNotEmpty);
-    return null;
+    // final aggregateId = aggregateIdBuilder.build().accept(emitter);
+    return DartFormatter().format('$imports\n\n$aggregateDto');
   }
 
 }

@@ -8,7 +8,7 @@ class MuurkeKlopNDown extends Scorable {
 
   final Map<int, MuurkeKlopNDownRound> rounds = Map();
 
-  MuurkeKlopNDown.aggregateId(ScorableAggregateId aggregateId) : super.aggregateId(aggregateId);
+  MuurkeKlopNDown.aggregateId(AggregateId aggregateId) : super.aggregateId(aggregateId);
 
   @commandHandler
   MuurkeKlopNDown.command(CreateScorable command) : super.command(command) {
@@ -141,7 +141,7 @@ class MuurkeKlopNDown extends Scorable {
           return CommandAllowance(command, false, "Round is not in progress");
         }
         if (round.isStruckOut(command.participant)) {
-          return CommandAllowance(command, false, "${command.participant.name} was already struck out in round ${command.roundIndex + 1}");
+          return CommandAllowance(command, false, "${command.participant.participantName} was already struck out in round ${command.roundIndex + 1}");
         }
         if (!isParticipating(command.participant)) {
           return CommandAllowance(command, false, "Player is not participating in this game");

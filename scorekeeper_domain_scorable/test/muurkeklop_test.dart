@@ -8,31 +8,30 @@ import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
 void main() {
-  final player1 = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: 'Player 1');
+  final player1 = Participant(participantId: Uuid().v4(), participantName: 'Player 1');
 
-  final player2 = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: 'Player 2');
+  final player2 = Participant(participantId: Uuid().v4(), participantName: 'Player 2');
 
-  final domainEventFactory = DomainEventFactory<MuurkeKlopNDown, MuurkeKlopNDownAggregateId>(producerId: 'MK Test', applicationVersion: 'V1');
+  final domainEventFactory = DomainEventFactory<MuurkeKlopNDown>(producerId: 'MK Test', applicationVersion: 'V1');
 
-  late TestFixture<MuurkeKlopNDown, MuurkeKlopNDownAggregateId> fixture;
+  late TestFixture<MuurkeKlopNDown> fixture;
 
   setUp(() {
-    fixture = TestFixture<MuurkeKlopNDown, MuurkeKlopNDownAggregateId>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
+    fixture = TestFixture<MuurkeKlopNDown>(MuurkeKlopNDownCommandHandler(), MuurkeKlopNDownEventHandler());
   });
 
   group('Command handling', () {
     group('Rounds', () {
       test('Add a round', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
-        final payload = ScorableCreated()
-          ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId;
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
-          ..given(_aggregateId, domainEventFactory.local(_aggregateId, 0, payload))
+          ..given(_aggregateId, ScorableCreated()
+            ..name = 'Test'
+            ..scorableId = _aggregateId.id)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(0));
           })
-          ..when(AddRound()..scorableId = _aggregateId.scorableId)
+          ..when(AddRound()..scorableId = _aggregateId.id)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(1));
             expect(scorable.rounds[0]!.roundIndex, equals(0));
@@ -41,19 +40,19 @@ void main() {
       });
 
       test('Remove a round', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
-          ..given(_aggregateId, domainEventFactory.local(_aggregateId, 0, ScorableCreated()
+          ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId))
-          ..given(_aggregateId, domainEventFactory.local(_aggregateId, 1, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
-            ..roundIndex = 0))
+            ..scorableId = _aggregateId.id)
+          ..given(_aggregateId, RoundAdded()
+            ..scorableId = _aggregateId.id
+            ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(1));
           })
           ..when(RemoveRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(0));
@@ -61,19 +60,19 @@ void main() {
       });
 
       test('Start a round', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
-          ..given(_aggregateId, domainEventFactory.local(_aggregateId, 0, ScorableCreated()
+          ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId))
-          ..given(_aggregateId, domainEventFactory.local(_aggregateId, 1, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
-            ..roundIndex = 0))
-          ..given(_aggregateId, domainEventFactory.local(_aggregateId, 2, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
-            ..participant = player1))
+            ..scorableId = _aggregateId.id)
+          ..given(_aggregateId, RoundAdded()
+            ..scorableId = _aggregateId.id
+            ..roundIndex = 0)
+          ..given(_aggregateId, ParticipantAdded()
+            ..scorableId = _aggregateId.id
+            ..participant = player1)
           ..when(StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds[0]!.state, equals(RoundState.STARTED));
@@ -81,16 +80,16 @@ void main() {
       });
 
       test('Start a round without participants', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Round cannot start without any players'));
@@ -98,22 +97,22 @@ void main() {
       });
 
       test('Start a round that has already started', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Round already started'));
@@ -121,25 +120,25 @@ void main() {
       });
 
       test('Start a round that has been paused', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundPaused()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(),
@@ -148,25 +147,25 @@ void main() {
       });
 
       test('Start a round that has been finished', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundFinished()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(
@@ -175,22 +174,22 @@ void main() {
       });
 
       test('Pause a round that has already started', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(PauseRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds[0]!.state, equals(RoundState.PAUSED));
@@ -198,19 +197,19 @@ void main() {
       });
 
       test('Pause a round that has not yet been started', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..when(PauseRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Round has not yet been started'));
@@ -218,25 +217,25 @@ void main() {
       });
 
       test('Pause a round that has already been paused', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundPaused()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(PauseRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Round has already been paused'));
@@ -244,28 +243,28 @@ void main() {
       });
 
       test('Pause a round that has been resumed', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundPaused()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundResumed()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(PauseRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds[0]!.state, equals(RoundState.PAUSED));
@@ -273,25 +272,25 @@ void main() {
       });
 
       test('Pause a round that has already been finished', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundFinished()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(PauseRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Round has already been finished'));
@@ -299,25 +298,25 @@ void main() {
       });
 
       test('Resume a round that has been paused', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundPaused()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(ResumeRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds[0]!.state, equals(RoundState.STARTED));
@@ -325,19 +324,19 @@ void main() {
       });
 
       test('Resume a round that is not paused', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..when(ResumeRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(fixture.lastThrownException.toString(), contains('Round is not paused'));
@@ -345,22 +344,22 @@ void main() {
       });
 
       test('Finish a round', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(FinishRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds[0]!.state, equals(RoundState.FINISHED));
@@ -368,22 +367,22 @@ void main() {
       });
 
       test('Finish a round that has not yet started', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..when(FinishRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds[0]!.state, equals(RoundState.FINISHED));
@@ -393,25 +392,25 @@ void main() {
 
     group('Participant strike-out', () {
       test('Strike out a participant', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player2)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..then((scorable) {
             expect(scorable.rounds.length, equals(2));
@@ -419,7 +418,7 @@ void main() {
             expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           })
           ..when(StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
@@ -431,28 +430,28 @@ void main() {
       });
 
       test('Strike out a participant twice in same round', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player2)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantStruckOut()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
@@ -461,7 +460,7 @@ void main() {
             expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           })
           ..when(StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
@@ -474,28 +473,28 @@ void main() {
       });
 
       test('Undo participant strike out', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player2)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantStruckOut()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
@@ -504,7 +503,7 @@ void main() {
             expect(scorable.rounds[1]!.strikeOutOrder, isEmpty);
           })
           ..when(UndoParticipantStrikeOut()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
@@ -521,26 +520,26 @@ void main() {
       ///  - can use its properties in command allowance messages
       ///  - can show some basic properties immediately without having to look them up
       test('Strike out modified participant (only matching participantId)', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         final player1b = Participant(participantId: player1.participantId, participantName: 'Player 1B');
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 1)
           ..given(_aggregateId, RoundStarted()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..when(StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1b
             ..roundIndex = 0)
           ..then((scorable) {
@@ -552,22 +551,22 @@ void main() {
       });
 
       test('Strike out a participant in a round that has not yet been started', () {
-        final _aggregateId = MuurkeKlopNDownAggregateId.random();
+        final _aggregateId = AggregateId.random(MuurkeKlopNDown);
         fixture
           ..given(_aggregateId, ScorableCreated()
             ..name = 'Test'
-            ..scorableId = _aggregateId.scorableId)
+            ..scorableId = _aggregateId.id)
           ..given(_aggregateId, RoundAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1)
           ..given(_aggregateId, ParticipantAdded()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player2)
           ..when(StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..participant = player1
             ..roundIndex = 0)
           ..then((scorable) {
@@ -579,24 +578,24 @@ void main() {
 
   group('Command allowances', () {
     test('StrikeOutParticipant allowed', () {
-      final _aggregateId = MuurkeKlopNDownAggregateId.random();
+      final _aggregateId = AggregateId.random(MuurkeKlopNDown);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, RoundAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..given(_aggregateId, ParticipantAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..participant = player1)
         ..given(_aggregateId, RoundStarted()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         // No "when" because we're directly testing the command allowance. Maybe we should not do this?
         ..then((scorable) {
           final command = StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0
             ..participant = player1;
           expect(scorable.isAllowed(command), equals(CommandAllowance(command, true, "Strike out player")));
@@ -604,31 +603,31 @@ void main() {
     });
 
     test('StrikeOutParticipant when already struck out in the given round', () {
-      final _aggregateId = MuurkeKlopNDownAggregateId.random();
+      final _aggregateId = AggregateId.random(MuurkeKlopNDown);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, RoundAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..given(_aggregateId, ParticipantAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..participant = player1)
         ..given(_aggregateId, RoundStarted()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..given(_aggregateId, ParticipantStruckOut()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0
           ..participant = player1)
         ..given(_aggregateId, RoundStarted()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         // No "when" because we're directly testing the command allowance. Maybe we should not do this?
         ..then((scorable) {
           final command = StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0
             ..participant = player1;
           expect(scorable.isAllowed(command),
@@ -637,23 +636,23 @@ void main() {
     });
 
     test('StrikeOutParticipant for Participant not in Scorable', () {
-      final _aggregateId = MuurkeKlopNDownAggregateId.random();
+      final _aggregateId = AggregateId.random(MuurkeKlopNDown);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, RoundAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..given(_aggregateId, ParticipantAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..participant = player1)
         ..given(_aggregateId, RoundStarted()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..then((scorable) {
           var command = StrikeOutParticipant()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0
             ..participant = player2;
           expect(scorable.isAllowed(command),
@@ -662,37 +661,37 @@ void main() {
     });
 
     test('StartRound allowed', () {
-      final _aggregateId = MuurkeKlopNDownAggregateId.random();
+      final _aggregateId = AggregateId.random(MuurkeKlopNDown);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, RoundAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..given(_aggregateId, ParticipantAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..participant = player1)
         ..then((scorable) {
           var command = StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0;
           expect(scorable.isAllowed(command), equals(CommandAllowance(command, true, "Start round")));
         });
     });
 
     test('StartRound without players', () {
-      final _aggregateId = MuurkeKlopNDownAggregateId.random();
+      final _aggregateId = AggregateId.random(MuurkeKlopNDown);
       fixture
         ..given(_aggregateId, ScorableCreated()
           ..name = 'Test'
-          ..scorableId = _aggregateId.scorableId)
+          ..scorableId = _aggregateId.id)
         ..given(_aggregateId, RoundAdded()
-          ..scorableId = _aggregateId.scorableId
+          ..scorableId = _aggregateId.id
           ..roundIndex = 0)
         ..then((scorable) {
           var command = StartRound()
-            ..scorableId = _aggregateId.scorableId
+            ..scorableId = _aggregateId.id
             ..roundIndex = 0;
           expect(scorable.isAllowed(command),
               equals(CommandAllowance(command, false, "Round cannot start without any players")));

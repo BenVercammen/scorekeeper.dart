@@ -1,5 +1,7 @@
 
 
+import 'package:scorekeeper_domain/core.dart';
+
 import 'aggregate.dart';
 
 // This is where we define the events we use.
@@ -122,14 +124,13 @@ abstract class Event {
 /// TODO: https://medium.com/google-cloud/using-cloud-events-and-cloud-events-generator-4b71b8a90277 checken...
 /// hoe gaan we die specifiëren?
 /// DomainEvent = payload + metadata, en enkel die payload is voor onze aggregate interessant...
-// @JsonSerializable()
-class DomainEvent<T extends Aggregate, A extends AggregateId> extends Event/* implements Serializable */{
+class DomainEvent extends Event {
 
   /// The sequence of the event
   final int _sequence;
 
   /// The ID of the aggregate of the event
-  final A _aggregateId;
+  final AggregateId _aggregateId;
 
   const DomainEvent({
     required String eventId,
@@ -142,7 +143,7 @@ class DomainEvent<T extends Aggregate, A extends AggregateId> extends Event/* im
     required String domainVersion,
     required String payloadType,
     required dynamic payload,
-    required A aggregateId,
+    required AggregateId aggregateId,
     required int sequence,
   })   : _sequence = sequence,
         _aggregateId = aggregateId,
@@ -158,7 +159,7 @@ class DomainEvent<T extends Aggregate, A extends AggregateId> extends Event/* im
             payloadType: payloadType,
             payload: payload);
 
-  A get aggregateId => _aggregateId;
+  AggregateId get aggregateId => _aggregateId;
 
   int get sequence => _sequence;
 
@@ -183,8 +184,7 @@ class DomainEvent<T extends Aggregate, A extends AggregateId> extends Event/* im
       aggregateId.hashCode ^
       payload.hashCode;
 
-  // TODO: deze had ik liever niet in DomainEvent gestoken, maar ergens maakt het wel sense dat we weten door welk type aggregate dit event ge-emit werd...
-  Type get aggregateType => T;
+  Type get aggregateType => aggregateId.type;
 
   @override
   String toString() {
@@ -284,4 +284,5 @@ abstract class DomainSerializer {
 
 abstract class DomainDeserializer {
   dynamic deserialize(String payloadType, String payload);
+  AggregateId deserializeAggregateId(String aggregateId, String aggregateType);
 }

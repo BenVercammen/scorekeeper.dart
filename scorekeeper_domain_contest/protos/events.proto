@@ -1,17 +1,16 @@
 syntax = "proto3";
 package io.scorekeeper.contest;
 
-import "identifiers.proto";
-
-
 message EventMetadata {
-  string eventId = 1;
-
+  string aggregateId = 1;
+  string aggregateType = 2;
+  string eventId = 3;
+  string eventType = 4;
 }
 
 
 message ContestCreated {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ContestId contestId = 2;
+  string contestId = 2;
   string contestName = 3;
 }

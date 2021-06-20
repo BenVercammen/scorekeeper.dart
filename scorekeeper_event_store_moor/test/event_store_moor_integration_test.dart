@@ -6,6 +6,6 @@ import 'event_store_moor_test.dart';
 /// In this test we'll validate our EventStore implementation.
 void main() {
 
-  EventStoreTestSuite.runEventStoreTests(TestEventStoreMoorImpl, () => TestEventStoreMoorImpl());
+  EventStoreTestSuite().runEventStoreTests(TestEventStoreMoorImpl, () => TestEventStoreMoorImpl());
 
 }

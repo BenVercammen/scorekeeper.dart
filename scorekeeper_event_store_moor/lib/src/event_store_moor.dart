@@ -20,12 +20,9 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   final DomainDeserializer domainDeserializer;
 
-  final AggregateIdFactory aggregateIdFactory;
-
   EventStoreMoorImpl(
       this.domainSerializer,
       this.domainDeserializer,
-      this.aggregateIdFactory,
       [LazyDatabase? database])
       : super(database ?? _openConnection());
 
@@ -40,7 +37,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   }
 
   @override
-  Stream<DomainEvent<Aggregate, AggregateId>> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) async* {
+  Stream<DomainEvent> getDomainEvents({AggregateId? aggregateId, DateTime? timestamp}) async* {
     final query = select(domainEventTable);
     if (aggregateId != null) {
       query.where((e) => e.aggregateId.equals(aggregateId.id));
@@ -52,7 +49,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
     final list = await query.get();
     for (final event in list) {
       final payload = domainDeserializer.deserialize(event.payloadType, event.payload);
-      yield DomainEvent<Aggregate, AggregateId>(
+      yield DomainEvent(
           eventId: event.eventId,
           timestamp: event.timestamp,
           producerId: event.producerId,
@@ -61,7 +58,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
           domainVersion: event.domainVersion,
           payloadType: event.payloadType,
           payload: payload,
-          aggregateId: (payload as Aggregate).aggregateId,
+          aggregateId: domainDeserializer.deserializeAggregateId(event.aggregateId, event.aggregateType),
           sequence: event.sequence);
     }
   }
@@ -108,6 +105,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
         domainId: event.domainId,
         domainVersion: event.domainVersion,
         aggregateId: event.aggregateId.id,
+        aggregateType: event.aggregateId.type.toString(),
         sequence: event.sequence,
         payloadType: event.payloadType,
         payload: domainSerializer.serialize(event.payload)
@@ -219,7 +217,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
       ///
       ///  => dus, schrappen die shit?
 
-      yield aggregateIdFactory.of(aggregate.aggregateId, aggregate.aggregateType);
+      yield AggregateId.of(aggregate.aggregateId, aggregate.runtimeType);
     }
   }
 
@@ -255,6 +253,7 @@ class DomainEventTable extends Table {
   TextColumn get domainId => text().withLength(min: 6, max: 36)();
   TextColumn get domainVersion => text().withLength(min: 1, max: 36)();
   TextColumn get aggregateId => text().withLength(min: 36, max: 36)();
+  TextColumn get aggregateType => text().withLength(min: 1, max: 64)();
   IntColumn get sequence => integer()();
   TextColumn get payloadType => text()();
   TextColumn get payload => text()();

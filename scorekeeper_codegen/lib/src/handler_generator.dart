@@ -47,7 +47,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     // Command Handler
     final commandHandlerBuilder = ClassBuilder()
       ..name = '${aggregateName}CommandHandler'
-      ..implements.add(Reference('CommandHandler<$aggregateName, ${aggregateName}AggregateId>'))
+      ..implements.add(Reference('CommandHandler<$aggregateName>'))
       ..methods.add(_commandIsConstructorMethod(constructor))
       ..methods.add(_commandConstructorMethod(aggregate, constructor))
       ..methods.add(_commandHandleMethod(aggregate, commandHandlerMethods))
@@ -57,7 +57,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     // Event Handler
     final eventHandlerBuilder = ClassBuilder()
       ..name = '${aggregateName}EventHandler'
-      ..implements.add(Reference('EventHandler<$aggregateName, ${aggregateName}AggregateId>'))
+      ..implements.add(Reference('EventHandler<$aggregateName>'))
       ..methods.add(_eventHandleMethod(aggregate, eventHandlerMethods))
       ..methods.add(_eventForTypeMethod(aggregate))
       ..methods.add(_newInstanceMethod(aggregate))
@@ -150,7 +150,7 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
 
   /// Build the newInstance method
   Method _newInstanceMethod(ClassElement aggregate) {
-    final aggregateIdClassName = '${aggregate.name}AggregateId';
+    const aggregateIdClassName = 'AggregateId';
     final builder = MethodBuilder()
       ..name = 'newInstance'
       ..returns = Reference(aggregate.name);
@@ -204,7 +204,6 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     }
     return constructorCommands.first;
   }
-
 
   /// Build the handles method
   Method _eventHandlesMethod(ClassElement aggregate, List<MethodElement> commandHandlerMethods) {

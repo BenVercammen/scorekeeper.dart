@@ -1,7 +1,6 @@
 syntax = "proto3";
 package io.scorekeeper.scorable;
 
-import "identifiers.proto";
 // Events voor die Participants VO, maar mss apart trekken?
 import "events.proto";
 
@@ -15,20 +14,20 @@ message CommandMetadata {
 /// Command to create a new Scorable
 message CreateScorable {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   string name = 3;
 }
 
 /// Command to add a Participant to a Scorable
 message AddParticipant {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
 }
 
 message RemoveParticipant {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   /// Note that we use a full participant object, and not just the ID.
   /// This way we might get some extra details about the user's state
   /// at the time of removal. This could be used in the command handler to
@@ -38,12 +37,12 @@ message RemoveParticipant {
 
 message StartScorable {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
 }
 
 message FinishScorable {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
 }
 
 
@@ -54,14 +53,14 @@ message FinishScorable {
 /// on the order in which he was struck out.
 message StrikeOutParticipant {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
   int32 roundIndex = 4;
 }
 
 message UndoParticipantStrikeOut {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
   int32 roundIndex = 4;
 }
@@ -69,40 +68,40 @@ message UndoParticipantStrikeOut {
 /// Add an extra Round to the Scorable
 message AddRound {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
 }
 
 /// Remove an existing Round from the Scorable
 message RemoveRound {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 /// Start a given Round of the Scorable
 message StartRound {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 /// Finish a given Round of the Scorable
 message FinishRound {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 /// Pause a given Round of the Scorable
 message PauseRound {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 /// Resume a given Round of the Scorable
 message ResumeRound {
   CommandMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }

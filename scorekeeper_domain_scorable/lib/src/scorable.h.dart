@@ -11,8 +11,7 @@ import 'package:scorekeeper_domain_scorable/src/scorable.dart';
 import 'package:scorekeeper_domain_scorable/src/generated/commands.pb.dart';
 import 'package:scorekeeper_domain_scorable/src/generated/events.pb.dart';
 
-class ScorableCommandHandler
-    implements CommandHandler<Scorable, ScorableAggregateId> {
+class ScorableCommandHandler implements CommandHandler<Scorable> {
   @override
   bool isConstructorCommand(dynamic command) {
     return command is CreateScorable;
@@ -43,8 +42,8 @@ class ScorableCommandHandler
   }
 
   @override
-  Scorable newInstance(ScorableAggregateId scorableAggregateId) {
-    return Scorable.aggregateId(scorableAggregateId);
+  Scorable newInstance(AggregateId aggregateId) {
+    return Scorable.aggregateId(aggregateId);
   }
 
   @override
@@ -60,8 +59,7 @@ class ScorableCommandHandler
   }
 }
 
-class ScorableEventHandler
-    implements EventHandler<Scorable, ScorableAggregateId> {
+class ScorableEventHandler implements EventHandler<Scorable> {
   @override
   void handle(Scorable scorable, DomainEvent event) {
     switch (event.payload.runtimeType) {
@@ -85,8 +83,8 @@ class ScorableEventHandler
   }
 
   @override
-  Scorable newInstance(ScorableAggregateId scorableAggregateId) {
-    return Scorable.aggregateId(scorableAggregateId);
+  Scorable newInstance(AggregateId aggregateId) {
+    return Scorable.aggregateId(aggregateId);
   }
 
   @override

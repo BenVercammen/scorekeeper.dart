@@ -17,7 +17,7 @@ void main() {
     late Aggregate aggregate;
 
     setUp(() {
-      aggregate = _AggregateImpl(_AggregateImplId.random());
+      aggregate = _AggregateImpl(AggregateId.random(Aggregate));
     });
 
     /// Events that are being applied within the aggregate, should be stored temporarily
@@ -30,23 +30,4 @@ void main() {
 
   });
 
-}
-
-class _AggregateImplId extends AggregateId {
-
-  @override
-  final String id;
-
-  @override
-  final Type type = _AggregateImpl;
-
-  _AggregateImplId(this.id);
-
-  static _AggregateImplId random() {
-    return _AggregateImplId(Uuid().v4());
-  }
-
-  static _AggregateImplId of(String id) {
-    return _AggregateImplId(id);
-  }
 }

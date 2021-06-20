@@ -6,12 +6,8 @@ message EventMetadata {
 
 }
 
-message TestAggregateId {
-  string uuid = 1;
-}
-
 message TestAggregateCreated {
   EventMetadata metadata = 1;
-  TestAggregateId testAggregateId = 2;
+  string testAggregateId = 2;
   string contestName = 3;
 }

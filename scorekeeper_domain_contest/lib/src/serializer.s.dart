@@ -31,4 +31,18 @@ class ContestDeserializer implements DomainDeserializer {
         throw Exception('Cannot deserialize "$payloadType"');
     }
   }
+
+  @override
+  AggregateId deserializeAggregateId(String aggregateId, String aggregateType) {
+    switch (aggregateType) {
+      case 'String':
+        return AggregateId.of(aggregateId, String);
+      case 'EventMetadata':
+        return AggregateId.of(aggregateId, EventMetadata);
+      case 'ContestCreated':
+        return AggregateId.of(aggregateId, ContestCreated);
+      default:
+        throw Exception('Cannot deserialize AggregateId for "$aggregateType"');
+    }
+  }
 }

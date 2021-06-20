@@ -1,7 +1,7 @@
 syntax = "proto3";
 package io.scorekeeper.scorable;
 
-import "identifiers.proto";
+import "google/protobuf/timestamp.proto";
 
 // Value Objects
 
@@ -13,10 +13,11 @@ message EventMetadata {
   string aggregateType = 4;
   string eventType = 5;
   // TODO: user, timestamp, machine, ... etc!
+  google.protobuf.Timestamp ts = 6;
 }
 
 message Participant {
-  io.scorekeeper.identifiers.ParticipantId participantId = 1;
+  string participantId = 1;
   string participantName = 2;
 }
 
@@ -24,19 +25,19 @@ message Participant {
 
 message ScorableCreated {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   string name = 3;
 }
 
 message ParticipantAdded {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
 }
 
 message ParticipantRemoved {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
 }
 
@@ -48,50 +49,50 @@ message ParticipantRemoved {
 
 message ParticipantStruckOut {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
   int32 roundIndex = 4;
 }
 
 message ParticipantStrikeOutUndone {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   Participant participant = 3;
   int32 roundIndex = 4;
 }
 
 message RoundAdded {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 message RoundRemoved {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 message RoundStarted {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 message RoundFinished {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 message RoundPaused {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }
 
 message RoundResumed {
   EventMetadata metadata = 1;
-  io.scorekeeper.identifiers.ScorableId scorableId = 2;
+  string scorableId = 2;
   int32 roundIndex = 3;
 }

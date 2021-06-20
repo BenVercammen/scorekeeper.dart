@@ -6,8 +6,7 @@ import 'package:scorekeeper_domain_contest/contest.dart';
 /// The (root) aggregate of our domain
 /// A Contest groups together multiple Scorables, possibly in stages
 @aggregate
-@AggregateIdType(ContestId)
-class Contest extends Aggregate<ContestAggregateId> {
+class Contest extends Aggregate {
 
   late String name;
 
@@ -17,12 +16,12 @@ class Contest extends Aggregate<ContestAggregateId> {
   /// The Stage -> Scorable(Ref) map
   final Map<Stage, Set<ScorableRef>> stages = Map();
 
-  Contest.aggregateId(ContestAggregateId aggregateId) : super(aggregateId);
+  Contest.aggregateId(AggregateId aggregateId) : super(aggregateId);
 
   @commandHandler
-  Contest.command(CreateContest command) : super(ContestAggregateId.of(ContestId(uuid: command.aggregateId))) {
+  Contest.command(CreateContest command) : super(AggregateId.of(command.aggregateId, Contest)) {
     final event = ContestCreated()
-      ..contestId = ContestId(uuid: command.aggregateId)
+      ..contestId = command.aggregateId
       ..contestName = command.name;
     apply(event);
   }

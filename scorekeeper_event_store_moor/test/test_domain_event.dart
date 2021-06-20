@@ -8,30 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import 'generated/events.pb.dart';
 
-class TestDomainAggregateId extends AggregateId {
-
-  final TestAggregateId testAggregateId;
-
-  @override
-  final Type type = TestDomainAggregateId;
-
-  @override
-  String get id => testAggregateId.uuid;
-
-  TestDomainAggregateId(this.testAggregateId);
-
-  TestDomainAggregateId._(String id) : testAggregateId = TestAggregateId(uuid: id);
-
-  static TestDomainAggregateId random() {
-    return TestDomainAggregateId._(Uuid().v4());
-  }
-
-  static TestDomainAggregateId of(String id) {
-    return TestDomainAggregateId._(id);
-  }
-}
-
-// TODO: in domain te laten genereren!!!!
+// This class should be generated within the domain...
 class TestDomainEventSerializer implements DomainSerializer {
   @override
   String serialize(dynamic object) {
@@ -46,7 +23,7 @@ class TestDomainEventSerializer implements DomainSerializer {
   }
 }
 
-// TODO: in domain te laten genereren!
+// This class should be generated within the domain...
 class TestDomainEventDeserializer implements DomainDeserializer {
   @override
   dynamic deserialize(String payloadType, String serialized) {
@@ -57,6 +34,18 @@ class TestDomainEventDeserializer implements DomainDeserializer {
         return TestAggregateCreated.fromJson(serialized);
       default:
         throw Exception('CANNOT DESERIALIZE "$payloadType"');
+    }
+  }
+
+  @override
+  AggregateId deserializeAggregateId(String aggregateId, String aggregateType) {
+    switch (aggregateType) {
+      case 'String':
+        return AggregateId.of(aggregateId, String);
+      case 'Aggregate':
+        return AggregateId.of(aggregateId, Aggregate);
+      default:
+        throw Exception('CANNOT DESERIALIZE AggregateId for "$aggregateType"');
     }
   }
 

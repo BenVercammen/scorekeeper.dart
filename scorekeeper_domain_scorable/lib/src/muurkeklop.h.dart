@@ -11,8 +11,7 @@ import 'package:scorekeeper_domain_scorable/src/muurkeklop.dart';
 import 'package:scorekeeper_domain_scorable/src/generated/commands.pb.dart';
 import 'package:scorekeeper_domain_scorable/src/generated/events.pb.dart';
 
-class MuurkeKlopNDownCommandHandler
-    implements CommandHandler<MuurkeKlopNDown, MuurkeKlopNDownAggregateId> {
+class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
   @override
   bool isConstructorCommand(dynamic command) {
     return command is CreateScorable;
@@ -68,9 +67,8 @@ class MuurkeKlopNDownCommandHandler
   }
 
   @override
-  MuurkeKlopNDown newInstance(
-      MuurkeKlopNDownAggregateId muurkeKlopNDownAggregateId) {
-    return MuurkeKlopNDown.aggregateId(muurkeKlopNDownAggregateId);
+  MuurkeKlopNDown newInstance(AggregateId aggregateId) {
+    return MuurkeKlopNDown.aggregateId(aggregateId);
   }
 
   @override
@@ -94,8 +92,7 @@ class MuurkeKlopNDownCommandHandler
   }
 }
 
-class MuurkeKlopNDownEventHandler
-    implements EventHandler<MuurkeKlopNDown, MuurkeKlopNDownAggregateId> {
+class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
   @override
   void handle(MuurkeKlopNDown muurkeKlopNDown, DomainEvent event) {
     switch (event.payload.runtimeType) {
@@ -147,9 +144,8 @@ class MuurkeKlopNDownEventHandler
   }
 
   @override
-  MuurkeKlopNDown newInstance(
-      MuurkeKlopNDownAggregateId muurkeKlopNDownAggregateId) {
-    return MuurkeKlopNDown.aggregateId(muurkeKlopNDownAggregateId);
+  MuurkeKlopNDown newInstance(AggregateId aggregateId) {
+    return MuurkeKlopNDown.aggregateId(aggregateId);
   }
 
   @override

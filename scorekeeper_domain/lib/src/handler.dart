@@ -1,9 +1,11 @@
 
+import 'package:scorekeeper_domain/core.dart';
+
 import 'aggregate.dart';
 import 'event.dart';
 
 /// Interface to be implemented by the generated domain command handler
-abstract class CommandHandler<T extends Aggregate, A extends AggregateId> {
+abstract class CommandHandler<T extends Aggregate> {
 
   /// Check if the given command should call a constructor
   bool isConstructorCommand(dynamic command);
@@ -13,7 +15,7 @@ abstract class CommandHandler<T extends Aggregate, A extends AggregateId> {
   T handleConstructorCommand(dynamic command);
 
   /// Create a new empty instance
-  T newInstance(A aggregateId);
+  T newInstance(AggregateId aggregateId);
 
   /// Handle regular (non-constructor) commands
   void handle(T aggregate, dynamic command);
@@ -25,17 +27,17 @@ abstract class CommandHandler<T extends Aggregate, A extends AggregateId> {
 
 
 /// Interface to be implemented by the generated domain event handler
-abstract class EventHandler<T extends Aggregate, A extends AggregateId> {
+abstract class EventHandler<T extends Aggregate> {
 
-  void handle(T aggregate, DomainEvent<T, A> event);
+  void handle(T aggregate, DomainEvent event);
 
   /// Returns whether or not this EventHandler can handle the given DomainEvent
   /// TODO: eigenlijk toch weer niet gebruikt?
-  bool handles(DomainEvent<T, A> event);
+  bool handles(DomainEvent event);
 
   bool forType(Type type);
 
   /// Create a new empty instance
-  T newInstance(A aggregateId);
+  T newInstance(AggregateId aggregateId);
 
 }

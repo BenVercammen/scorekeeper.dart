@@ -10,8 +10,7 @@ import 'package:scorekeeper_domain/src/aggregate.dart';
 import 'package:scorekeeper_domain_contest/src/contest.dart';
 import 'package:scorekeeper_domain_contest/src/generated/events.pb.dart';
 
-class ContestCommandHandler
-    implements CommandHandler<Contest, ContestAggregateId> {
+class ContestCommandHandler implements CommandHandler<Contest> {
   @override
   bool isConstructorCommand(dynamic command) {
     return command is CreateContest;
@@ -48,8 +47,8 @@ class ContestCommandHandler
   }
 
   @override
-  Contest newInstance(ContestAggregateId contestAggregateId) {
-    return Contest.aggregateId(contestAggregateId);
+  Contest newInstance(AggregateId aggregateId) {
+    return Contest.aggregateId(aggregateId);
   }
 
   @override
@@ -67,7 +66,7 @@ class ContestCommandHandler
   }
 }
 
-class ContestEventHandler implements EventHandler<Contest, ContestAggregateId> {
+class ContestEventHandler implements EventHandler<Contest> {
   @override
   void handle(Contest contest, DomainEvent event) {
     switch (event.payload.runtimeType) {
@@ -91,8 +90,8 @@ class ContestEventHandler implements EventHandler<Contest, ContestAggregateId> {
   }
 
   @override
-  Contest newInstance(ContestAggregateId contestAggregateId) {
-    return Contest.aggregateId(contestAggregateId);
+  Contest newInstance(AggregateId aggregateId) {
+    return Contest.aggregateId(aggregateId);
   }
 
   @override

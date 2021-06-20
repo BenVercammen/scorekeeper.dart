@@ -29,6 +29,10 @@ So, we should be able to tell moor to clear/delete the database.
 In the future, we'll need to make sure that we can handle such things.
 Of course, right now this is because of required metadata. Our (volatile) domain events are simply serialized and stored without any structure.
 
+#### Local development
+When running tests, the SQL structure is already set up, no?
+Where to find the database file??
+ - Tests by default should put it in ``C:\Users\...\AppData\Local\Temp\db.sqlite``
 
 
 ## Testing
