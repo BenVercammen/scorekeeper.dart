@@ -76,7 +76,7 @@ class UnsupportedCommandException implements Exception {
 
   @override
   String toString() {
-    return 'No command handler registered for $command';
+    return "No command handler registered for Instance of '${(command.runtimeType)}'";
   }
 
 }
@@ -90,7 +90,7 @@ class MultipleCommandHandlersException implements Exception {
 
   @override
   String toString() {
-    return 'Multiple command handlers registered for $command';
+    return 'Multiple command handlers registered for ${(command.runtimeType)}';
   }
 
 }

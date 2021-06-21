@@ -57,6 +57,24 @@ class ScorableCommandHandler implements CommandHandler<Scorable> {
         return false;
     }
   }
+
+  @override
+  AggregateId extractAggregateId(dynamic command) {
+    switch (command.runtimeType) {
+      case CreateScorable:
+        return AggregateId.of(
+            (command as CreateScorable).scorableId, CreateScorable);
+      case AddParticipant:
+        return AggregateId.of(
+            (command as AddParticipant).scorableId, AddParticipant);
+      case RemoveParticipant:
+        return AggregateId.of(
+            (command as RemoveParticipant).scorableId, RemoveParticipant);
+      default:
+        throw Exception(
+            'Cannot extract AggregateId for "${command.runtimeType}"');
+    }
+  }
 }
 
 class ScorableEventHandler implements EventHandler<Scorable> {
@@ -96,6 +114,27 @@ class ScorableEventHandler implements EventHandler<Scorable> {
         return true;
       default:
         return false;
+    }
+  }
+
+  @override
+  AggregateId extractAggregateId(dynamic event) {
+    switch (event.runtimeType) {
+      case CreateScorable:
+        return AggregateId.of(
+            (event as CreateScorable).scorableId, CreateScorable);
+      case ScorableCreated:
+        return AggregateId.of(
+            (event as ScorableCreated).scorableId, ScorableCreated);
+      case ParticipantAdded:
+        return AggregateId.of(
+            (event as ParticipantAdded).scorableId, ParticipantAdded);
+      case ParticipantRemoved:
+        return AggregateId.of(
+            (event as ParticipantRemoved).scorableId, ParticipantRemoved);
+      default:
+        throw Exception(
+            'Cannot extract AggregateId for "${event.runtimeType}"');
     }
   }
 }

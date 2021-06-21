@@ -2,7 +2,8 @@ import 'dart:collection';
 
 import 'package:logger/logger.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_domain_scorable/scorable.dart';
+// import 'package:scorekeeper_domain/core.dart' as c show AggregateId;
+
 
 import 'aggregate.dart';
 import 'event.dart';
@@ -23,6 +24,8 @@ class Scorekeeper {
   /// that we can only retrieve at runtime.
   late final DomainEventFactory _domainEventFactory;
 
+  late final AggregateDtoFactory _aggregateDtoFactory;
+
   /// The (generated) handler that maps commands to aggregate handler methods
   final _commandHandlers = <CommandHandler>{};
 
@@ -40,6 +43,7 @@ class Scorekeeper {
   /// RemoteEventPublisher and RemoteEventListener are optional
   Scorekeeper({required EventStore eventStore,
     required AggregateCache aggregateCache,
+    required AggregateDtoFactory aggregateDtoFactory,
     required DomainEventFactory domainEventFactory,
     RemoteEventPublisher? remoteEventPublisher,
     RemoteEventListener? remoteEventListener,
@@ -47,6 +51,7 @@ class Scorekeeper {
     _logger = logger ?? Logger();
     _eventStore = eventStore;
     _aggregateCache = aggregateCache;
+    _aggregateDtoFactory = aggregateDtoFactory;
     _domainEventFactory = domainEventFactory;
     if (null == remoteEventPublisher) {
       _logger.i('No remote event publisher was passed along, so all events will remain on the local machine');
@@ -61,7 +66,7 @@ class Scorekeeper {
     _remoteEventListener?.domainEventStream.listen((DomainEvent event) async {
       _logger.d('Received remote event');
       // If the event relates to an aggregate that's supposed to be stored, we'll store it
-      if (await isRegistered(event.aggregateId)) {
+      if (await isRegistered(event.aggregateId as AggregateId)) {
         try {
           await _eventStore.storeDomainEvent(event);
           // If the event relates to a cached aggregate, we'll handle it immediately
@@ -103,22 +108,20 @@ class Scorekeeper {
 
   /// Add an aggregate as being available within the current Scorekeeper instance.
   /// This is important as otherwise aggregates from outside this instance won't be available.
-  void registerAggregate(AggregateId aggregateId, Type aggregateType) {
-    // _registeredAggregates.putIfAbsent(aggregateId, () => aggregateType);
+  void registerAggregate(AggregateId aggregateId) {
     _eventStore.registerAggregateId(aggregateId);
   }
 
   /// Mark an aggregate as no longer being registered.
   /// Removes a "cached" aggregate from this scorekeeper instance and stops listening for (domain) events of that aggregate.
   void unregisterAggregate(AggregateId aggregateId) {
-    // _registeredAggregates.remove(aggregateId);
     _aggregateCache.purge(aggregateId);
     _eventStore.unregisterAggregateId(aggregateId);
   }
 
   /// Handle the given command using the wired (generated) CommandHandler
   Future<void> handleCommand(dynamic command) async {
-    _validateCommand(command);
+    // _validateCommand(command);
     final aggregate = await _handleCommand(command);
     // Make sure the aggregate is now registered and cached.
     // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
@@ -135,10 +138,10 @@ class Scorekeeper {
     // TODO: if not exists, make sure to rehydrate from events...
     if (!_aggregateCache.contains(aggregateId)) {
       // TODO: hmm, nog die types meegeven/bewaren???
-      final aggregate = await _loadHydratedAggregate(MuurkeKlopNDown, aggregateId);
+      final aggregate = await _loadHydratedAggregate(aggregateId);
       _aggregateCache.store(aggregate);
     }
-    return AggregateDtoFactory.create(_aggregateCache.get(aggregateId));
+    return _aggregateDtoFactory.create(_aggregateCache.get(aggregateId));
   }
 
   void evictAggregateFromCache(AggregateId aggregateId) {
@@ -147,9 +150,9 @@ class Scorekeeper {
 
   /// Enable caching for a given aggregate
   /// TODO: try to make private?? now also used in tests, but maybe tests don't need to know about this?
-  Future<void> loadAndAddAggregateToCache(AggregateId aggregateId, Type aggregateType) async {
+  Future<void> loadAndAddAggregateToCache(AggregateId aggregateId) async {
     if (!_aggregateCache.contains(aggregateId)) {
-      final aggregate = await _loadHydratedAggregate(aggregateType, aggregateId);
+      final aggregate = await _loadHydratedAggregate(aggregateId);
       _aggregateCache.store(aggregate);
     }
   }
@@ -158,8 +161,8 @@ class Scorekeeper {
     return await _eventStore.isRegisteredAggregateId(aggregateId);
   }
 
-  Future<void> refreshCache(Type aggregateType, AggregateId aggregateId) async {
-    _aggregateCache.store(await _loadHydratedAggregate(aggregateType, aggregateId));
+  Future<void> refreshCache(AggregateId aggregateId) async {
+    _aggregateCache.store(await _loadHydratedAggregate(aggregateId));
   }
 
   /// All events that have been applied by the command handler, should be handled and published remotely
@@ -179,7 +182,7 @@ class Scorekeeper {
         // We need this because of "atomicity"!
         // We cannot have a command of which only half its applied events are actually handled and stored
         // So we'll just invalidate the cached aggregate, the events are stored after all events have been applied successfully
-        aggregate = await _loadHydratedAggregate(aggregate.runtimeType, aggregate.aggregateId);
+        aggregate = await _loadHydratedAggregate(aggregate.aggregateId);
         throw exception;
       }
     }
@@ -202,11 +205,11 @@ class Scorekeeper {
 
   /// Call the correct command handler for the given command,
   /// and return the relevant aggregate.
-  Future<Aggregate> _handleCommand(dynamic command) async {
+  Future<T> _handleCommand<T extends Aggregate>(dynamic command) async {
     AggregateId aggregateId = _extractAggregateId(command);
     // The aggregate on which the command should be applied.
     // We'll use the registered command handler(s) to create a new Aggregate instances based on the given command
-    Aggregate aggregate;
+    T aggregate;
     final commandHandler = _getCommandHandlerFor(command);
     if (commandHandler.isConstructorCommand(command)) {
       // First make sure no Aggregate for the given AggregateId exists already
@@ -216,13 +219,13 @@ class Scorekeeper {
       if (await _eventStore.hasEventsForAggregate(aggregateId)) {
         throw AggregateIdAlreadyExistsException(aggregateId);
       }
-      aggregate = commandHandler.handleConstructorCommand(command);
+      aggregate = commandHandler.handleConstructorCommand(command) as T;
     } else {
       if (_aggregateCache.contains(aggregateId)) {
         aggregate = _aggregateCache.get(aggregateId);
       } else {
         // When not yet stored in cache, request events from local event manager and apply them...
-        aggregate = commandHandler.newInstance(aggregateId);
+        aggregate = commandHandler.newInstance(aggregateId) as T;
         await _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((event) {
           aggregate.apply(event.payload);
         });
@@ -238,12 +241,14 @@ class Scorekeeper {
   /// We do this because aggregates for which we're handling commands are pretty likely to be "commanded" again.
   Future<void> _cacheAndRegisterAggregate(Aggregate aggregate) async {
     _aggregateCache.store(aggregate);
-    registerAggregate(aggregate.aggregateId, aggregate.runtimeType);
-    await loadAndAddAggregateToCache(aggregate.aggregateId, aggregate.runtimeType);
+    registerAggregate(aggregate.aggregateId);
+    await loadAndAddAggregateToCache(aggregate.aggregateId);
   }
 
   /// Basic command validation
   /// Make sure the aggregateId is available.
+  /// UPDATE: actually
+  @Deprecated("No longer required to have 'aggregateId' as field name. Commands (and events) should have an AggregateId typed field, but the name can be more specific to the relevant Aggregate (eg: ScorableId).")
   void _validateCommand(command) {
     try {
       // ignore: unnecessary_statements
@@ -258,8 +263,7 @@ class Scorekeeper {
   }
 
   AggregateId _extractAggregateId(command) {
-    final aggregateId = ScorableAggregateId.of(command.aggregateId as String);
-    return aggregateId;
+    return _getCommandHandlerFor(command).extractAggregateId(command);
   }
 
   /// Handle the given DomainEvent using the wired (generated) EventHandler.
@@ -282,7 +286,7 @@ class Scorekeeper {
       // Load the (hydrated) aggregate and store it in cache.
       // TODO: TO TEST so this means that we'll automatically cache every Aggregate that we've registered!?
       //  NOT according to 'Handle regular event for registered, non-cached aggregateId' ...
-      aggregate = await _loadHydratedAggregate(domainEvent.aggregateType, aggregateId);
+      aggregate = await _loadHydratedAggregate(aggregateId);
       _aggregateCache.store(aggregate);
     }
     // Load the matching event handler and apply the event!
@@ -292,8 +296,8 @@ class Scorekeeper {
   }
 
   /// Loads a fully (re)hydrated aggregate based on all currently stored events
-  Future<T> _loadHydratedAggregate<T extends Aggregate>(Type runtimeType, AggregateId aggregateId) async {
-    final eventHandler = _getDomainEventHandlerFor(runtimeType);
+  Future<T> _loadHydratedAggregate<T extends Aggregate>(AggregateId aggregateId) async {
+    final eventHandler = _getDomainEventHandlerFor(aggregateId.type);
     // Nieuwe instance maken
     final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
@@ -305,7 +309,7 @@ class Scorekeeper {
     return aggregate as T;
   }
 
-  CommandHandler<Aggregate, AggregateId> _getCommandHandlerFor(dynamic command) {
+  CommandHandler<T> _getCommandHandlerFor<T extends Aggregate>(dynamic command) {
     final handlers = _commandHandlers.where((handler) => handler.handles(command)).toSet();
     if (handlers.isEmpty) {
       throw UnsupportedCommandException(command);
@@ -313,7 +317,7 @@ class Scorekeeper {
     if (handlers.length > 1) {
       throw MultipleCommandHandlersException(command);
     }
-    return handlers.first;
+    return handlers.first as CommandHandler<T>;
   }
 
   /// Get the EventHandler for the given Aggregate Type

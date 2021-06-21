@@ -64,6 +64,29 @@ class ContestCommandHandler implements CommandHandler<Contest> {
         return false;
     }
   }
+
+  @override
+  AggregateId extractAggregateId(dynamic command) {
+    switch (command.runtimeType) {
+      case CreateContest:
+        return AggregateId.of(
+            (command as CreateContest).aggregateId, CreateContest);
+      case AddParticipant:
+        return AggregateId.of(
+            (command as AddParticipant).aggregateId, AddParticipant);
+      case RemoveParticipant:
+        return AggregateId.of(
+            (command as RemoveParticipant).aggregateId, RemoveParticipant);
+      case AddStage:
+        return AggregateId.of((command as AddStage).aggregateId, AddStage);
+      case AddScorable:
+        return AggregateId.of(
+            (command as AddScorable).aggregateId, AddScorable);
+      default:
+        throw Exception(
+            'Cannot extract AggregateId for "${command.runtimeType}"');
+    }
+  }
 }
 
 class ContestEventHandler implements EventHandler<Contest> {
@@ -103,6 +126,27 @@ class ContestEventHandler implements EventHandler<Contest> {
         return true;
       default:
         return false;
+    }
+  }
+
+  @override
+  AggregateId extractAggregateId(dynamic event) {
+    switch (event.runtimeType) {
+      case CreateContest:
+        return AggregateId.of(
+            (event as CreateContest).aggregateId, CreateContest);
+      case ContestCreated:
+        return AggregateId.of(
+            (event as ContestCreated).contestId, ContestCreated);
+      case ParticipantAdded:
+        return AggregateId.of(
+            (event as ParticipantAdded).aggregateId, ParticipantAdded);
+      case ParticipantRemoved:
+        return AggregateId.of(
+            (event as ParticipantRemoved).aggregateId, ParticipantRemoved);
+      default:
+        throw Exception(
+            'Cannot extract AggregateId for "${event.runtimeType}"');
     }
   }
 }

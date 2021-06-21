@@ -154,10 +154,10 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     // First list all commands we are considering here
     final commands = [
       StartRound()
-        ..scorableId = ScorableId(uuid: scorable.aggregateId.id)
+        ..scorableId = scorable.aggregateId.id
         ..roundIndex = round.roundIndex,
       FinishRound()
-        ..scorableId = ScorableId(uuid: scorable.aggregateId.id)
+        ..scorableId = scorable.aggregateId.id
         ..roundIndex = round.roundIndex
     ];
 

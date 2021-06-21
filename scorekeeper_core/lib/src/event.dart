@@ -131,7 +131,7 @@ class EventStoreInMemoryImpl extends EventStore {
   /// Currently, this means no other event with the given sequence
   Future<void> _domainEventSequenceInvalid(DomainEvent event) async {
     final nextSequence = await nextSequenceForAggregate(event.aggregateId);
-    _logger.w('next sequence for aggregate ${event.aggregateId.id}: $nextSequence - current sequence == ${event.sequence}');
+    _logger.w('next sequence for aggregate ${event.aggregateId}: $nextSequence - current sequence == ${event.sequence}');
     if (nextSequence != event.sequence) {
       throw InvalidEventException(event, 'Sequence invalid: expected ${nextSequence} but was ${event.sequence}');
     }
@@ -254,7 +254,7 @@ abstract class RemoteEventListener {
 /// Takes care of a lot of metadata prefilling.
 /// TODO: This factory should probably be overidden by generated factory per domain aggregate?
 /// so we can auto-fill domainId and version??
-class DomainEventFactory<T extends Aggregate, A extends AggregateId> {
+class DomainEventFactory<T extends Aggregate> {
 
   final String producerId;
 
@@ -269,16 +269,16 @@ class DomainEventFactory<T extends Aggregate, A extends AggregateId> {
     required this.applicationVersion,
   });
 
-  DomainEvent<T, A> local(A aggregateId, int sequence, dynamic payload) {
+  DomainEvent local(AggregateId aggregateId, int sequence, dynamic payload) {
     return _event(Uuid().v4(), DateTime.now(), aggregateId, payload, sequence);
   }
 
-  DomainEvent<T, A> remote(String eventId, A aggregateId, int sequence, DateTime timestamp, payload) {
+  DomainEvent remote(String eventId, AggregateId aggregateId, int sequence, DateTime timestamp, payload) {
     return _event(eventId, timestamp, aggregateId, payload, sequence);
   }
 
-  DomainEvent<T, A> _event(String eventId, DateTime timestamp, A aggregateId, payload, int sequence) {
-    return new DomainEvent<T, A>(
+  DomainEvent _event(String eventId, DateTime timestamp, AggregateId aggregateId, payload, int sequence) {
+    return new DomainEvent(
         eventId: eventId,
         timestamp: timestamp,
 
@@ -296,7 +296,7 @@ class DomainEventFactory<T extends Aggregate, A extends AggregateId> {
         sequence: sequence);
   }
 
-  EventNotHandled<T> eventNotHandled(DomainEvent<T, A> notHandledEvent, String reason) {
+  EventNotHandled<T> eventNotHandled(DomainEvent notHandledEvent, String reason) {
     return EventNotHandled(notHandledEvent, reason, eventId: Uuid().v4(), timestamp: DateTime.now(), producerId: producerId, applicationVersion: applicationVersion, domainId: domainId, domainVersion: domainVersion);
   }
 

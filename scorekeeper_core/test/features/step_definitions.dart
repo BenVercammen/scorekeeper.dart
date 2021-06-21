@@ -116,13 +116,13 @@ class StepDefinitions {
   }
 
   /// Parse a GherkinTable into a List of DomainEvents
-  List<DomainEvent<Aggregate, AggregateId>> _parseDomainEvents(GherkinTable table) {
-    final domainEvents = List<DomainEvent<Aggregate, AggregateId>>.empty(growable: true);
+  List<DomainEvent> _parseDomainEvents(GherkinTable table) {
+    final domainEvents = List<DomainEvent>.empty(growable: true);
     final keys = <String>{'eventUuid', 'eventSequence', 'eventTimestamp', 'aggregateId', 'payload.type', 'payload.property1'};
     final parsedRows = _parseTableAsListMap(table, keys);
     for (final row in parsedRows) {
       final payload = _eventPayloadFor(row['payload.type']!, row['payload.property1']!);
-      final event = _domainEventFactory.remote(row['eventUuid']!, AggregateId.of(row['aggregateId']!), int.parse(row['eventSequence']!), DateTime.parse(row['eventTimestamp']!), payload);
+      final event = _domainEventFactory.remote(row['eventUuid']!, AggregateId.of(row['aggregateId']!, Aggregate), int.parse(row['eventSequence']!), DateTime.parse(row['eventTimestamp']!), payload);
       domainEvents.add(event);
     }
     return domainEvents;

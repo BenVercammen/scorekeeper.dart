@@ -54,7 +54,9 @@ class SerializerDeserializerGenerator implements Builder {
       final lib = await buildStep.resolver.libraryFor(assetId, allowSyntaxErrors: false);
       // Classes uitlezen
       for (final element in lib.topLevelElements) {
-        classes.add(element as ClassElement);
+        if (element is ClassElement) {
+          classes.add(element as ClassElement);
+        }
       }
 
       // Serializer

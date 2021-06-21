@@ -52,7 +52,9 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..methods.add(_commandConstructorMethod(aggregate, constructor))
       ..methods.add(_commandHandleMethod(aggregate, commandHandlerMethods))
       ..methods.add(_newInstanceMethod(aggregate))
-      ..methods.add(_commandHandlesMethod(aggregate, constructor, commandHandlerMethods));
+      ..methods.add(_commandHandlesMethod(aggregate, constructor, commandHandlerMethods))
+      ..methods.add(_commandExtractAggregateIdMethod(aggregate, constructor, commandHandlerMethods))
+    ;
 
     // Event Handler
     final eventHandlerBuilder = ClassBuilder()
@@ -61,7 +63,9 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..methods.add(_eventHandleMethod(aggregate, eventHandlerMethods))
       ..methods.add(_eventForTypeMethod(aggregate))
       ..methods.add(_newInstanceMethod(aggregate))
-      ..methods.add(_eventHandlesMethod(aggregate, eventHandlerMethods));
+      ..methods.add(_eventHandlesMethod(aggregate, eventHandlerMethods))
+      ..methods.add(_eventExtractAggregateIdMethod(aggregate, constructor, eventHandlerMethods))
+    ;
 
     // Import the current aggregate package + scorekeeper_domain...
     final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
@@ -131,6 +135,82 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     }
     builder.annotations.add(const Reference('override'));
     return builder.build();
+  }
+
+  /// Build the extractAggregateId method for command handler
+  Method _commandExtractAggregateIdMethod(ClassElement aggregate, ConstructorElement constructor, List<MethodElement> commandHandlerMethods) {
+    final builder = MethodBuilder()
+      ..name = 'extractAggregateId'
+      ..returns = const Reference('AggregateId');
+    final param1 = ParameterBuilder()
+      ..name = 'command'
+      ..type = const Reference('dynamic');
+
+    builder.requiredParameters.add(param1.build());
+    final parameterType = constructor.parameters[0].type.element;
+    if (null != parameterType) {
+      final parameterTypeName = parameterType?.name;
+      final code = StringBuffer()
+        ..write('switch (command.runtimeType) {');
+      final aggregateIdFieldName = _getAggregateIdField(parameterType as ClassElement);
+      code.write('\ncase $parameterTypeName:\n\treturn AggregateId.of((command as $parameterTypeName).$aggregateIdFieldName, $parameterTypeName);');
+      for (var handlerMethod in commandHandlerMethods) {
+        final commandType = handlerMethod.parameters[0].type.element! as ClassElement;
+        final commandTypeName = commandType.name;
+        if (null != commandTypeName) {
+          final aggregateIdFieldName = _getAggregateIdField(commandType);
+          code.write('\ncase $commandTypeName:\n\treturn AggregateId.of((command as $commandTypeName).$aggregateIdFieldName, $commandTypeName);');
+        }
+      }
+      code..write("\ndefault:\n\tthrow Exception('Cannot extract AggregateId for \"\${command.runtimeType}\"');")..write('}');
+      builder.body = Code(code.toString());
+    }
+    builder.annotations.add(const Reference('override'));
+    return builder.build();
+  }
+
+  /// Build the extractAggregateId method for event handler
+  Method _eventExtractAggregateIdMethod(ClassElement aggregate, ConstructorElement constructor, List<MethodElement> eventHandlerMethods) {
+    final builder = MethodBuilder()
+      ..name = 'extractAggregateId'
+      ..returns = const Reference('AggregateId');
+
+    final param1 = ParameterBuilder()
+      ..name = 'event'
+      ..type = const Reference('dynamic');
+
+    builder.requiredParameters.add(param1.build());
+    final parameterType = constructor.parameters[0].type.element;
+    if (null != parameterType) {
+      final parameterTypeName = parameterType?.name;
+      final code = StringBuffer()
+        ..write('switch (event.runtimeType) {');
+      final aggregateIdFieldName = _getAggregateIdField(parameterType as ClassElement);
+      code.write('\ncase $parameterTypeName:\n\treturn AggregateId.of((event as $parameterTypeName).$aggregateIdFieldName, $parameterTypeName);');
+      for (var handlerMethod in eventHandlerMethods) {
+        final eventType = handlerMethod.parameters[0].type.element! as ClassElement;
+        final eventTypeName = eventType.name;
+        if (null != eventTypeName) {
+          final aggregateIdFieldName = _getAggregateIdField(eventType);
+          code.write('\ncase $eventTypeName:\n\treturn AggregateId.of((event as $eventTypeName).$aggregateIdFieldName, $eventTypeName);');
+        }
+      }
+      code..write("\ndefault:\n\tthrow Exception('Cannot extract AggregateId for \"\${event.runtimeType}\"');")..write('}');
+      builder.body = Code(code.toString());
+    }
+    builder.annotations.add(const Reference('override'));
+    return builder.build();
+  }
+
+  /// Return the first field that ends with "Id".
+  /// This is a convention that should be adhered to.
+  /// Any references to other AggregateId's, should be declared afterwards...
+  String _getAggregateIdField(ClassElement eventOrCommand) {
+    final Element? element = eventOrCommand.fields.firstWhere((element) => element.name.endsWith('Id'), orElse: () => eventOrCommand.fields.first);
+    if (element == null || element.name == null || !element.name!.endsWith('Id')) {
+      throw Exception("Problem while generating handlers: class '${eventOrCommand.name}' has no 'Id' field");
+    }
+    return element.name!;
   }
 
   /// Build the handleConstructorCommand method
@@ -278,4 +358,6 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       }).isNotEmpty;
     }).toList(growable: true);
   }
+
 }
+

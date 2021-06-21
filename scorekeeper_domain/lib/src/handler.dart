@@ -23,6 +23,9 @@ abstract class CommandHandler<T extends Aggregate> {
   /// Returns whether or not this CommandHandler can handle the given command
   bool handles(dynamic command);
 
+  /// Retrieve the AggregateId for a given command
+  AggregateId extractAggregateId(dynamic command);
+
 }
 
 
@@ -40,4 +43,6 @@ abstract class EventHandler<T extends Aggregate> {
   /// Create a new empty instance
   T newInstance(AggregateId aggregateId);
 
+  /// Retrieve the AggregateId for a given event
+  AggregateId extractAggregateId(dynamic event);
 }

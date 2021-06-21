@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_core/src/scorekeeper_base.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_domain_scorable/scorable.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart' hide AggregateDtoFactory;
+import 'package:scorekeeper_domain_scorable/scorable.dart' as s show AggregateDtoFactory;
 import 'package:scorekeeper_flutter/src/services/service.dart';
 import 'package:test/test.dart';
 
@@ -20,7 +21,8 @@ void main() {
       _scorekeeper = Scorekeeper(
           eventStore: EventStoreInMemoryImpl(),
           aggregateCache: AggregateCacheInMemoryImpl(),
-          domainEventFactory: const DomainEventFactory<Scorable, ScorableAggregateId>(
+          aggregateDtoFactory: s.AggregateDtoFactory(),
+          domainEventFactory: const DomainEventFactory<Scorable>(
               producerId: 'service_test', applicationVersion: 'v1'))
         // Register the command and event handlers for the relevant domain
         ..registerCommandHandler(MuurkeKlopNDownCommandHandler())
@@ -35,9 +37,9 @@ void main() {
       // Given 20 Registered AggregateIds
       // (Aggregates the current instance is interested in, in this case because it created them itself)
       for (var i = 1; i <= 20; i++) {
-        final aggregateId = ScorableAggregateId.random();
+        final aggregateId = AggregateId.random(Scorable);
         await _scorekeeper.handleCommand(CreateScorable()
-          ..scorableId = ScorableId(uuid: aggregateId.id)
+          ..scorableId = aggregateId.id
           ..name = 'Aggregate $i');
         sleep(const Duration(milliseconds: 1));
         registeredAggregateIds.add(aggregateId);

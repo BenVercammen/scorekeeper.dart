@@ -90,6 +90,42 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
         return false;
     }
   }
+
+  @override
+  AggregateId extractAggregateId(dynamic command) {
+    switch (command.runtimeType) {
+      case CreateScorable:
+        return AggregateId.of(
+            (command as CreateScorable).scorableId, CreateScorable);
+      case AddRound:
+        return AggregateId.of((command as AddRound).scorableId, AddRound);
+      case RemoveRound:
+        return AggregateId.of((command as RemoveRound).scorableId, RemoveRound);
+      case StartRound:
+        return AggregateId.of((command as StartRound).scorableId, StartRound);
+      case PauseRound:
+        return AggregateId.of((command as PauseRound).scorableId, PauseRound);
+      case ResumeRound:
+        return AggregateId.of((command as ResumeRound).scorableId, ResumeRound);
+      case FinishRound:
+        return AggregateId.of((command as FinishRound).scorableId, FinishRound);
+      case StrikeOutParticipant:
+        return AggregateId.of(
+            (command as StrikeOutParticipant).scorableId, StrikeOutParticipant);
+      case UndoParticipantStrikeOut:
+        return AggregateId.of((command as UndoParticipantStrikeOut).scorableId,
+            UndoParticipantStrikeOut);
+      case AddParticipant:
+        return AggregateId.of(
+            (command as AddParticipant).scorableId, AddParticipant);
+      case RemoveParticipant:
+        return AggregateId.of(
+            (command as RemoveParticipant).scorableId, RemoveParticipant);
+      default:
+        throw Exception(
+            'Cannot extract AggregateId for "${command.runtimeType}"');
+    }
+  }
 }
 
 class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
@@ -165,6 +201,46 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
         return true;
       default:
         return false;
+    }
+  }
+
+  @override
+  AggregateId extractAggregateId(dynamic event) {
+    switch (event.runtimeType) {
+      case CreateScorable:
+        return AggregateId.of(
+            (event as CreateScorable).scorableId, CreateScorable);
+      case RoundAdded:
+        return AggregateId.of((event as RoundAdded).scorableId, RoundAdded);
+      case RoundRemoved:
+        return AggregateId.of((event as RoundRemoved).scorableId, RoundRemoved);
+      case RoundStarted:
+        return AggregateId.of((event as RoundStarted).scorableId, RoundStarted);
+      case RoundPaused:
+        return AggregateId.of((event as RoundPaused).scorableId, RoundPaused);
+      case RoundResumed:
+        return AggregateId.of((event as RoundResumed).scorableId, RoundResumed);
+      case RoundFinished:
+        return AggregateId.of(
+            (event as RoundFinished).scorableId, RoundFinished);
+      case ParticipantStruckOut:
+        return AggregateId.of(
+            (event as ParticipantStruckOut).scorableId, ParticipantStruckOut);
+      case ParticipantStrikeOutUndone:
+        return AggregateId.of((event as ParticipantStrikeOutUndone).scorableId,
+            ParticipantStrikeOutUndone);
+      case ScorableCreated:
+        return AggregateId.of(
+            (event as ScorableCreated).scorableId, ScorableCreated);
+      case ParticipantAdded:
+        return AggregateId.of(
+            (event as ParticipantAdded).scorableId, ParticipantAdded);
+      case ParticipantRemoved:
+        return AggregateId.of(
+            (event as ParticipantRemoved).scorableId, ParticipantRemoved);
+      default:
+        throw Exception(
+            'Cannot extract AggregateId for "${event.runtimeType}"');
     }
   }
 }

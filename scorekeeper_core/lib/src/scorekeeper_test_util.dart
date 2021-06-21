@@ -17,35 +17,18 @@ class TracingLogger extends Logger {
   }
 }
 
-/// In these tests we're using String payloads,
-/// since we don't import a (generated) domain...
-class _TestAggregateId extends AggregateId {
-  final String id;
-  final Type type = String;
-
-  _TestAggregateId(this.id);
-
-  static _TestAggregateId random() {
-    return _TestAggregateId(Uuid().v4());
-  }
-
-  static _TestAggregateId of(String id) {
-    return _TestAggregateId(Uuid().v4());
-  }
-}
-
 /// Abstract class containing the test suite for all EventStore implementations.
 /// This way we can easily reuse the default test set across multiple implementations.
-abstract class EventStoreTestSuite<T extends Aggregate> {
-  static void runEventStoreTests(
+class EventStoreTestSuite<T extends Aggregate> {
+  void runEventStoreTests(
       Type eventStoreType, Function() constructorCallback) {
     final DomainEventFactory domainEventFactory = DomainEventFactory(
         producerId: 'prodId', applicationVersion: 'appVersion');
     final EventStore eventStore = constructorCallback();
 
-    final aggregateId1 = _TestAggregateId.random();
-    final aggregateId2 = _TestAggregateId.random();
-    final aggregateId3 = _TestAggregateId.random();
+    final aggregateId1 = AggregateId.random(T);
+    final aggregateId2 = AggregateId.random(T);
+    final aggregateId3 = AggregateId.random(T);
     final eventId1 = Uuid().v4();
     final eventId2 = Uuid().v4();
     final eventId3 = Uuid().v4();
@@ -172,7 +155,7 @@ abstract class EventStoreTestSuite<T extends Aggregate> {
               () async {
             try {
               await eventStore.storeDomainEvent(domainEventFactory.local(
-                  _TestAggregateId.of('unknownaggregateid'), 1, 'payload'));
+                  AggregateId.of('unknownaggregateid', T), 1, 'payload'));
               fail('Expected InvalidEventException');
             } on InvalidEventException catch (e) {
               expect(e.toString(), contains('AggregateId not registered'));
@@ -182,7 +165,7 @@ abstract class EventStoreTestSuite<T extends Aggregate> {
           test('AggregateId should be registered', () async {
             try {
               await eventStore.storeDomainEvent(domainEventFactory.local(
-                  _TestAggregateId.of('unknownaggregateid'), 0, 'payload'));
+                  AggregateId.of('unknownaggregateid', T), 0, 'payload'));
               fail('Expected InvalidEventException');
             } on InvalidEventException catch (e) {
               expect(e.toString(), contains('AggregateId not registered'));
@@ -263,14 +246,14 @@ abstract class EventStoreTestSuite<T extends Aggregate> {
 ///       let's see if we can dig up our old reflection code somewhere...
 ///
 ///
-class TestFixture<T extends Aggregate, A extends AggregateId> {
-  late final CommandHandler<T, A> commandHandler;
+class TestFixture<T extends Aggregate> {
+  late final CommandHandler<T> commandHandler;
 
-  late final EventHandler<T, A> eventHandler;
+  late final EventHandler<T> eventHandler;
 
   late final Map<Aggregate, int> eventSequenceMap = HashMap();
 
-  late final domainEventFactory = DomainEventFactory<T, A>(
+  late final domainEventFactory = DomainEventFactory<T>(
       producerId: 'prodId', applicationVersion: 'appVersion');
 
   T? aggregate;
@@ -280,7 +263,7 @@ class TestFixture<T extends Aggregate, A extends AggregateId> {
   TestFixture(this.commandHandler, this.eventHandler);
 
   /// Given the payload for a given aggregateId
-  TestFixture given(A aggregateId, dynamic payload) {
+  TestFixture given(AggregateId aggregateId, dynamic payload) {
     // Ignore events for different aggregateId's...
     if (aggregate != null && aggregate!.aggregateId != aggregateId) {
       return this;
@@ -288,14 +271,14 @@ class TestFixture<T extends Aggregate, A extends AggregateId> {
     aggregate ??= eventHandler.newInstance(aggregateId);
     var sequence = eventSequenceMap[aggregate] ?? 0;
     eventSequenceMap[aggregate!] = sequence++;
-    eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId as A, sequence, payload));
+    eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId, sequence, payload));
     return this;
   }
 
   /// Given a full DomainEvent
-  TestFixture givenDomainEvent(DomainEvent<T, A> event) {
+  TestFixture givenDomainEvent(DomainEvent event) {
     // Ignore events for different aggregateId's...
-    if (aggregate != null && event.aggregateId != aggregate!.aggregateId.id) {
+    if (aggregate != null && event.aggregateId != aggregate!.aggregateId) {
       return this;
     }
     aggregate ??= eventHandler.newInstance(event.aggregateId);
@@ -313,7 +296,7 @@ class TestFixture<T extends Aggregate, A extends AggregateId> {
       for (var event in aggregate!.pendingEvents) {
         var sequence = eventSequenceMap[aggregate] ?? 0;
         eventSequenceMap[aggregate!] = sequence++;
-        eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId as A, sequence, event));
+        eventHandler.handle(aggregate!, domainEventFactory.local(aggregate!.aggregateId, sequence, event));
       }
       lastThrownException = null;
     } on Exception catch (exception) {
@@ -330,15 +313,15 @@ class TestFixture<T extends Aggregate, A extends AggregateId> {
 //
 // /// Simple DomainEventFactory implementation for our test fixture...
 // class TestDomainEventFactory<T extends Aggregate> {
-//   DomainEvent<T> local(AggregateId aggregateId, int sequence, dynamic payload) {
+//   DomainEvent local(AggregateId aggregateId, int sequence, dynamic payload) {
 //     return _event(Uuid().v4(), DateTime.now(), aggregateId, payload, sequence);
 //   }
 //
-//   DomainEvent<T> remote(String eventId, AggregateId aggregateId, int sequence, DateTime timestamp, payload) {
+//   DomainEvent remote(String eventId, AggregateId aggregateId, int sequence, DateTime timestamp, payload) {
 //     return _event(eventId, timestamp, aggregateId, payload, sequence);
 //   }
 //
-//   DomainEvent<T> _event(String eventId, DateTime timestamp, AggregateId aggregateId, payload, int sequence) {
+//   DomainEvent _event(String eventId, DateTime timestamp, AggregateId aggregateId, payload, int sequence) {
 //     return new DomainEvent(
 //         eventId: eventId,
 //         timestamp: timestamp,

@@ -1,5 +1,4 @@
 
-import 'package:scorekeeper_domain/core.dart' hide AggregateId;
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_domain_scorable/scorable.dart';
 

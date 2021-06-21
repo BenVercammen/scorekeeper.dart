@@ -20,7 +20,8 @@ Future<void> main() async {
   final scorekeeper = Scorekeeper(
       eventStore: eventStore,
       aggregateCache: AggregateCacheInMemoryImpl(),
-      domainEventFactory: const DomainEventFactory<MuurkeKlopNDown, MuurkeKlopNDownAggregateId>(
+      aggregateDtoFactory: AggregateDtoFactory(),
+      domainEventFactory: const DomainEventFactory<MuurkeKlopNDown>(
           producerId: 'ScorekeeperMain', applicationVersion: 'v1'))
     // Register the command and event handlers for the relevant domain
     ..registerCommandHandler(MuurkeKlopNDownCommandHandler())

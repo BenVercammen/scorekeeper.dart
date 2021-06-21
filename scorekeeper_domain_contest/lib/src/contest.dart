@@ -147,10 +147,12 @@ class FinishContest {
 }
 
 class AddStage {
+  late String aggregateId;
   late String stageName;
 }
 
 class AddScorable {
+  late String aggregateId;
   // TODO: moet deze aggregate dan de scorable effectief instantiëren?
   // Of wordt die apart aangemaakt en hier aan toegevoegd!?
   late String stageName;

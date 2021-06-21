@@ -10,5 +10,5 @@ import 'package:scorekeeper_core/scorekeeper_test_util.dart';
 /// The EventStore should just be able to read and write/append events.
 ///
 void main() {
-  EventStoreTestSuite.runEventStoreTests(EventStoreInMemoryImpl, () => EventStoreInMemoryImpl());
+  EventStoreTestSuite().runEventStoreTests(EventStoreInMemoryImpl, () => EventStoreInMemoryImpl());
 }

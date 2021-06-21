@@ -1,10 +1,20 @@
 
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
-import 'package:scorekeeper_domain_scorable/scorable.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
+
+
+class TestAggregate extends Aggregate {
+  late String name;
+  TestAggregate(AggregateId aggregateId) : super(aggregateId);
+}
+
+class TestAggregateCreated {
+  late String name;
+  late String scorableId;
+}
 
 void main() {
 
@@ -13,13 +23,13 @@ void main() {
   group('DomainEvent', () {
 
     test('Test local DomainEvent factory method', () {
-      final event = domainEventFactory.local(ScorableAggregateId.random(), 0, 'payload');
+      final event = domainEventFactory.local(AggregateId.random(TestAggregate), 0, 'payload');
       expect(event.eventId, isNotNull);
       expect(event.sequence, equals(0));
       expect(event.timestamp, isNotNull);
       expect(event.aggregateId, isNotNull);
       expect(event.aggregateType, isNotNull);
-      expect(event.aggregateType, equals(Aggregate));
+      expect(event.aggregateType, equals(TestAggregate));
     });
 
     /// DomainEvents should equal only if eventId and sequence match.
@@ -31,38 +41,38 @@ void main() {
       final timestamp1 = DateTime.now().subtract(Duration(microseconds: 5));
       final timestamp2 = DateTime.now();
       // Exactly alike
-      expect(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 0, timestamp1, 'payload'), equals(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 0, timestamp1, 'payload')));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 0, timestamp1, 'payload'), equals(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 0, timestamp1, 'payload')));
       // Timestamp is not taken into account
-      expect(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 0, timestamp2, 'payload'), equals(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 0, timestamp1, 'payload')));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 0, timestamp2, 'payload'), equals(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 0, timestamp1, 'payload')));
       // Uuid and sequence are important
-      expect(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid2, ScorableAggregateId.of('1'), 0, timestamp1, 'payload'))));
-      expect(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid1, ScorableAggregateId.of('1'), 1, timestamp1, 'payload'))));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid2, AggregateId.of('1', TestAggregate), 0, timestamp1, 'payload'))));
+      expect(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 0, timestamp1, 'payload'), isNot(equals(domainEventFactory.remote(uuid1, AggregateId.of('1', TestAggregate), 1, timestamp1, 'payload'))));
     });
 
     test('Equals method pt2', () {
       final eventId1 = '0';
       final eventId2 = '1';
-      final aggregateId1 = ScorableAggregateId.random();
-      final aggregateId2 = ScorableAggregateId.random();
-      final aggregateId3 = ScorableAggregateId.random();
-      final payload1 = ScorableCreated()
+      final aggregateId1 = AggregateId.random(TestAggregate);
+      final aggregateId2 = AggregateId.random(TestAggregate);
+      final aggregateId3 = AggregateId.random(TestAggregate);
+      final payload1 = TestAggregateCreated()
         ..name = 'Test'
-        ..scorableId = ScorableId(uuid: aggregateId1.id);
-      final payload1b = ScorableCreated()
+        ..scorableId = aggregateId1.id;
+      final payload1b = TestAggregateCreated()
         ..name = 'Test 2'
-        ..scorableId = ScorableId(uuid: aggregateId1.id);
-      final payload2 = ScorableCreated()
+        ..scorableId = aggregateId1.id;
+      final payload2 = TestAggregateCreated()
         ..name = 'Test'
-        ..scorableId = ScorableId(uuid: aggregateId2.id);
-      final payload2b = ScorableCreated()
+        ..scorableId = aggregateId2.id;
+      final payload2b = TestAggregateCreated()
         ..name = 'Test'
-        ..scorableId = ScorableId(uuid: aggregateId2.id);
-      final payload3 = ScorableCreatedWithEquals()
+        ..scorableId = aggregateId2.id;
+      final payload3 = TestAggregateCreatedWithEquals()
         ..name = 'Test'
-        ..scorableId = ScorableId(uuid: aggregateId3.id);
-      final payload3b = ScorableCreatedWithEquals()
+        ..scorableId = aggregateId3.id;
+      final payload3b = TestAggregateCreatedWithEquals()
         ..name = 'Test'
-        ..scorableId = ScorableId(uuid: aggregateId3.id);
+        ..scorableId = aggregateId3.id;
       final now = DateTime.now();
       expect(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1), equals(domainEventFactory.remote(eventId1, aggregateId1, 0, now, payload1)));
       expect(domainEventFactory.remote(eventId2, aggregateId1, 0, now, payload1), equals(domainEventFactory.remote(eventId2, aggregateId1, 0, now, payload1)));
@@ -107,24 +117,24 @@ void main() {
 ///   - Extended commands and events with equals methods
 ///   - DTO's that only contain the properties?
 ///     -> how to prevent the clients to get full control of the aggregates?
-class ScorableCreatedWithEquals {
+class TestAggregateCreatedWithEquals {
 
-  final ScorableCreated _scorableCreated = ScorableCreated();
+  final TestAggregateCreated _scorableCreated = TestAggregateCreated();
 
   @override
   bool operator ==(Object other) =>
-      identical(this._scorableCreated, other) || other is ScorableCreatedWithEquals && runtimeType == other.runtimeType;
+      identical(this._scorableCreated, other) || other is TestAggregateCreatedWithEquals && runtimeType == other.runtimeType;
 
   @override
   int get hashCode => 0;
 
-  ScorableCreatedWithEquals();
+  TestAggregateCreatedWithEquals();
 
   set name(String name) {
     _scorableCreated.name = name;
   }
 
-  set scorableId(ScorableId scorableId) {
+  set scorableId(String scorableId) {
     _scorableCreated.scorableId = scorableId;
   }
 }

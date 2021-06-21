@@ -18,9 +18,9 @@ class ScorekeeperService {
 
   /// Add a new Scorable
   Future<MuurkeKlopNDownDto> createNewScorable(String scorableName) async {
-    final aggregateId = ScorableAggregateId.random();
+    final aggregateId = AggregateId.random(Scorable);
     final command = CreateScorable()
-      ..scorableId = ScorableId(uuid: aggregateId.id)
+      ..scorableId = aggregateId.id
       ..name = scorableName;
     await _scorekeeper.handleCommand(command);
     return await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
@@ -28,16 +28,16 @@ class ScorekeeperService {
 
   /// Add a newly created Participant to the Scorable
   Future<void> addParticipantToScorable(AggregateId aggregateId, String participantName) async {
-    final participant = Participant(participantId: ParticipantId(uuid: Uuid().v4()), participantName: participantName);
+    final participant = Participant()..participantId = Uuid().v4()..participantName = participantName;
     final command = AddParticipant()
       ..participant = participant
-      ..scorableId = ScorableId(uuid: aggregateId.id);
+      ..scorableId = aggregateId.id;
     await _scorekeeper.handleCommand(command);
   }
 
   /// Add a new Round to the Scorable
   Future<void> addRoundToScorable(AggregateId aggregateId) async {
-    final command = AddRound()..scorableId = ScorableId(uuid: aggregateId.id);
+    final command = AddRound()..scorableId = aggregateId.id;
     await _scorekeeper.handleCommand(command);
   }
 
