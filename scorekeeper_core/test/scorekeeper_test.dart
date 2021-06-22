@@ -890,7 +890,7 @@ void main() {
         });
 
         test('Command should always have an aggregateId property', () async {
-          final invalidCommand = Object();
+          final invalidCommand = CreateScorable();
           await when(() => command(invalidCommand));
           thenExceptionShouldBeThrown(InvalidCommandException(invalidCommand, 'aggregateId is required'));
         });

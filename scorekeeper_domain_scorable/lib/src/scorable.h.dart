@@ -62,14 +62,12 @@ class ScorableCommandHandler implements CommandHandler<Scorable> {
   AggregateId extractAggregateId(dynamic command) {
     switch (command.runtimeType) {
       case CreateScorable:
-        return AggregateId.of(
-            (command as CreateScorable).scorableId, CreateScorable);
+        return AggregateId.of((command as CreateScorable).scorableId, Scorable);
       case AddParticipant:
-        return AggregateId.of(
-            (command as AddParticipant).scorableId, AddParticipant);
+        return AggregateId.of((command as AddParticipant).scorableId, Scorable);
       case RemoveParticipant:
         return AggregateId.of(
-            (command as RemoveParticipant).scorableId, RemoveParticipant);
+            (command as RemoveParticipant).scorableId, Scorable);
       default:
         throw Exception(
             'Cannot extract AggregateId for "${command.runtimeType}"');
@@ -121,17 +119,14 @@ class ScorableEventHandler implements EventHandler<Scorable> {
   AggregateId extractAggregateId(dynamic event) {
     switch (event.runtimeType) {
       case CreateScorable:
-        return AggregateId.of(
-            (event as CreateScorable).scorableId, CreateScorable);
+        return AggregateId.of((event as CreateScorable).scorableId, Scorable);
       case ScorableCreated:
-        return AggregateId.of(
-            (event as ScorableCreated).scorableId, ScorableCreated);
+        return AggregateId.of((event as ScorableCreated).scorableId, Scorable);
       case ParticipantAdded:
-        return AggregateId.of(
-            (event as ParticipantAdded).scorableId, ParticipantAdded);
+        return AggregateId.of((event as ParticipantAdded).scorableId, Scorable);
       case ParticipantRemoved:
         return AggregateId.of(
-            (event as ParticipantRemoved).scorableId, ParticipantRemoved);
+            (event as ParticipantRemoved).scorableId, Scorable);
       default:
         throw Exception(
             'Cannot extract AggregateId for "${event.runtimeType}"');

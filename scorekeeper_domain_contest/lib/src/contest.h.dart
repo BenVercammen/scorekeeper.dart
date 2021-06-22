@@ -69,19 +69,16 @@ class ContestCommandHandler implements CommandHandler<Contest> {
   AggregateId extractAggregateId(dynamic command) {
     switch (command.runtimeType) {
       case CreateContest:
-        return AggregateId.of(
-            (command as CreateContest).aggregateId, CreateContest);
+        return AggregateId.of((command as CreateContest).aggregateId, Contest);
       case AddParticipant:
-        return AggregateId.of(
-            (command as AddParticipant).aggregateId, AddParticipant);
+        return AggregateId.of((command as AddParticipant).aggregateId, Contest);
       case RemoveParticipant:
         return AggregateId.of(
-            (command as RemoveParticipant).aggregateId, RemoveParticipant);
+            (command as RemoveParticipant).aggregateId, Contest);
       case AddStage:
-        return AggregateId.of((command as AddStage).aggregateId, AddStage);
+        return AggregateId.of((command as AddStage).aggregateId, Contest);
       case AddScorable:
-        return AggregateId.of(
-            (command as AddScorable).aggregateId, AddScorable);
+        return AggregateId.of((command as AddScorable).aggregateId, Contest);
       default:
         throw Exception(
             'Cannot extract AggregateId for "${command.runtimeType}"');
@@ -133,17 +130,14 @@ class ContestEventHandler implements EventHandler<Contest> {
   AggregateId extractAggregateId(dynamic event) {
     switch (event.runtimeType) {
       case CreateContest:
-        return AggregateId.of(
-            (event as CreateContest).aggregateId, CreateContest);
+        return AggregateId.of((event as CreateContest).aggregateId, Contest);
       case ContestCreated:
-        return AggregateId.of(
-            (event as ContestCreated).contestId, ContestCreated);
+        return AggregateId.of((event as ContestCreated).contestId, Contest);
       case ParticipantAdded:
-        return AggregateId.of(
-            (event as ParticipantAdded).aggregateId, ParticipantAdded);
+        return AggregateId.of((event as ParticipantAdded).aggregateId, Contest);
       case ParticipantRemoved:
         return AggregateId.of(
-            (event as ParticipantRemoved).aggregateId, ParticipantRemoved);
+            (event as ParticipantRemoved).aggregateId, Contest);
       default:
         throw Exception(
             'Cannot extract AggregateId for "${event.runtimeType}"');

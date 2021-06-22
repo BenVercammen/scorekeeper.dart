@@ -121,7 +121,6 @@ class Scorekeeper {
 
   /// Handle the given command using the wired (generated) CommandHandler
   Future<void> handleCommand(dynamic command) async {
-    // _validateCommand(command);
     final aggregate = await _handleCommand(command);
     // Make sure the aggregate is now registered and cached.
     // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
@@ -207,6 +206,10 @@ class Scorekeeper {
   /// and return the relevant aggregate.
   Future<T> _handleCommand<T extends Aggregate>(dynamic command) async {
     AggregateId aggregateId = _extractAggregateId(command);
+    if (aggregateId.id.isEmpty) {
+      // TODO: eigenlijk ook een geldige UUID verwacht? 36 characters, anders serialization issues??
+      throw new InvalidCommandException(command, 'AggregateId should not be empty!');
+    }
     // The aggregate on which the command should be applied.
     // We'll use the registered command handler(s) to create a new Aggregate instances based on the given command
     T aggregate;
@@ -245,24 +248,7 @@ class Scorekeeper {
     await loadAndAddAggregateToCache(aggregate.aggregateId);
   }
 
-  /// Basic command validation
-  /// Make sure the aggregateId is available.
-  /// UPDATE: actually
-  @Deprecated("No longer required to have 'aggregateId' as field name. Commands (and events) should have an AggregateId typed field, but the name can be more specific to the relevant Aggregate (eg: ScorableId).")
-  void _validateCommand(command) {
-    try {
-      // ignore: unnecessary_statements
-      command.aggregateId;
-      // ignore: avoid_catching_errors
-    } on NoSuchMethodError {
-      throw InvalidCommandException(command, 'aggregateId is required');
-    }
-    if (command.aggregateId == null || command.aggregateId.toString().isEmpty) {
-      throw InvalidCommandException(command, 'aggregateId is required');
-    }
-  }
-
-  AggregateId _extractAggregateId(command) {
+  AggregateId _extractAggregateId(dynamic command) {
     return _getCommandHandlerFor(command).extractAggregateId(command);
   }
 

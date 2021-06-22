@@ -149,17 +149,17 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     builder.requiredParameters.add(param1.build());
     final parameterType = constructor.parameters[0].type.element;
     if (null != parameterType) {
-      final parameterTypeName = parameterType?.name;
+      final parameterTypeName = parameterType.name;
       final code = StringBuffer()
         ..write('switch (command.runtimeType) {');
       final aggregateIdFieldName = _getAggregateIdField(parameterType as ClassElement);
-      code.write('\ncase $parameterTypeName:\n\treturn AggregateId.of((command as $parameterTypeName).$aggregateIdFieldName, $parameterTypeName);');
+      code.write('\ncase $parameterTypeName:\n\treturn AggregateId.of((command as $parameterTypeName).$aggregateIdFieldName, ${aggregate.name});');
       for (var handlerMethod in commandHandlerMethods) {
         final commandType = handlerMethod.parameters[0].type.element! as ClassElement;
         final commandTypeName = commandType.name;
         if (null != commandTypeName) {
           final aggregateIdFieldName = _getAggregateIdField(commandType);
-          code.write('\ncase $commandTypeName:\n\treturn AggregateId.of((command as $commandTypeName).$aggregateIdFieldName, $commandTypeName);');
+          code.write('\ncase $commandTypeName:\n\treturn AggregateId.of((command as $commandTypeName).$aggregateIdFieldName, ${aggregate.name});');
         }
       }
       code..write("\ndefault:\n\tthrow Exception('Cannot extract AggregateId for \"\${command.runtimeType}\"');")..write('}');
@@ -182,17 +182,17 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
     builder.requiredParameters.add(param1.build());
     final parameterType = constructor.parameters[0].type.element;
     if (null != parameterType) {
-      final parameterTypeName = parameterType?.name;
+      final parameterTypeName = parameterType.name;
       final code = StringBuffer()
         ..write('switch (event.runtimeType) {');
       final aggregateIdFieldName = _getAggregateIdField(parameterType as ClassElement);
-      code.write('\ncase $parameterTypeName:\n\treturn AggregateId.of((event as $parameterTypeName).$aggregateIdFieldName, $parameterTypeName);');
+      code.write('\ncase $parameterTypeName:\n\treturn AggregateId.of((event as $parameterTypeName).$aggregateIdFieldName, ${aggregate.name});');
       for (var handlerMethod in eventHandlerMethods) {
         final eventType = handlerMethod.parameters[0].type.element! as ClassElement;
         final eventTypeName = eventType.name;
         if (null != eventTypeName) {
           final aggregateIdFieldName = _getAggregateIdField(eventType);
-          code.write('\ncase $eventTypeName:\n\treturn AggregateId.of((event as $eventTypeName).$aggregateIdFieldName, $eventTypeName);');
+          code.write('\ncase $eventTypeName:\n\treturn AggregateId.of((event as $eventTypeName).$aggregateIdFieldName, ${aggregate.name});');
         }
       }
       code..write("\ndefault:\n\tthrow Exception('Cannot extract AggregateId for \"\${event.runtimeType}\"');")..write('}');

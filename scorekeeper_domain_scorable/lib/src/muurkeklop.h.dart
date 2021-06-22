@@ -96,31 +96,37 @@ class MuurkeKlopNDownCommandHandler implements CommandHandler<MuurkeKlopNDown> {
     switch (command.runtimeType) {
       case CreateScorable:
         return AggregateId.of(
-            (command as CreateScorable).scorableId, CreateScorable);
+            (command as CreateScorable).scorableId, MuurkeKlopNDown);
       case AddRound:
-        return AggregateId.of((command as AddRound).scorableId, AddRound);
+        return AggregateId.of(
+            (command as AddRound).scorableId, MuurkeKlopNDown);
       case RemoveRound:
-        return AggregateId.of((command as RemoveRound).scorableId, RemoveRound);
+        return AggregateId.of(
+            (command as RemoveRound).scorableId, MuurkeKlopNDown);
       case StartRound:
-        return AggregateId.of((command as StartRound).scorableId, StartRound);
+        return AggregateId.of(
+            (command as StartRound).scorableId, MuurkeKlopNDown);
       case PauseRound:
-        return AggregateId.of((command as PauseRound).scorableId, PauseRound);
+        return AggregateId.of(
+            (command as PauseRound).scorableId, MuurkeKlopNDown);
       case ResumeRound:
-        return AggregateId.of((command as ResumeRound).scorableId, ResumeRound);
+        return AggregateId.of(
+            (command as ResumeRound).scorableId, MuurkeKlopNDown);
       case FinishRound:
-        return AggregateId.of((command as FinishRound).scorableId, FinishRound);
+        return AggregateId.of(
+            (command as FinishRound).scorableId, MuurkeKlopNDown);
       case StrikeOutParticipant:
         return AggregateId.of(
-            (command as StrikeOutParticipant).scorableId, StrikeOutParticipant);
+            (command as StrikeOutParticipant).scorableId, MuurkeKlopNDown);
       case UndoParticipantStrikeOut:
-        return AggregateId.of((command as UndoParticipantStrikeOut).scorableId,
-            UndoParticipantStrikeOut);
+        return AggregateId.of(
+            (command as UndoParticipantStrikeOut).scorableId, MuurkeKlopNDown);
       case AddParticipant:
         return AggregateId.of(
-            (command as AddParticipant).scorableId, AddParticipant);
+            (command as AddParticipant).scorableId, MuurkeKlopNDown);
       case RemoveParticipant:
         return AggregateId.of(
-            (command as RemoveParticipant).scorableId, RemoveParticipant);
+            (command as RemoveParticipant).scorableId, MuurkeKlopNDown);
       default:
         throw Exception(
             'Cannot extract AggregateId for "${command.runtimeType}"');
@@ -209,35 +215,40 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
     switch (event.runtimeType) {
       case CreateScorable:
         return AggregateId.of(
-            (event as CreateScorable).scorableId, CreateScorable);
+            (event as CreateScorable).scorableId, MuurkeKlopNDown);
       case RoundAdded:
-        return AggregateId.of((event as RoundAdded).scorableId, RoundAdded);
+        return AggregateId.of(
+            (event as RoundAdded).scorableId, MuurkeKlopNDown);
       case RoundRemoved:
-        return AggregateId.of((event as RoundRemoved).scorableId, RoundRemoved);
+        return AggregateId.of(
+            (event as RoundRemoved).scorableId, MuurkeKlopNDown);
       case RoundStarted:
-        return AggregateId.of((event as RoundStarted).scorableId, RoundStarted);
+        return AggregateId.of(
+            (event as RoundStarted).scorableId, MuurkeKlopNDown);
       case RoundPaused:
-        return AggregateId.of((event as RoundPaused).scorableId, RoundPaused);
+        return AggregateId.of(
+            (event as RoundPaused).scorableId, MuurkeKlopNDown);
       case RoundResumed:
-        return AggregateId.of((event as RoundResumed).scorableId, RoundResumed);
+        return AggregateId.of(
+            (event as RoundResumed).scorableId, MuurkeKlopNDown);
       case RoundFinished:
         return AggregateId.of(
-            (event as RoundFinished).scorableId, RoundFinished);
+            (event as RoundFinished).scorableId, MuurkeKlopNDown);
       case ParticipantStruckOut:
         return AggregateId.of(
-            (event as ParticipantStruckOut).scorableId, ParticipantStruckOut);
+            (event as ParticipantStruckOut).scorableId, MuurkeKlopNDown);
       case ParticipantStrikeOutUndone:
-        return AggregateId.of((event as ParticipantStrikeOutUndone).scorableId,
-            ParticipantStrikeOutUndone);
+        return AggregateId.of(
+            (event as ParticipantStrikeOutUndone).scorableId, MuurkeKlopNDown);
       case ScorableCreated:
         return AggregateId.of(
-            (event as ScorableCreated).scorableId, ScorableCreated);
+            (event as ScorableCreated).scorableId, MuurkeKlopNDown);
       case ParticipantAdded:
         return AggregateId.of(
-            (event as ParticipantAdded).scorableId, ParticipantAdded);
+            (event as ParticipantAdded).scorableId, MuurkeKlopNDown);
       case ParticipantRemoved:
         return AggregateId.of(
-            (event as ParticipantRemoved).scorableId, ParticipantRemoved);
+            (event as ParticipantRemoved).scorableId, MuurkeKlopNDown);
       default:
         throw Exception(
             'Cannot extract AggregateId for "${event.runtimeType}"');
