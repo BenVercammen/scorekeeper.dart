@@ -12,11 +12,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Create a Scorekeeper instance
-  // final eventStore = EventStoreInMemoryImpl();
+
   final domainSerializer = ScorableSerializer();
   final domainDeserializer = ScorableDeserializer();
-
   final eventStore = EventStoreMoorImpl(domainSerializer, domainDeserializer);
+  // final eventStore = EventStoreInMemoryImpl();
+
   final scorekeeper = Scorekeeper(
       eventStore: eventStore,
       aggregateCache: AggregateCacheInMemoryImpl(),

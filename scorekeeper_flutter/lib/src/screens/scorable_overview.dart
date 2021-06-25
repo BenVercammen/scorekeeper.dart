@@ -36,7 +36,8 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
 
   /// Load the scorables given the current page/pageSize values.
   Future<void> _loadScorables() async {
-    scorables.addAll({for (var e in await _scorekeeperService.loadScorables(page, pageSize)) e.aggregateId: e});
+    final loaded = {for (var e in await _scorekeeperService.loadScorables(page, pageSize)) e.aggregateId: e};
+    scorables.addAll(loaded);
   }
 
   void reloadState() {

@@ -1,3 +1,4 @@
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 import 'package:scorekeeper_domain_scorable/src/generated/events.pb.dart';
 import 'package:scorekeeper_domain/core.dart';
 
@@ -78,37 +79,6 @@ class ScorableDeserializer implements DomainDeserializer {
 
   @override
   AggregateId deserializeAggregateId(String aggregateId, String aggregateType) {
-    switch (aggregateType) {
-      case 'String':
-        return AggregateId.of(aggregateId, String);
-      case 'EventMetadata':
-        return AggregateId.of(aggregateId, EventMetadata);
-      case 'Participant':
-        return AggregateId.of(aggregateId, Participant);
-      case 'ScorableCreated':
-        return AggregateId.of(aggregateId, ScorableCreated);
-      case 'ParticipantAdded':
-        return AggregateId.of(aggregateId, ParticipantAdded);
-      case 'ParticipantRemoved':
-        return AggregateId.of(aggregateId, ParticipantRemoved);
-      case 'ParticipantStruckOut':
-        return AggregateId.of(aggregateId, ParticipantStruckOut);
-      case 'ParticipantStrikeOutUndone':
-        return AggregateId.of(aggregateId, ParticipantStrikeOutUndone);
-      case 'RoundAdded':
-        return AggregateId.of(aggregateId, RoundAdded);
-      case 'RoundRemoved':
-        return AggregateId.of(aggregateId, RoundRemoved);
-      case 'RoundStarted':
-        return AggregateId.of(aggregateId, RoundStarted);
-      case 'RoundFinished':
-        return AggregateId.of(aggregateId, RoundFinished);
-      case 'RoundPaused':
-        return AggregateId.of(aggregateId, RoundPaused);
-      case 'RoundResumed':
-        return AggregateId.of(aggregateId, RoundResumed);
-      default:
-        throw Exception('Cannot deserialize AggregateId for "$aggregateType"');
-    }
+    return AggregateId.of(aggregateId, Scorable);
   }
 }

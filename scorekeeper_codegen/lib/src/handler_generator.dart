@@ -346,7 +346,13 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
       ..name = 'type'
       ..type = const Reference('Type');
     builder.requiredParameters.add(param1.build());
-    builder.body = Code('return type == ${aggregate.name};');
+    final codeBuilder = StringBuffer('return type == ${aggregate.name}');
+    // In case this is a subclass handler, make sure to include the parent domain class here as well!
+    for (var parentClassElement in _getParentClassElements(aggregate)) {
+      codeBuilder.write(' || type == ${parentClassElement.name}');
+    }
+    codeBuilder.write(';');
+    builder.body = Code(codeBuilder.toString());
     builder.annotations.add(const Reference('override'));
     return builder.build();
   }
@@ -357,6 +363,16 @@ class CommandEventHandlerGenerator extends src.GeneratorForAnnotation<AggregateA
         return meta.element?.name == annotationName;
       }).isNotEmpty;
     }).toList(growable: true);
+  }
+
+  Set<ClassElement> _getParentClassElements(ClassElement classElement) {
+    final parentClasses = <ClassElement>{};
+    if (classElement.supertype != null && classElement.supertype!.element.name != 'Aggregate') {
+      parentClasses
+        ..add(classElement.supertype!.element)
+        ..addAll(_getParentClassElements(classElement.supertype!.element));
+    }
+    return parentClasses;
   }
 
 }

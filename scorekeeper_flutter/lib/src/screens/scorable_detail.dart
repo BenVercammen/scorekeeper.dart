@@ -14,6 +14,26 @@ class ScorableDetailPage extends StatefulWidget {
   _ScorableDetailPageState createState() => _ScorableDetailPageState(scorekeeperService, scorable);
 }
 
+///final futurebuilder = FutureBuilder(
+//         future: scorable,
+//         builder: (context, snapshot) {
+//           switch (snapshot.connectionState) {
+//             case ConnectionState.none:
+//               return Text('NONE...');
+//             case ConnectionState.active:
+//               return Text('ACTIVE');
+//             case ConnectionState.waiting:
+//               return Text('WAITING');
+//             case ConnectionState.done:
+//               return Text('FULLY LOADED!!');
+//             default:
+//               return Text('Uh OH...');
+//           }
+//         }
+//     );
+///
+
+
 class _ScorableDetailPageState extends State<ScorableDetailPage> {
   final ScorekeeperService scorekeeperService;
 
@@ -27,29 +47,61 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   }
 
   /// Actually add the participant
-  void _addParticipant(String name) {
-    scorekeeperService.addParticipantToScorable(scorable.aggregateId, name);
+  Future<void> _addParticipant(String name) async {
+    await scorekeeperService.addParticipantToScorable(scorable.aggregateId, name);
     setState(() {
       // We don't need to set anything explicitly, we know our commands are handled synchronously
     });
   }
 
   /// Add a round
-  void _addRound() {
-    scorekeeperService.addRoundToScorable(scorable.aggregateId);
+  Future<void> _addRound() async {
+    await scorekeeperService.addRoundToScorable(scorable.aggregateId);
     setState(() {
       // We don't need to set anything explicitly, we know our commands are handled synchronously
     });
   }
 
+  /// TODO: await toegevoegd, aggregate is nog niet helemaal geladen alvorens we hier in terecht komen :/
+  /// TODO: eigenlijk in test (IT?) gieten en oplossen he?
+
   /// Send an arbitrary command
-  void _sendCommand(command) {
-    scorekeeperService.sendCommand(command);
+  Future<void> _sendCommand(command) async {
+    await scorekeeperService.sendCommand(command);
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+  //
+  //   final futurebuilder = FutureBuilder<MuurkeKlopNDownDto>(
+  //       future: future,
+  //       builder: (context, snapshot) {
+  //         switch (snapshot.connectionState) {
+  //           case ConnectionState.none:
+  //             return Text('NONE...');
+  //           case ConnectionState.active:
+  //             return Text('ACTIVE');
+  //           case ConnectionState.waiting:
+  //             return Text('WAITING');
+  //           case ConnectionState.done:
+  //             scorable = snapshot.data as MuurkeKlopNDownDto;
+  //             // return Text('FULLY LOADED!!');
+  //             return _buildScaffold();
+  //           default:
+  //             return Text('DEFAULT...');
+  //         }
+  //       }
+  //   );
+  //
+  //   return futurebuilder;
+  //
+  //
+  //
+  //
+  // }
+  //
+  // Scaffold _buildScaffold() {
     return Scaffold(
       appBar: AppBar(
         title: Text(scorable.name),
@@ -166,7 +218,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
     // Finally display the allowed commands
     final icons = Wrap(children: [
       ...commands.map((command) => TextButton(
-          onPressed: () => _sendCommand(command),
+          onPressed: () async => await _sendCommand(command),
           // TODO: Icon moet nog dynamisch bepaald worden!
           child: Icon(Icons.play_arrow, semanticLabel: command.runtimeType.toString())))
     ]);

@@ -55,5 +55,16 @@ void main() {
       expect(pagedItems[3].name, equals('Aggregate 17'));
       expect(pagedItems[4].name, equals('Aggregate 16'));
     });
+
+    /// So, this test was created because we were struggling with the following issue:
+    ///   ``LateInitializationError: Field 'name' has not been initialized.``
+    /// The root of the problem was the fact that we've added ``AggregateType`` to the ``AggregateId``
+    /// but because of inheritance, it's tricky to determine which type to use (eg: ``Scorable`` or ``MuurkeKlopNDown``)
+    test('createScorable', () async {
+      final result = scorekeeperService.createNewScorable('Test', MuurkeKlopNDown);
+      final dto = await result;
+      expect(dto.name, equals('Test'));
+    });
+
   });
 }

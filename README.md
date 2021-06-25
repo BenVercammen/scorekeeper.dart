@@ -52,19 +52,22 @@ TODO:
 
 
 
+# Building the complete project
+This "mono_repo" project consists of multiple dart packages that all work together.
+In the future, the ``scorekeeper_domain_xxx`` packages might get externalized.
 
-# GENERATE PROTOC CLASSES:
-Currently still experimental, but might not be viable anymore with our current setup.
-Idea was to generate protoc classes that we can use for message transfer.
-However, our messages/DTO's now also need `late` modifiers since the null-safety dart update... :/
+The current build setup is like this:
+ 1. ``mono_repo pub get`` in order to pull in all dependencies
+ 2. ``protoc --dart_out=.... -I=... ...proto`` to generate the relevant domain ``event`` and ``command`` classes
+ 3. ``pub run build_runner build`` to generate
+    - ``scorekeeper_event_store_moor`` classes
+    - ``scorekeeper_domain_xxx`` handler, serializer, ... classes
 
-```pub global activate protoc_plugin```
+## General setup
+ - ```pub global activate protoc_plugin```
+ - ```cd \Workspace\score\gdl\lib\src\scorable```
+ - ```mkdir generated\io\scorable```
 
-```cd \Workspace\score\gdl\lib\src\scorable```
-
-```mkdir generated\io\scorable```
-
-## NOTE: moet relatief tov root source??? anders proto_path meegeven
 ```cd ..
 mkdir scorable\generated\score\scorable
 protoc --dart_out=./scorable/generated/score/scorable --proto_path=scorable\proto identifiers.proto

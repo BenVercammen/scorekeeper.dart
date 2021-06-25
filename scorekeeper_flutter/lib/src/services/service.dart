@@ -17,12 +17,13 @@ class ScorekeeperService {
   ScorekeeperService(this._scorekeeper);
 
   /// Add a new Scorable
-  Future<MuurkeKlopNDownDto> createNewScorable(String scorableName) async {
-    final aggregateId = AggregateId.random(Scorable);
+  Future<MuurkeKlopNDownDto> createNewScorable(String scorableName, Type scorableType) async {
+    final aggregateId = AggregateId.random(scorableType);
     final command = CreateScorable()
       ..scorableId = aggregateId.id
       ..name = scorableName;
     await _scorekeeper.handleCommand(command);
+    // Nu gaan we die uit de cache halen, maar blijkbaar zit em er nog niet volledig geladen in??
     return await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
   }
 
@@ -42,13 +43,14 @@ class ScorekeeperService {
   }
 
   /// Load Scorables ordered descending by last modified date
-  /// TODO: for now it's loading ALL aggregates, this needs to be fixed!
+  /// TODO: for now it's loading ALL (stored/registered/cached/...) aggregates, this needs to be fixed!
   Future<OrderedSet<MuurkeKlopNDownDto>> loadScorables(int page, int pageSize) async {
+    print('LOG:: loadScorables (wordt denk ik nog té vaak gedaan..');
     final registeredAggregateIds = await _scorekeeper.registeredAggregateIds.toSet();
     final cachedAggregates = <MuurkeKlopNDownDto>{};
-    registeredAggregateIds.forEach((a) async =>
-      await cachedAggregates.add(await _scorekeeper.getCachedAggregateDtoById(a))
-    );
+    for (final aggregateId in registeredAggregateIds) {
+      cachedAggregates.add(await _scorekeeper.getCachedAggregateDtoById(aggregateId));
+    }
     final allDtos = OrderedSet<MuurkeKlopNDownDto>((AggregateDto dto1, AggregateDto dto2) {
       if (null == dto2.lastModified && null == dto1.lastModified) {
         return 0;

@@ -136,8 +136,9 @@ class Scorekeeper {
   Future<T> getCachedAggregateDtoById<T extends AggregateDto>(AggregateId aggregateId) async {
     // TODO: if not exists, make sure to rehydrate from events...
     if (!_aggregateCache.contains(aggregateId)) {
-      // TODO: hmm, nog die types meegeven/bewaren???
       final aggregate = await _loadHydratedAggregate(aggregateId);
+      // TODO: hier gaat em al storen, terwijl _loadHydrated nog bezig is :/
+      // OOOF, er zijn geen EVENTS opgeslagen!???
       _aggregateCache.store(aggregate);
     }
     return _aggregateDtoFactory.create(_aggregateCache.get(aggregateId));
@@ -185,6 +186,13 @@ class Scorekeeper {
         throw exception;
       }
     }
+    // Make sure the AggregateId is registered.
+    // When we receive commands for an Aggregate, that means this Scorekeeper instance will need to keep track of it.
+    if (!(await isRegistered(aggregate.aggregateId))) {
+      _logger.i('Registering aggregate ${aggregate.aggregateId} while handling its command triggered events.');
+      registerAggregate(aggregate.aggregateId);
+    }
+
     // Actually store the events now that we know they've all been applied properly
     for (var domainEvent in appliedDomainEvents) {
       try {
@@ -287,7 +295,11 @@ class Scorekeeper {
     // Nieuwe instance maken
     final aggregate = eventHandler.newInstance(aggregateId);
     // Alle events die we al hebben eerst nog apply'en!
-    _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((DomainEvent domainEvent) {
+    // TODO: okay, probleem is dus dat er op dit moment nog geen events in de store zitten, die gaan pas later komen :/
+    final result = await _eventStore.getDomainEvents(aggregateId: aggregateId).toSet();
+    print(result);
+
+    await _eventStore.getDomainEvents(aggregateId: aggregateId).forEach((DomainEvent domainEvent) {
       _logger.d('Handling event triggered by hydration: $domainEvent');
       // TODO: nog testen dat payload van en naar string tegoei wordt ge(de)serializeerd...
       eventHandler.handle(aggregate, domainEvent);
@@ -310,6 +322,11 @@ class Scorekeeper {
   /// There can only be one, if we want to communicate events across Aggregates,
   /// we'll have to make use of IntegrationEvents...
   EventHandler _getDomainEventHandlerFor(Type runtimeType) {
-    return _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType)).first;
+    final Iterable<EventHandler<Aggregate>> handlers = _eventHandlers.where((EventHandler handler) => handler.forType(runtimeType));
+    if (handlers.isEmpty) {
+      // TODO: UnsupportedEventException ??
+      throw Exception('No handler found for event of type $runtimeType');
+    }
+    return handlers.first;
   }
 }

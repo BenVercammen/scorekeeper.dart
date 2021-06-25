@@ -26,8 +26,12 @@ class Scorable extends Aggregate {
   Scorable.aggregateId(AggregateId scorableId) : super(scorableId);
 
   @commandHandler
-  Scorable.command(CreateScorable command) : super(AggregateId.of(command.scorableId, Scorable)) {
+  /// TODO: OKE, aggregateId moet ook meegegeven worden!!??
+  /// hier zit ik dus nog te worstelen met inheritance ... :/ moet nu "MuurkeKlopNDown" meegeven ipv "Scorable"
+  /// anders wordt er een extra AggregateId aangemaakt, omdat die super/sub classes niet matchen...
+  Scorable.command(CreateScorable command) : super(AggregateId.of(command.scorableId, MuurkeKlopNDown)) {
     final event = ScorableCreated(
+        // TODO: metadata zetten!?
         metadata: null,
         scorableId: command.scorableId,
         name: command.name);
@@ -82,10 +86,10 @@ class Scorable extends Aggregate {
     participants.remove(event.participant);
   }
 
-  @override
-  String toString() {
-    return 'Scorable $name ($aggregateId)';
-  }
+  // @override
+  // String toString() {
+  //   return 'Scorable $name ($aggregateId)';
+  // }
 
   /// Is it possible to provide a method that returns the currently allowed commands?
   /// This works on multiple levels

@@ -58,6 +58,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
           domainVersion: event.domainVersion,
           payloadType: event.payloadType,
           payload: payload,
+          // TODO: lijkt alsof deze nog niet getest werd? Pas in flutter UI probleem naar boven gekomen...
           aggregateId: domainDeserializer.deserializeAggregateId(event.aggregateId, event.aggregateType),
           sequence: event.sequence);
     }
@@ -145,7 +146,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
     final query = selectOnly(domainEventTable)
       ..where(domainEventTable.aggregateId.equals(aggregateId.id))
       ..addColumns([max]);
-    return (await query.map((row) => row.read(max)).getSingle() ?? -1) + 1;
+    return await query.map((row) => row.read(max)).getSingle() ?? 0;
   }
 
   /// TODO: duplicate! apart trekken somehow..
@@ -206,18 +207,7 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
     // TODO: is geen stream he, kan nog problemen opleveren, niet?
     final list = await select(registeredAggregateTable).get();
     for (final aggregate in list) {
-
-
-      /// TODO: oké, ik ben veeeeeeeeeel te veel tijd en moeite aan't steken in die "AggregateId" subclasses :/
-      ///  -> is dat écht nodig?
-      ///   + duidelijk in API waar we mee bezig zijn
-      ///   - veel generics, factories, IOC, ... om weinig gedaan te krijgen
-      ///   - aggregateId's gaan echt gewoon UUID + AggregateType zijn, nooit meer...
-      ///   -> AggregateDto moet wel zorgen voor het aanmaken van AggregateId??
-      ///
-      ///  => dus, schrappen die shit?
-
-      yield AggregateId.of(aggregate.aggregateId, aggregate.runtimeType);
+      yield domainDeserializer.deserializeAggregateId(aggregate.aggregateId, aggregate.aggregateType);
     }
   }
 

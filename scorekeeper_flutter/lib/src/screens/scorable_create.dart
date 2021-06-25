@@ -1,6 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 
 import '../services/service.dart';
 import './scorable_detail.dart';
@@ -69,8 +70,8 @@ class _ScorableCreatePageState extends State<ScorableCreatePage> {
     try {
       // TODO: validateInput();
       // TODO: scorekeeperservice create new game
-      final scorable = await _scorekeeperService.createNewScorable(_nameController.text);
-      await Navigator. of(context).pushReplacement(MaterialPageRoute(
+      final scorable = await _scorekeeperService.createNewScorable(_nameController.text, MuurkeKlopNDown);
+      await Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => ScorableDetailPage(_scorekeeperService, scorable)));
     } on Exception catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

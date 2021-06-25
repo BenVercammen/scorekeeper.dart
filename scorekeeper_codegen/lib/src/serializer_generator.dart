@@ -71,7 +71,7 @@ class SerializerDeserializerGenerator implements Builder {
         ..implements.add(Reference('DomainDeserializer'))
         ..methods.addAll({
             _deserializeMethod(classes),
-            _deserializeAggregateIdMethod(classes)
+            _deserializeAggregateIdMethod(domainName)
             });
 
       // Import the correct packages/files/...
@@ -142,7 +142,7 @@ class SerializerDeserializerGenerator implements Builder {
   }
 
   /// Build the deserializeAggregateId method
-  Method _deserializeAggregateIdMethod(Set<ClassElement> classes) {
+  Method _deserializeAggregateIdMethod(String domainClassName) {
     final builder = MethodBuilder()
       ..name = 'deserializeAggregateId'
       ..returns = const Reference('AggregateId')
@@ -155,16 +155,7 @@ class SerializerDeserializerGenerator implements Builder {
       ..type = const Reference('String');
     builder.requiredParameters.add(param1.build());
     builder.requiredParameters.add(param2.build());
-    final code = StringBuffer()
-      ..write('switch (aggregateType) {')
-      ..write("\n\tcase 'String':\n\t\treturn AggregateId.of(aggregateId, String);");
-    for (final classElement in classes) {
-      code.write("\n\tcase '${classElement.name}':\n\t\treturn AggregateId.of(aggregateId, ${classElement.name});");
-    }
-    code
-      ..write("\ndefault:\n\tthrow Exception('Cannot deserialize AggregateId for \"\$aggregateType\"');")
-      ..write('}');
-    builder.body = Code(code.toString());
+    builder.body = Code('return AggregateId.of(aggregateId, $domainClassName);');
     return builder.build();
   }
 

@@ -182,7 +182,7 @@ class MuurkeKlopNDownEventHandler implements EventHandler<MuurkeKlopNDown> {
 
   @override
   bool forType(Type type) {
-    return type == MuurkeKlopNDown;
+    return type == MuurkeKlopNDown || type == Scorable;
   }
 
   @override

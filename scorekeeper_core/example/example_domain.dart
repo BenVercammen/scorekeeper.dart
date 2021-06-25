@@ -1,4 +1,5 @@
 import 'package:scorekeeper_domain/core.dart';
+import 'package:scorekeeper_domain_scorable/scorable.dart';
 
 /// This file contains classes that are purely used as an example domain.
 /// In normal domains, these classes should be mostly generated.
@@ -13,7 +14,9 @@ class Scorable extends Aggregate {
   Scorable.aggregateId(AggregateId scorableId) : super(scorableId);
 
   @commandHandler
-  Scorable.command(CreateScorable command) : super(AggregateId.of(command.scorableId, Scorable)) {
+  // TODO: ik denk dat DIT de oorzaak gaat zijn van alle problemen...
+  //  We gaan hier nog iets moeten verzinnen op die AggregateId's... toch al maar meegeven ipv hier laten genereren?
+  Scorable.command(CreateScorable command) : super(AggregateId.of(command.scorableId, MuurkeKlopNDown)) {
     final event = ScorableCreated()
         ..scorableId = command.scorableId
         ..name = command.name;
