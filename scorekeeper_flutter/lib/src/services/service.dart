@@ -34,6 +34,8 @@ class ScorekeeperService {
       ..participant = participant
       ..scorableId = aggregateId.id;
     await _scorekeeper.handleCommand(command);
+    // TODO: moeten we echt nog eens eerst uit cache gaan halen?
+    // await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId)
   }
 
   /// Add a new Round to the Scorable

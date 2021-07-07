@@ -23,8 +23,8 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
   EventStoreMoorImpl(
       this.domainSerializer,
       this.domainDeserializer,
-      [LazyDatabase? database])
-      : super(database ?? _openConnection());
+      {Future<Directory>? dbFileDir, String dbFilename = 'db.sqlite'})
+      : super(_openConnection(dbFileDir: dbFileDir, dbFilename: dbFilename));
 
   @override
   int get schemaVersion => 1;
@@ -214,14 +214,14 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 }
 
 /// The method to open a connection to the event store (.sqlite file)
-LazyDatabase _openConnection() {
+LazyDatabase _openConnection({Future<Directory>? dbFileDir, String dbFilename = 'db.sqlite'}) {
   // the LazyDatabase util lets us find the right location for the file async.
   return LazyDatabase(() async {
     // put the database file, called db.sqlite here, into the documents folder
     // for your app.
-    final dbFolder = await getApplicationDocumentsDirectory();
+    final dbFolder = await (dbFileDir ?? getApplicationDocumentsDirectory());
     // await Directory(dbFolder.path).create(recursive: true);
-    final file = File(p.join(dbFolder.path, 'db.sqlite'));
+    final file = File(p.join(dbFolder.path, dbFilename));
     return VmDatabase(file);
   });
 }

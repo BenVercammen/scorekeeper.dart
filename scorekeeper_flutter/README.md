@@ -108,11 +108,17 @@ Verifies the behavior of a method or class.
 Verifies the behavior of Flutter widgets without running the app itself.
 
 ## Integration tests
-https://flutter.dev/docs/testing/integration-tests
-https://github.com/flutter/flutter/tree/master/packages/integration_test#integration_test
+ - https://flutter.dev/docs/testing/integration-tests
+ - https://github.com/flutter/flutter/tree/master/packages/integration_test#integration_test
+
 Also called end-to-end testing or GUI testing, runs the full app.
 Used for automated testing of the actual UI.
 Makes use of the `flutter drive` command in order to run on physical devices, emulators or in the Firebase Test Lab.
+
+Example statement:
+
+``flutter drive --driver test_driver/scorekeeper_flutter_it.dart --target test_driver/scorekeeper_driver.dart``
+
 
 ### Running integration tests
 Using the commands below, you can run the integration tests on an emulator.
@@ -128,6 +134,9 @@ While developing your integration tests, you'll typically want the load time in 
 
 In order to cut down on the time to load and run integration tests, it is possible to by-pass `flutter driver` altogether.
 See https://medium.com/flutter-community/hot-reload-for-flutter-integration-tests-e0478b63bd54 for more information on this.
+
+
+
 
 #### IntelliJ IDEA setup (still not fully working...)
  1. Create a new "Flutter" run configuration 

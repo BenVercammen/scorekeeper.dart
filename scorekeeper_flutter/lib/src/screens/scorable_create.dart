@@ -50,9 +50,11 @@ class _ScorableCreatePageState extends State<ScorableCreatePage> {
           children: [
             ElevatedButton(
                 onPressed: _cancel,
+                key: const Key('cancel_create'),
                 child: const Padding(padding: EdgeInsets.all(5.0), child: Text('Cancel'))),
             ElevatedButton(
                 onPressed: _createGame,
+                key: const Key('create_new_game'),
                 child: const Padding(padding: EdgeInsets.all(5.0), child: Text('Create'))),
           ],
         )

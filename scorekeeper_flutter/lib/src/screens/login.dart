@@ -69,9 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               ElevatedButton(
                   onPressed: _signInWithEmailAndPassword,
+                  key: const Key('sign_in'),
                   child: const Padding(padding: EdgeInsets.all(5.0), child: Text('Sign in'))),
               ElevatedButton(
                   onPressed: _createUserWithEmailAndPassword,
+                  key: const Key('sign_up'),
                   child: const Padding(padding: EdgeInsets.all(5.0), child: Text('Sign up'))),
             ],
           )

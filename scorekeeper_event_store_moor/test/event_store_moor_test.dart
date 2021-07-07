@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:moor/ffi.dart';
-import 'package:moor/moor.dart';
+import 'package:moor/moor.dart' hide isNotNull;
 import 'package:path_provider/path_provider.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
 import 'package:scorekeeper_domain/core.dart';
@@ -15,19 +15,15 @@ import 'test_domain_event.dart';
 
 /// In order to store the .sqlite file some place else,
 /// we'll be using the temporary directory
-final tempTestDatabase = LazyDatabase(() async {
-  final dbFolder = await getTemporaryDirectory();
-  final file = File(p.join(dbFolder.path, 'db.sqlite'));
-  // TODO: bestand toch maar wegsmijten aan het begin van test run, zeker indien database schema nog vaak wijzigt..
-  print('DB FILE located in ${file.absolute.path}');
-  return VmDatabase(file);
-});
+final dbFolder = getTemporaryDirectory();
+const dbFile = 'db.sqlite';
 
 class TestEventStoreMoorImpl extends EventStoreMoorImpl {
   TestEventStoreMoorImpl() : super(
     TestDomainEventSerializer(),
     TestDomainEventDeserializer(),
-    tempTestDatabase
+    dbFileDir: dbFolder,
+    dbFilename: dbFile
   );
 
   @override

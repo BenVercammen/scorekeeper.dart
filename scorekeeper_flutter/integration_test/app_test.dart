@@ -6,6 +6,7 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
@@ -33,6 +34,7 @@ void main() {
     scorekeeperService = ScorekeeperService(_scorekeeper);
   });
 
+  /// Test the default login screen
   testWidgets('Login screen for unauthenticated user',
       (WidgetTester tester) async {
     // Build app and trigger a frame
@@ -41,7 +43,10 @@ void main() {
     expect(find.widgetWithText(ElevatedButton, 'Sign in'), findsOneWidget);
     expect(find.text('E-mailaddress'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-    // Fill in username and password
+    // Fill in username and password (TODO?)
     // Submit
   });
+
+
+
 }

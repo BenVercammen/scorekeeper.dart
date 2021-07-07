@@ -40,8 +40,8 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
     scorables.addAll(loaded);
   }
 
-  void reloadState() {
-    _loadScorables();
+  Future<void> reloadState() async {
+    await _loadScorables();
     setState(() {
     });
   }
@@ -58,9 +58,11 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
+      key: const Key('scorable_overview'),
       body: ListView.builder(itemCount: scorables.values.length, itemBuilder: scorableItemBuilder),
       floatingActionButton: FloatingActionButton(
         onPressed: _createNewScorableForm,
+        key: const Key('create_new_scorable'),
         tooltip: 'Create new Scorable',
         child: const Icon(Icons.add),
       ),
@@ -72,6 +74,7 @@ class _ScorableOverviewPageState extends State<ScorableOverviewPage> {
     final scorable = scorables.values.elementAt(index);
     return ListTile(
       title: Text(scorable.name),
+      key: Key('scorable_item_$index'),
       subtitle: Text(scorable.lastModified!.toLocal().toIso8601String()),
       onTap: () {
         Navigator.push(context,

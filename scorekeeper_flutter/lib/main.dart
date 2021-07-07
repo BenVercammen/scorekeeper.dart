@@ -7,7 +7,7 @@ import 'package:scorekeeper_domain_scorable/scorable.dart';
 import 'src/app.dart';
 import 'src/services/service.dart';
 
-Future<void> main() async {
+Future<void> main({String? pDbFilename}) async {
   // Make sure flutter is initialized (ServicesBinding.instance is null otherwise)
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -15,12 +15,14 @@ Future<void> main() async {
 
   final domainSerializer = ScorableSerializer();
   final domainDeserializer = ScorableDeserializer();
-  final eventStore = EventStoreMoorImpl(domainSerializer, domainDeserializer);
+  final eventStore = EventStoreMoorImpl(domainSerializer, domainDeserializer,
+      dbFilename: pDbFilename ?? 'db.sqlite');
   // final eventStore = EventStoreInMemoryImpl();
+  final aggregateCache = AggregateCacheInMemoryImpl();
 
   final scorekeeper = Scorekeeper(
       eventStore: eventStore,
-      aggregateCache: AggregateCacheInMemoryImpl(),
+      aggregateCache: aggregateCache,
       aggregateDtoFactory: AggregateDtoFactory(),
       domainEventFactory: const DomainEventFactory<MuurkeKlopNDown>(
           producerId: 'ScorekeeperMain', applicationVersion: 'v1'))

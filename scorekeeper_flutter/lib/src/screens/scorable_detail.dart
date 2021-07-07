@@ -49,7 +49,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   /// Actually add the participant
   Future<void> _addParticipant(String name) async {
     await scorekeeperService.addParticipantToScorable(scorable.aggregateId, name);
-    setState(() {
+     setState(() {
       // We don't need to set anything explicitly, we know our commands are handled synchronously
     });
   }
@@ -135,8 +135,11 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
       ]));
     // Body row
     for (final participant in scorable.participants) {
+      final index = scorable.participants.indexOf(participant);
       rowList.add(TableRow(children: [
-        TableCell(child: _ParticipantTableContainer(Text(participant.participantName))),
+        TableCell(
+            key: Key('participant_item_$index'),
+            child: _ParticipantTableContainer(Text(participant.participantName))),
         ...participantRoundBody(participant),
         TableCell(child: _ParticipantTableContainer(const Text('Total')))
       ]));
@@ -146,8 +149,11 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
       TableCell(
           child: _ParticipantTableContainer(TextButton(
         onPressed: () => _showAddParticipantDialog(context),
-        // tooltip: 'Add new Participant',
-        child: const Icon(Icons.add),
+        child: const Icon(
+          Icons.add,
+          key: const Key('add_participant'),
+          semanticLabel: 'Add participant',
+        ),
       ))),
       ..._roundsFooter(),
       TableCell(child: _ParticipantTableContainer(
@@ -186,7 +192,11 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
             child: _ParticipantTableContainer(TextButton(
           onPressed: _addRound,
           // tooltip: 'Add new Round',
-          child: const Icon(Icons.add),
+          child: const Icon(
+            Icons.add,
+            key: Key('add_round'),
+            semanticLabel: 'Add participant',
+          ),
         )))
       ]);
     }
@@ -310,8 +320,12 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
             const Spacer(),
             ElevatedButton(
                 onPressed: _submitForm,
+                key: const Key('submit_add_participant'),
                 child: Container(
-                  child: const Text('Add player'),
+                  // key: const Key('submit_add_participant_container'),
+                  child: const Text('Add player',
+                    // key: const Key('submit_add_participant_container_text'),
+                    ),
                 ))
           ]),
         ));

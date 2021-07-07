@@ -63,7 +63,8 @@ abstract class AggregateDto<T extends Aggregate> {
 
   AggregateId get aggregateId => _aggregate.aggregateId;
 
-  DateTime? get lastModified => _aggregate.lastModified;
+  // TODO: temp fix om lastmodified date te hebben...
+  DateTime? get lastModified => _aggregate.lastModified??DateTime.now();
 
 }
 
