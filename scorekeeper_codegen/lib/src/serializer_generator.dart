@@ -34,6 +34,55 @@ class SerializerDeserializerGenerator implements Builder {
     };
   }
 
+  /// Get all generated event classes.
+  /// These are generated in the first protobuf codegen step.
+  Future<Set<ClassElement>> _getEventClasses(BuildStep buildStep) async {
+    final eventClasses = <ClassElement>{};
+    // Look for the events.pb.dart file
+    await for (final assetId in buildStep.findAssets(Glob(_eventClassesFile))) {
+      final file = File(assetId.path);
+      // Skip if the file does not exist (happens since the moor codegen stuff)
+      if (!file.existsSync()) {
+        continue;
+      }
+      // Resolve library...
+      final lib = await buildStep.resolver.libraryFor(
+          assetId, allowSyntaxErrors: false);
+      // Classes uitlezen
+      for (final element in lib.topLevelElements) {
+        if (element is ClassElement) {
+          eventClasses.add(element as ClassElement);
+        }
+      }
+    }
+    return eventClasses;
+  }
+
+  /// Get all relevant aggregate classes.
+  Future<Set<ClassElement>> _getAggregateClasses(BuildStep buildStep) async {
+    final aggregateClasses = <ClassElement>{};
+    // Look for the events.pb.dart file
+    await for (final assetId in buildStep.findAssets(Glob('lib/src/**'))) {
+      final file = File(assetId.path);
+      // Skip if the file does not exist (happens since the moor codegen stuff)
+      if (!file.existsSync()) {
+        continue;
+      }
+      // Resolve library...
+      final lib = await buildStep.resolver.libraryFor(
+          assetId, allowSyntaxErrors: false);
+      // Classes uitlezen
+      lib.topLevelElements.where((element) =>
+          element is ClassElement &&
+          element.metadata
+              .where((meta) => meta.element!.name == 'aggregate')
+              .isNotEmpty).forEach((element) {
+                aggregateClasses.add(element as ClassElement);
+      });
+    }
+    return aggregateClasses;
+  }
+
   /// Generate a Serializer and Deserializer class that handles all event classes
   /// defined in the (generated) ``events.pb.dart`` file.
   @override
@@ -42,53 +91,39 @@ class SerializerDeserializerGenerator implements Builder {
     var domainName = buildStep.inputId.package;
     domainName = domainName.substring(domainName.lastIndexOf('_') + 1);
     domainName = domainName.substring(0, 1).toUpperCase() + domainName.substring(1);
-    final classes = <ClassElement>{};
-    // Look for the events.pb.dart file
-    await for (final assetId in buildStep.findAssets(Glob(_eventClassesFile))) {
-      final file = File(assetId.path);
-      // Skip if the file does not exist (happens since the moor codegen stuff)
-      if (!file.existsSync()) {
-        return;
-      }
-      // Resolve library...
-      final lib = await buildStep.resolver.libraryFor(assetId, allowSyntaxErrors: false);
-      // Classes uitlezen
-      for (final element in lib.topLevelElements) {
-        if (element is ClassElement) {
-          classes.add(element as ClassElement);
-        }
-      }
+    final eventClasses = await _getEventClasses(buildStep);
+    final aggregateClasses = await _getAggregateClasses(buildStep);
 
-      // Serializer
-      final SerializerBuilder = ClassBuilder()
-        ..name = '${domainName}Serializer'
-        ..implements.add(Reference('DomainSerializer'))
-        ..methods.add(_serializeMethod(classes));
+    // Serializer
+    final SerializerBuilder = ClassBuilder()
+      ..name = '${domainName}Serializer'
+      ..implements.add(Reference('DomainSerializer'))
+      ..methods.add(_serializeMethod(eventClasses));
 
-      // Deserializer
-      final eventHandlerBuilder = ClassBuilder()
-        ..name = '${domainName}Deserializer'
-        ..implements.add(Reference('DomainDeserializer'))
-        ..methods.addAll({
-            _deserializeMethod(classes),
-            _deserializeAggregateIdMethod(domainName)
-            });
+    // Deserializer
+    final eventHandlerBuilder = ClassBuilder()
+      ..name = '${domainName}Deserializer'
+      ..implements.add(Reference('DomainDeserializer'))
+      ..methods.addAll({
+          _deserializeMethod(eventClasses),
+          _deserializeAggregateIdMethod(aggregateClasses)
+          });
 
-      // Import the correct packages/files/...
-      final importedLibraries = getRelevantImports([...classes])
-          // Add the core dependency
-          ..add('package:scorekeeper_domain/core.dart')
-          // Ignore protobuf...
-          ..removeWhere((element) => element.contains('protobuf'));
-      final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
-      // Put everything together!
-      final emitter = DartEmitter();
-      final serializer = SerializerBuilder.build().accept(emitter);
-      final deserializer = eventHandlerBuilder.build().accept(emitter);
-      final code = DartFormatter().format('$imports\n\n$serializer\n\n$deserializer');
-      final output = _allFileOutput(buildStep);
-      return buildStep.writeAsString(output, code);
-    }
+    // Import the correct packages/files/...
+    final importedLibraries = getRelevantImports([...eventClasses])
+        // Add the core dependency
+        ..add('package:scorekeeper_domain/core.dart')
+        // Ignore protobuf...
+        ..removeWhere((element) => element.contains('protobuf'));
+    final imports = importedLibraries.fold('', (original, current) => "$original\nimport '$current';");
+    // Put everything together!
+    final emitter = DartEmitter();
+    final serializer = SerializerBuilder.build().accept(emitter);
+    final deserializer = eventHandlerBuilder.build().accept(emitter);
+    final code = DartFormatter().format('$imports\n\n$serializer\n\n$deserializer');
+    final output = _allFileOutput(buildStep);
+    return buildStep.writeAsString(output, code);
+
   }
 
   /// Build the serialize method
@@ -142,7 +177,7 @@ class SerializerDeserializerGenerator implements Builder {
   }
 
   /// Build the deserializeAggregateId method
-  Method _deserializeAggregateIdMethod(String domainClassName) {
+  Method _deserializeAggregateIdMethod(Set<ClassElement> aggregateClasses) {
     final builder = MethodBuilder()
       ..name = 'deserializeAggregateId'
       ..returns = const Reference('AggregateId')
@@ -151,11 +186,22 @@ class SerializerDeserializerGenerator implements Builder {
       ..name = 'aggregateId'
       ..type = const Reference('String');
     final param2 = ParameterBuilder()
-      ..name = 'aggregateType'
+      ..name = 'aggregateTypeName'
       ..type = const Reference('String');
     builder.requiredParameters.add(param1.build());
     builder.requiredParameters.add(param2.build());
-    builder.body = Code('return AggregateId.of(aggregateId, $domainClassName);');
+    final code = StringBuffer()
+      ..write('Type aggregateType;')
+      ..write('switch (aggregateTypeName) {')
+      ..write("\n\tcase 'String':\n\t\taggregateType = String; break;");
+    for (final classElement in aggregateClasses) {
+      code.write("\n\tcase '${classElement.name}':\n\t\taggregateType = ${classElement.name}; break;");
+    }
+    code
+      ..write("\ndefault:\n\tthrow Exception('Cannot deserialize aggregateId for aggregateType \"\aggregateTypeName\"');")
+      ..write('}')
+      ..write('return AggregateId.of(aggregateId, aggregateType);');
+    builder.body = Code(code.toString());
     return builder.build();
   }
 

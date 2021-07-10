@@ -20,10 +20,12 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   final DomainDeserializer domainDeserializer;
 
+  final bool allowClear;
+
   EventStoreMoorImpl(
       this.domainSerializer,
       this.domainDeserializer,
-      {Future<Directory>? dbFileDir, String dbFilename = 'db.sqlite'})
+      {Future<Directory>? dbFileDir, String dbFilename = 'db.sqlite', this.allowClear = false})
       : super(_openConnection(dbFileDir: dbFileDir, dbFilename: dbFilename));
 
   @override
@@ -128,8 +130,11 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
 
   @override
   Future<void> clear() async {
-    // TODO: remove clear() from API??
-    throw Exception('Not allowed to clear all events from event store!');
+    if (!allowClear) {
+      throw Exception('Not allowed to clear all events from event store!');
+    }
+    await delete(registeredAggregateTable).go();
+    await delete(domainEventTable).go();
   }
 
   @override
@@ -137,7 +142,8 @@ class EventStoreMoorImpl extends _$EventStoreMoorImpl implements EventStore {
     final aggregate = select(registeredAggregateTable)
       ..where((a) => a.aggregateId.equals(aggregateId.id))
       ..watchSingle();
-    return null != await aggregate.getSingleOrNull();
+    final aggregateData = await aggregate.getSingleOrNull();
+    return null != aggregateData;
   }
 
   @override

@@ -66,6 +66,7 @@ class AggregateDtoFactoryGenerator implements Builder {
         break;
       }
       // Check if the file contains the @aggregate annotation
+      // TODO: use _getAggregateClasses (like in serializer_generator)
       final fileContent = file.readAsStringSync();
       if (fileContent.contains('@aggregate')) {
         // Aggregate = first instance of string between "class " and " extends" after "@aggregate" annotation

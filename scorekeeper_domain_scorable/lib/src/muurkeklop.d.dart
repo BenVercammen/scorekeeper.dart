@@ -17,4 +17,8 @@ class MuurkeKlopNDownDto extends ScorableDto {
   Map<int, MuurkeKlopNDownRound> get rounds {
     return _muurkeKlopNDown.rounds;
   }
+
+  // int get hashCode {
+  //   return _muurkeKlopNDown.hashCode;
+  // }
 }

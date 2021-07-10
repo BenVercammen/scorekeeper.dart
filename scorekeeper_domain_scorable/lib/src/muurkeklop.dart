@@ -215,7 +215,18 @@ class MuurkeKlopNDown extends Scorable {
     return participants.contains(participant);
   }
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MuurkeKlopNDown &&
+          runtimeType == other.runtimeType &&
+          name == other.name;
+          // TODO: oké, wanneer zijn ze "equal"??
+          // TODO: rounds == other.rounds;
+          // TODO: participants == other.participants;
 
+  @override
+  int get hashCode => name.hashCode;
 }
 
 

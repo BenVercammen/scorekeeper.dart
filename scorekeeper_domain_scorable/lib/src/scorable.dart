@@ -86,10 +86,10 @@ class Scorable extends Aggregate {
     participants.remove(event.participant);
   }
 
-  // @override
-  // String toString() {
-  //   return 'Scorable $name ($aggregateId)';
-  // }
+  @override
+  String toString() {
+    return 'Scorable $name ($aggregateId) [$instanceNumber]';
+  }
 
   /// Is it possible to provide a method that returns the currently allowed commands?
   /// This works on multiple levels

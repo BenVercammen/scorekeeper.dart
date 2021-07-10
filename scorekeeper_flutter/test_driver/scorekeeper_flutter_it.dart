@@ -51,6 +51,7 @@ void main() {
       await driver.tap(find.byValueKey('scorable_item_0'));
       // Add a new player
       await driver.tap(find.byValueKey('add_participant'));
+      await driver.tap(find.byValueKey('participant_name'));
       await driver.enterText('Player One');
       await driver.tap(find.byValueKey('submit_add_participant'));
       expect(find.byValueKey('participant_item_0'), isNotNull);

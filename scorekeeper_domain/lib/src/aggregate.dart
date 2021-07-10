@@ -4,6 +4,13 @@ import 'package:uuid/uuid.dart';
 /// Adds the AggregateId to an Aggregate, as well as the capability to send out events.
 abstract class Aggregate {
 
+  /// Small counter that we use for keeping track of the number of Aggregate instances
+  /// Should probably be removed in the future...
+  /// Can still be useful for now, to keep track of number of instances (performance testing/monitoring)
+  static int instanceCount = 0;
+
+  int instanceNumber = -1;
+
   final AggregateId _aggregateId;
 
   AggregateId get aggregateId => _aggregateId;
@@ -15,7 +22,9 @@ abstract class Aggregate {
   DateTime? get lastModified => _lastModified;
 
   /// We always require an aggregateId
-  Aggregate(this._aggregateId);
+  Aggregate(this._aggregateId) {
+    instanceNumber = instanceCount++;
+  }
 
   /// All domain events that the aggregate applied on itself.
   /// the command handler should take "freshly applied" events off this Set after each (succesful?) handle

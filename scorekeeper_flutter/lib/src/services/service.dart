@@ -1,5 +1,7 @@
+import 'package:logger/logger.dart';
 import 'package:ordered_set/ordered_set.dart';
 import 'package:scorekeeper_core/scorekeeper.dart';
+import 'package:scorekeeper_core/scorekeeper_test_util.dart';
 import 'package:scorekeeper_domain/core.dart';
 import 'package:scorekeeper_domain_scorable/scorable.dart';
 import 'package:uuid/uuid.dart';
@@ -14,7 +16,11 @@ class ScorekeeperService {
   // The actual Scorekeeper application (write model)
   final Scorekeeper _scorekeeper;
 
-  ScorekeeperService(this._scorekeeper);
+  late Logger _logger;
+
+  ScorekeeperService(this._scorekeeper, [Logger? logger]) {
+    _logger = logger ?? Logger();
+  }
 
   /// Add a new Scorable
   Future<MuurkeKlopNDownDto> createNewScorable(String scorableName, Type scorableType) async {
@@ -22,32 +28,37 @@ class ScorekeeperService {
     final command = CreateScorable()
       ..scorableId = aggregateId.id
       ..name = scorableName;
+    _logger.d('START handle command from service (createNewScorable)');
     await _scorekeeper.handleCommand(command);
+    _logger.d('DONE handle command from service (createNewScorable)');
     // Nu gaan we die uit de cache halen, maar blijkbaar zit em er nog niet volledig geladen in??
     return await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
   }
 
   /// Add a newly created Participant to the Scorable
   Future<void> addParticipantToScorable(AggregateId aggregateId, String participantName) async {
+    var scorable = await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId);
     final participant = Participant()..participantId = Uuid().v4()..participantName = participantName;
     final command = AddParticipant()
       ..participant = participant
       ..scorableId = aggregateId.id;
+    _logger.d('START handle command from service (addParticipantToScorable)');
     await _scorekeeper.handleCommand(command);
-    // TODO: moeten we echt nog eens eerst uit cache gaan halen?
-    // await _scorekeeper.getCachedAggregateDtoById<MuurkeKlopNDownDto>(aggregateId)
+    _logger.d('DONE handle command from service (addParticipantToScorable)');
   }
 
   /// Add a new Round to the Scorable
   Future<void> addRoundToScorable(AggregateId aggregateId) async {
     final command = AddRound()..scorableId = aggregateId.id;
+    _logger.d('START handle command from service (addRoundToScorable)');
     await _scorekeeper.handleCommand(command);
+    _logger.d('DONE handle command from service (addRoundToScorable)');
   }
 
   /// Load Scorables ordered descending by last modified date
   /// TODO: for now it's loading ALL (stored/registered/cached/...) aggregates, this needs to be fixed!
   Future<OrderedSet<MuurkeKlopNDownDto>> loadScorables(int page, int pageSize) async {
-    print('LOG:: loadScorables (wordt denk ik nog té vaak gedaan..');
+    _logger.d('START loadScorables (TODO: is this done too often?)');
     final registeredAggregateIds = await _scorekeeper.registeredAggregateIds.toSet();
     final cachedAggregates = <MuurkeKlopNDownDto>{};
     for (final aggregateId in registeredAggregateIds) {
@@ -74,6 +85,7 @@ class ScorekeeperService {
         resultDtos.add(allDtos.elementAt(i));
       }
     }
+    _logger.d('DONE loadScorables');
     return resultDtos;
   }
 
@@ -81,6 +93,8 @@ class ScorekeeperService {
   /// TODO: is this something we actually want to be doing?
   /// Something to think about...
   Future<void> sendCommand(command) async {
+    _logger.d('START handle command from service (sendCommand)');
     await _scorekeeper.handleCommand(command);
+    _logger.d('DONE handle command from service (sendCommand)');
   }
 }

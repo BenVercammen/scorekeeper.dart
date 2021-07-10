@@ -78,7 +78,23 @@ class ScorableDeserializer implements DomainDeserializer {
   }
 
   @override
-  AggregateId deserializeAggregateId(String aggregateId, String aggregateType) {
-    return AggregateId.of(aggregateId, Scorable);
+  AggregateId deserializeAggregateId(
+      String aggregateId, String aggregateTypeName) {
+    Type aggregateType;
+    switch (aggregateTypeName) {
+      case 'String':
+        aggregateType = String;
+        break;
+      case 'MuurkeKlopNDown':
+        aggregateType = MuurkeKlopNDown;
+        break;
+      case 'Scorable':
+        aggregateType = Scorable;
+        break;
+      default:
+        throw Exception(
+            'Cannot deserialize aggregateId for aggregateType "aggregateTypeName"');
+    }
+    return AggregateId.of(aggregateId, aggregateType);
   }
 }

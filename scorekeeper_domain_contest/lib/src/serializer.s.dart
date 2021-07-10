@@ -1,3 +1,4 @@
+import 'package:scorekeeper_domain_contest/contest.dart';
 import 'package:scorekeeper_domain_contest/src/generated/events.pb.dart';
 import 'package:scorekeeper_domain/core.dart';
 
@@ -33,16 +34,15 @@ class ContestDeserializer implements DomainDeserializer {
   }
 
   @override
-  AggregateId deserializeAggregateId(String aggregateId, String aggregateType) {
-    switch (aggregateType) {
-      case 'String':
-        return AggregateId.of(aggregateId, String);
-      case 'EventMetadata':
-        return AggregateId.of(aggregateId, EventMetadata);
-      case 'ContestCreated':
-        return AggregateId.of(aggregateId, ContestCreated);
+  AggregateId deserializeAggregateId(String aggregateId, String aggregateTypeName) {
+    Type aggregateType;
+    switch (aggregateTypeName) {
+      case 'Contest':
+        aggregateType = Contest;
+        break;
       default:
-        throw Exception('Cannot deserialize AggregateId for "$aggregateType"');
+        throw Exception('Cannot deserialize aggregateType "$aggregateTypeName"');
     }
+    return AggregateId.of(aggregateId, aggregateType);
   }
 }

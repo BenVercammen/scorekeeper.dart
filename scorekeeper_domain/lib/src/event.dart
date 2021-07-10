@@ -284,5 +284,5 @@ abstract class DomainSerializer {
 
 abstract class DomainDeserializer {
   dynamic deserialize(String payloadType, String payload);
-  AggregateId deserializeAggregateId(String aggregateId, String aggregateType);
+  AggregateId deserializeAggregateId(String aggregateId, String aggregateTypeName);
 }

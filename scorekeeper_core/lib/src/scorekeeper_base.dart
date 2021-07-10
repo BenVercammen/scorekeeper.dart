@@ -11,7 +11,7 @@ import 'event.dart';
 /// The Scorekeeper class adds event sourcing capabilities to the actual domain.
 /// All commands and events will have to go through this class in order to be handled.
 class Scorekeeper {
-  Logger _logger = Logger();
+  late Logger _logger;
 
   /// The EventStore for storing DomainEvents of the local Scorekeeper instance
   late EventStore _eventStore;
@@ -121,13 +121,19 @@ class Scorekeeper {
 
   /// Handle the given command using the wired (generated) CommandHandler
   Future<void> handleCommand(dynamic command) async {
+    _logger.d('START handleCommand $command');
     final aggregate = await _handleCommand(command);
+//    _logger.d('DONE handleCommand $command');
     // Make sure the aggregate is now registered and cached.
     // It makes sense to do so because otherwise events would get lost and there is a high probably new commands will be sent for this aggregate
+//    _logger.d('START cacheAndRegisterAggregate');
     await _cacheAndRegisterAggregate(aggregate);
+//    _logger.d('DONE cacheAndRegisterAggregate');
     // De appliedEvents nog effectief handlen
-    print('============= De appliedEvents nog effectief handlen');
+//    _logger.d('START handleEventsAppliedByCommand');
     await _handleEventsAppliedByCommand(aggregate);
+//    _logger.d('DONE handleEventsAppliedByCommand');
+    _logger.d('DONE handleCommand $command');
   }
 
   /// Load an aggregate by id from the cache...
@@ -166,7 +172,7 @@ class Scorekeeper {
   }
 
   /// All events that have been applied by the command handler, should be handled and published remotely
-  Future<void> _handleEventsAppliedByCommand(Aggregate aggregate) async {
+  Future<void> _handleEventsAppliedByCommand<T extends Aggregate>(T aggregate) async {
     final eventHandler = _getDomainEventHandlerFor(aggregate.runtimeType);
     final appliedDomainEvents = <DomainEvent>{};
     for (var event in aggregate.pendingEvents) {
@@ -199,7 +205,7 @@ class Scorekeeper {
         await _eventStore.storeDomainEvent(domainEvent);
         _remoteEventPublisher?.publishDomainEvent(domainEvent);
       } on Exception catch (exception) {
-        print('========== prbleem tijdens command.... ABORT ALL THE THINGs!');
+        _logger.e('Probleem tijdens command.... ABORT ALL THE THINGs!');
         // TODO: okay, hier zit de meat van het probleem! we moeten zien dat het commando geweigerd wordt indien hier iets foutloopt??
         // damn...
         // TODO: testen + afhandelen!

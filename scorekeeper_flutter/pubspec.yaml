@@ -28,6 +28,7 @@ dependencies:
   firebase_core: ^1.0.1
   flutter:
     sdk: flutter
+  logger: ^1.0.0
   ordered_set: ^3.0.0
   scorekeeper_core:
     path: ../scorekeeper_core

@@ -49,7 +49,7 @@ class _ScorableDetailPageState extends State<ScorableDetailPage> {
   /// Actually add the participant
   Future<void> _addParticipant(String name) async {
     await scorekeeperService.addParticipantToScorable(scorable.aggregateId, name);
-     setState(() {
+    setState(() {
       // We don't need to set anything explicitly, we know our commands are handled synchronously
     });
   }
@@ -303,6 +303,7 @@ class _AddParticipantFormState extends State<_AddParticipantForm> {
             TextFormField(
               autofocus: true,
               keyboardType: TextInputType.name,
+              key: const Key('participant_name'),
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 labelText: 'Name *',
